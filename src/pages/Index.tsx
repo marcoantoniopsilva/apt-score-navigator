@@ -5,14 +5,17 @@ import { PropertyCard } from '@/components/PropertyCard';
 import { AddPropertyForm } from '@/components/AddPropertyForm';
 import { CriteriaWeightsEditor } from '@/components/CriteriaWeightsEditor';
 import { RankingControls } from '@/components/RankingControls';
+import AppHeader from '@/components/AppHeader';
+import { RefreshCw, BarChart3, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Plus, Home, BarChart3, RefreshCw } from 'lucide-react';
 import { calculateFinalScore } from '@/utils/scoreCalculator';
 import { loadSavedProperties } from '@/utils/propertyExtractor';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
   const [weights, setWeights] = useState<CriteriaWeights>(DEFAULT_WEIGHTS);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -22,8 +25,10 @@ const Index = () => {
 
   // Carregar propriedades salvas na inicialização
   useEffect(() => {
-    loadProperties();
-  }, []);
+    if (user) {
+      loadProperties();
+    }
+  }, [user]);
 
   const loadProperties = async () => {
     try {
@@ -134,42 +139,13 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3">
-              <div className="bg-blue-600 p-2 rounded-lg">
-                <Home className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  Comparador de Imóveis
-                </h1>
-                <p className="text-gray-600">
-                  Encontre o melhor apartamento para alugar
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-3">
-              <Button 
-                onClick={loadProperties}
-                variant="outline"
-                disabled={isLoading}
-              >
-                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
-                Atualizar
-              </Button>
-              <Button 
-                onClick={() => setShowAddForm(true)}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar Imóvel
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <AppHeader 
+        title="Comparador de Imóveis"
+        subtitle="Encontre o melhor apartamento para alugar"
+        onAddProperty={() => setShowAddForm(true)}
+        onRefresh={loadProperties}
+        isLoading={isLoading}
+      />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Controles */}

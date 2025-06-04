@@ -29,8 +29,18 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
   try {
     console.log('Chamando edge function para extração...');
     
+    // Obter o token de sessão atual
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      throw new Error('Usuário não autenticado. Faça login para extrair propriedades.');
+    }
+
     const { data, error } = await supabase.functions.invoke('extract-property-data', {
-      body: { url }
+      body: { url },
+      headers: {
+        Authorization: `Bearer ${session.access_token}`
+      }
     });
 
     if (error) {
