@@ -38,41 +38,61 @@ const Index = () => {
   const loadProperties = async () => {
     try {
       setIsLoading(true);
+      console.log('=== INÍCIO LOAD PROPERTIES ===');
       console.log('Index: Carregando propriedades do banco...');
       const savedProperties = await loadSavedProperties();
       console.log('Index: Propriedades carregadas do banco:', savedProperties);
       
       // Converter formato do banco para formato da aplicação
-      const convertedProperties: Property[] = savedProperties.map(prop => ({
-        id: prop.id,
-        title: prop.title,
-        address: prop.address,
-        bedrooms: prop.bedrooms,
-        bathrooms: prop.bathrooms,
-        parkingSpaces: prop.parking_spaces,
-        area: prop.area,
-        floor: prop.floor || '',
-        rent: prop.rent,
-        condo: prop.condo,
-        iptu: prop.iptu,
-        fireInsurance: prop.fire_insurance,
-        otherFees: prop.other_fees,
-        totalMonthlyCost: prop.total_monthly_cost,
-        images: prop.images || [],
-        sourceUrl: prop.source_url || undefined,
-        scores: {
-          location: prop.location_score,
-          internalSpace: prop.internal_space_score,
-          furniture: prop.furniture_score,
-          accessibility: prop.accessibility_score,
-          finishing: prop.finishing_score,
-          price: prop.price_score,
-        },
-        finalScore: prop.final_score
-      }));
+      const convertedProperties: Property[] = savedProperties.map(prop => {
+        const converted = {
+          id: prop.id,
+          title: prop.title,
+          address: prop.address,
+          bedrooms: prop.bedrooms,
+          bathrooms: prop.bathrooms,
+          parkingSpaces: prop.parking_spaces,
+          area: prop.area,
+          floor: prop.floor || '',
+          rent: prop.rent,
+          condo: prop.condo,
+          iptu: prop.iptu,
+          fireInsurance: prop.fire_insurance,
+          otherFees: prop.other_fees,
+          totalMonthlyCost: prop.total_monthly_cost,
+          images: prop.images || [],
+          sourceUrl: prop.source_url || undefined,
+          scores: {
+            location: Number(prop.location_score),
+            internalSpace: Number(prop.internal_space_score),
+            furniture: Number(prop.furniture_score),
+            accessibility: Number(prop.accessibility_score),
+            finishing: Number(prop.finishing_score),
+            price: Number(prop.price_score),
+          },
+          finalScore: Number(prop.final_score)
+        };
+        
+        console.log(`Index: Propriedade ${prop.id} convertida:`, {
+          scores_do_banco: {
+            location_score: prop.location_score,
+            internal_space_score: prop.internal_space_score,
+            furniture_score: prop.furniture_score,
+            accessibility_score: prop.accessibility_score,
+            finishing_score: prop.finishing_score,
+            price_score: prop.price_score,
+          },
+          scores_convertidos: converted.scores,
+          final_score_banco: prop.final_score,
+          final_score_convertido: converted.finalScore
+        });
+        
+        return converted;
+      });
 
       console.log('Index: Propriedades convertidas:', convertedProperties);
       setProperties(convertedProperties);
+      console.log('=== FIM LOAD PROPERTIES ===');
       
       if (convertedProperties.length > 0) {
         toast({
@@ -139,13 +159,18 @@ const Index = () => {
 
   const handleUpdateProperty = async (updatedProperty: Property) => {
     try {
-      console.log('Index: Atualizando propriedade:', updatedProperty);
+      console.log('=== INÍCIO HANDLE UPDATE ===');
+      console.log('Index: Propriedade recebida para atualização:', updatedProperty);
+      console.log('Index: Scores atuais:', updatedProperty.scores);
+      
       const propertyWithScore = {
         ...updatedProperty,
         finalScore: calculateFinalScore(updatedProperty.scores, weights)
       };
       
       console.log('Index: Propriedade com pontuação recalculada:', propertyWithScore);
+      console.log('Index: Scores que serão enviados para o banco:', propertyWithScore.scores);
+      console.log('Index: Final score calculado:', propertyWithScore.finalScore);
       console.log('Index: Enviando para o banco de dados...');
       
       // Atualizar no banco de dados
@@ -155,7 +180,8 @@ const Index = () => {
       // Atualizar o estado local apenas após sucesso no banco
       setProperties(prev => {
         const updated = prev.map(p => p.id === updatedProperty.id ? propertyWithScore : p);
-        console.log('Index: Estado local atualizado:', updated);
+        console.log('Index: Estado local atualizado');
+        console.log('Index: Propriedade atualizada no estado:', updated.find(p => p.id === updatedProperty.id));
         return updated;
       });
       
@@ -164,6 +190,7 @@ const Index = () => {
         description: "As alterações foram salvas no banco de dados.",
       });
       console.log('Index: Atualização concluída com sucesso');
+      console.log('=== FIM HANDLE UPDATE ===');
     } catch (error) {
       console.error('Index: Erro ao atualizar propriedade:', error);
       toast({
