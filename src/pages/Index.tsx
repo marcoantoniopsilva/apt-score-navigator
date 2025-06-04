@@ -9,7 +9,12 @@ import AppHeader from '@/components/AppHeader';
 import { RefreshCw, BarChart3, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { calculateFinalScore } from '@/utils/scoreCalculator';
-import { loadSavedProperties } from '@/utils/propertyExtractor';
+import { 
+  loadSavedProperties, 
+  savePropertyToDatabase, 
+  updatePropertyInDatabase, 
+  deletePropertyFromDatabase 
+} from '@/utils/propertyExtractor';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -93,32 +98,83 @@ const Index = () => {
     setProperties(updatedProperties);
   }, [weights]);
 
-  const handleAddProperty = (property: Property) => {
-    const propertyWithScore = {
-      ...property,
-      finalScore: calculateFinalScore(property.scores, weights)
-    };
-    setProperties(prev => [...prev, propertyWithScore]);
-    setShowAddForm(false);
-    
-    toast({
-      title: "Propriedade adicionada",
-      description: "A propriedade foi salva com sucesso.",
-    });
+  const handleAddProperty = async (property: Property) => {
+    try {
+      const propertyWithScore = {
+        ...property,
+        finalScore: calculateFinalScore(property.scores, weights)
+      };
+      
+      // Salvar no banco de dados
+      await savePropertyToDatabase(propertyWithScore);
+      
+      // Atualizar o estado local
+      setProperties(prev => [...prev, propertyWithScore]);
+      setShowAddForm(false);
+      
+      toast({
+        title: "Propriedade adicionada",
+        description: "A propriedade foi salva com sucesso no banco de dados.",
+      });
+    } catch (error) {
+      console.error('Erro ao adicionar propriedade:', error);
+      toast({
+        title: "Erro ao salvar",
+        description: "Não foi possível salvar a propriedade. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleUpdateProperty = (updatedProperty: Property) => {
-    const propertyWithScore = {
-      ...updatedProperty,
-      finalScore: calculateFinalScore(updatedProperty.scores, weights)
-    };
-    setProperties(prev => 
-      prev.map(p => p.id === updatedProperty.id ? propertyWithScore : p)
-    );
+  const handleUpdateProperty = async (updatedProperty: Property) => {
+    try {
+      const propertyWithScore = {
+        ...updatedProperty,
+        finalScore: calculateFinalScore(updatedProperty.scores, weights)
+      };
+      
+      // Atualizar no banco de dados
+      await updatePropertyInDatabase(propertyWithScore);
+      
+      // Atualizar o estado local
+      setProperties(prev => 
+        prev.map(p => p.id === updatedProperty.id ? propertyWithScore : p)
+      );
+      
+      toast({
+        title: "Propriedade atualizada",
+        description: "As alterações foram salvas no banco de dados.",
+      });
+    } catch (error) {
+      console.error('Erro ao atualizar propriedade:', error);
+      toast({
+        title: "Erro ao atualizar",
+        description: "Não foi possível salvar as alterações. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
-  const handleDeleteProperty = (id: string) => {
-    setProperties(prev => prev.filter(p => p.id !== id));
+  const handleDeleteProperty = async (id: string) => {
+    try {
+      // Deletar do banco de dados
+      await deletePropertyFromDatabase(id);
+      
+      // Atualizar o estado local
+      setProperties(prev => prev.filter(p => p.id !== id));
+      
+      toast({
+        title: "Propriedade removida",
+        description: "A propriedade foi deletada do banco de dados.",
+      });
+    } catch (error) {
+      console.error('Erro ao deletar propriedade:', error);
+      toast({
+        title: "Erro ao deletar",
+        description: "Não foi possível deletar a propriedade. Tente novamente.",
+        variant: "destructive"
+      });
+    }
   };
 
   const sortedProperties = [...properties].sort((a, b) => {

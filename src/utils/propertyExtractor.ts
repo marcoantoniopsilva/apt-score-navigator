@@ -73,6 +73,152 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
   }
 };
 
+// Função para salvar uma nova propriedade no banco
+export const savePropertyToDatabase = async (property: any) => {
+  try {
+    console.log('Salvando propriedade no banco:', property);
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const propertyData = {
+      title: property.title,
+      address: property.address,
+      bedrooms: property.bedrooms,
+      bathrooms: property.bathrooms,
+      parking_spaces: property.parkingSpaces,
+      area: property.area,
+      floor: property.floor || '',
+      rent: property.rent,
+      condo: property.condo,
+      iptu: property.iptu,
+      fire_insurance: property.fireInsurance,
+      other_fees: property.otherFees,
+      total_monthly_cost: property.totalMonthlyCost,
+      images: property.images || [],
+      source_url: property.sourceUrl || null,
+      location_score: property.scores.location,
+      internal_space_score: property.scores.internalSpace,
+      furniture_score: property.scores.furniture,
+      accessibility_score: property.scores.accessibility,
+      finishing_score: property.scores.finishing,
+      price_score: property.scores.price,
+      final_score: property.finalScore,
+      user_id: session.user.id
+    };
+
+    const { data, error } = await supabase
+      .from('properties')
+      .insert(propertyData)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Erro ao salvar propriedade:', error);
+      throw new Error('Falha ao salvar propriedade no banco de dados');
+    }
+
+    console.log('Propriedade salva com sucesso:', data);
+    return data;
+
+  } catch (error) {
+    console.error('Erro ao salvar propriedade:', error);
+    throw error;
+  }
+};
+
+// Função para atualizar uma propriedade existente
+export const updatePropertyInDatabase = async (property: any) => {
+  try {
+    console.log('Atualizando propriedade no banco:', property);
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const propertyData = {
+      title: property.title,
+      address: property.address,
+      bedrooms: property.bedrooms,
+      bathrooms: property.bathrooms,
+      parking_spaces: property.parkingSpaces,
+      area: property.area,
+      floor: property.floor || '',
+      rent: property.rent,
+      condo: property.condo,
+      iptu: property.iptu,
+      fire_insurance: property.fireInsurance,
+      other_fees: property.otherFees,
+      total_monthly_cost: property.totalMonthlyCost,
+      images: property.images || [],
+      source_url: property.sourceUrl || null,
+      location_score: property.scores.location,
+      internal_space_score: property.scores.internalSpace,
+      furniture_score: property.scores.furniture,
+      accessibility_score: property.scores.accessibility,
+      finishing_score: property.scores.finishing,
+      price_score: property.scores.price,
+      final_score: property.finalScore,
+      updated_at: new Date().toISOString()
+    };
+
+    const { data, error } = await supabase
+      .from('properties')
+      .update(propertyData)
+      .eq('id', property.id)
+      .eq('user_id', session.user.id)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Erro ao atualizar propriedade:', error);
+      throw new Error('Falha ao atualizar propriedade no banco de dados');
+    }
+
+    console.log('Propriedade atualizada com sucesso:', data);
+    return data;
+
+  } catch (error) {
+    console.error('Erro ao atualizar propriedade:', error);
+    throw error;
+  }
+};
+
+// Função para deletar uma propriedade
+export const deletePropertyFromDatabase = async (propertyId: string) => {
+  try {
+    console.log('Deletando propriedade do banco:', propertyId);
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const { error } = await supabase
+      .from('properties')
+      .delete()
+      .eq('id', propertyId)
+      .eq('user_id', session.user.id);
+
+    if (error) {
+      console.error('Erro ao deletar propriedade:', error);
+      throw new Error('Falha ao deletar propriedade do banco de dados');
+    }
+
+    console.log('Propriedade deletada com sucesso');
+
+  } catch (error) {
+    console.error('Erro ao deletar propriedade:', error);
+    throw error;
+  }
+};
+
 // Função para carregar propriedades salvas do banco
 export const loadSavedProperties = async () => {
   try {
