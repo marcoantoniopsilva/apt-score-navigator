@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Property, PropertyScores, DEFAULT_WEIGHTS } from '@/types/property';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { X, Link, Plus, Calculator } from 'lucide-react';
+import { X, Link, Plus, Calculator, AlertCircle, Info } from 'lucide-react';
 import { calculateFinalScore } from '@/utils/scoreCalculator';
 import { extractPropertyFromUrl } from '@/utils/propertyExtractor';
 import { useToast } from '@/hooks/use-toast';
@@ -73,9 +72,13 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({
       return;
     }
 
+    console.log('Iniciando extração para URL:', urlInput);
     setIsLoading(true);
+    
     try {
       const extractedData = await extractPropertyFromUrl(urlInput);
+      console.log('Dados extraídos com sucesso:', extractedData);
+      
       setFormData(prev => ({
         ...prev,
         ...extractedData,
@@ -83,16 +86,20 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({
       }));
       
       toast({
-        title: "Sucesso",
-        description: "Dados extraídos com sucesso!"
+        title: "Sucesso!",
+        description: "Dados extraídos e preenchidos automaticamente. Revise as informações antes de salvar.",
       });
+      
     } catch (error) {
       console.error('Erro ao extrair dados:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      
       toast({
         title: "Aviso",
-        description: "Não foi possível extrair automaticamente. Preencha manualmente.",
+        description: errorMessage,
         variant: "destructive"
       });
+      
       // Define a URL mesmo se a extração falhar
       setFormData(prev => ({
         ...prev,
@@ -110,6 +117,15 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!formData.title.trim() || !formData.address.trim() || formData.rent <= 0) {
+      toast({
+        title: "Erro",
+        description: "Por favor, preencha todos os campos obrigatórios",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     const property: Property = {
       id: Date.now().toString(),
       ...formData,
@@ -119,6 +135,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({
       finalScore: calculateFinalScore(scores, DEFAULT_WEIGHTS)
     };
 
+    console.log('Propriedade criada:', property);
     onSubmit(property);
   };
 
@@ -135,16 +152,25 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Extração por URL */}
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <Label className="text-sm font-medium mb-2 flex items-center">
-                <Link className="h-4 w-4 mr-2" />
-                Extrair dados do anúncio (opcional)
-              </Label>
+            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
+              <div className="flex items-start space-x-2 mb-3">
+                <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                <div className="flex-1">
+                  <Label className="text-sm font-medium mb-1 flex items-center text-blue-800">
+                    <Link className="h-4 w-4 mr-2" />
+                    Extrair dados do anúncio (Funcionalidade Simulada)
+                  </Label>
+                  <p className="text-xs text-blue-700 mb-3">
+                    Esta é uma simulação para demonstração. Os dados são preenchidos automaticamente com base no domínio do site (Zap, OLX, QuintoAndar, etc.).
+                  </p>
+                </div>
+              </div>
+              
               <div className="flex space-x-2">
                 <Input
                   value={urlInput}
                   onChange={(e) => setUrlInput(e.target.value)}
-                  placeholder="Cole o link do anúncio (Zap, OLX, QuintoAndar, etc.)"
+                  placeholder="Cole o link do anúncio (ex: https://www.zapimoveis.com.br/...)"
                   className="flex-1"
                 />
                 <Button 
@@ -152,6 +178,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({
                   onClick={handleExtractFromUrl}
                   disabled={isLoading}
                   variant="outline"
+                  className="whitespace-nowrap"
                 >
                   {isLoading ? 'Extraindo...' : 'Extrair'}
                 </Button>
@@ -171,6 +198,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({
                     value={formData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
                     required
+                    placeholder="Ex: Apartamento 2 quartos em Pinheiros"
                   />
                 </div>
                 <div>
@@ -180,6 +208,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({
                     value={formData.address}
                     onChange={(e) => handleInputChange('address', e.target.value)}
                     required
+                    placeholder="Ex: Rua Augusta, 123 - Jardins, São Paulo"
                   />
                 </div>
               </div>
@@ -233,7 +262,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({
                   id="floor"
                   value={formData.floor}
                   onChange={(e) => handleInputChange('floor', e.target.value)}
-                  placeholder="Ex: 5º andar, Térreo, etc."
+                  placeholder="Ex: 5º andar, Térreo, Cobertura"
                 />
               </div>
             </div>
