@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { Property } from '@/types/property';
-import { loadSavedProperties } from '@/utils/propertyExtractor';
+import { loadSavedProperties } from '@/services/propertyDatabaseService';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 

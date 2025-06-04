@@ -6,7 +6,7 @@ import {
   savePropertyToDatabase, 
   updatePropertyInDatabase, 
   deletePropertyFromDatabase 
-} from '@/utils/propertyExtractor';
+} from '@/services/propertyDatabaseService';
 import { useToast } from '@/hooks/use-toast';
 
 export const usePropertyActions = (
