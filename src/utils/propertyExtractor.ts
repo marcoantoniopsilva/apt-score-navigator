@@ -15,7 +15,7 @@ interface ExtractedPropertyData {
 }
 
 export const extractPropertyFromUrl = async (url: string): Promise<ExtractedPropertyData> => {
-  console.log('Iniciando extração real para URL:', url);
+  console.log('Iniciando extração para URL:', url);
   
   // Validação básica da URL
   try {
@@ -43,8 +43,13 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
       throw new Error(data.error || 'Falha na extração dos dados');
     }
 
-    console.log('Dados extraídos com sucesso:', data.data);
-    return data.data;
+    console.log('Dados extraídos e salvos com sucesso:', data.data);
+    
+    // Retornar os dados para preenchimento do formulário
+    return {
+      ...data.data,
+      parkingSpaces: data.data.parking_spaces || 0 // Converter snake_case para camelCase
+    };
 
   } catch (error) {
     console.error('Erro ao extrair dados:', error);
@@ -55,6 +60,30 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
     }
     
     throw new Error('Não foi possível extrair dados deste site. Verifique se a URL está correta e se o site permite extração automática.');
+  }
+};
+
+// Função para carregar propriedades salvas do banco
+export const loadSavedProperties = async () => {
+  try {
+    console.log('Carregando propriedades salvas...');
+    
+    const { data: properties, error } = await supabase
+      .from('properties')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Erro ao carregar propriedades:', error);
+      throw new Error('Falha ao carregar propriedades salvas');
+    }
+
+    console.log('Propriedades carregadas:', properties);
+    return properties || [];
+
+  } catch (error) {
+    console.error('Erro ao carregar propriedades:', error);
+    throw error;
   }
 };
 

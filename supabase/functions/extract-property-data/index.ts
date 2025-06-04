@@ -1,6 +1,7 @@
 
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -69,15 +70,44 @@ serve(async (req) => {
       );
     }
 
+    // Obter o token de autorização para identificar o usuário
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Token de autorização é obrigatório' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     console.log('Extraindo dados para URL:', url);
 
     const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
-    if (!firecrawlApiKey || !openaiApiKey) {
+    if (!firecrawlApiKey || !openaiApiKey || !supabaseUrl || !supabaseServiceRoleKey) {
       return new Response(
         JSON.stringify({ error: 'API keys não configuradas' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Inicializar cliente Supabase
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey, {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false
+      }
+    });
+
+    // Verificar o usuário autenticado
+    const { data: { user }, error: authError } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
+    
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Usuário não autenticado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -172,7 +202,7 @@ IMPORTANTE: Retorne apenas o objeto JSON, sem texto adicional, sem blocos de có
         address: extractedData.address || 'Endereço não encontrado',
         bedrooms: Math.max(0, Number(extractedData.bedrooms) || 1),
         bathrooms: Math.max(0, Number(extractedData.bathrooms) || 1),
-        parkingSpaces: Math.max(0, Number(extractedData.parkingSpaces) || 0),
+        parking_spaces: Math.max(0, Number(extractedData.parkingSpaces) || 0),
         area: Math.max(1, Number(extractedData.area) || 50),
         floor: extractedData.floor || 'Não informado',
         rent: Math.max(0, Number(extractedData.rent) || 0),
@@ -180,10 +210,57 @@ IMPORTANTE: Retorne apenas o objeto JSON, sem texto adicional, sem blocos de có
         iptu: Math.max(0, Number(extractedData.iptu) || 0),
       };
 
-      console.log('Dados extraídos com sucesso:', cleanedData);
+      // Calcular custo total
+      const totalMonthlyCost = cleanedData.rent + cleanedData.condo + cleanedData.iptu + 50; // 50 é o padrão para seguro incêndio
+
+      // Salvar no banco de dados
+      const { data: savedProperty, error: saveError } = await supabase
+        .from('properties')
+        .insert({
+          user_id: user.id,
+          title: cleanedData.title,
+          address: cleanedData.address,
+          bedrooms: cleanedData.bedrooms,
+          bathrooms: cleanedData.bathrooms,
+          parking_spaces: cleanedData.parking_spaces,
+          area: cleanedData.area,
+          floor: cleanedData.floor,
+          rent: cleanedData.rent,
+          condo: cleanedData.condo,
+          iptu: cleanedData.iptu,
+          fire_insurance: 50,
+          other_fees: 0,
+          total_monthly_cost: totalMonthlyCost,
+          source_url: url,
+          images: [],
+          location_score: 5.0,
+          internal_space_score: 5.0,
+          furniture_score: 5.0,
+          accessibility_score: 5.0,
+          finishing_score: 5.0,
+          price_score: 5.0,
+          final_score: 5.0
+        })
+        .select()
+        .single();
+
+      if (saveError) {
+        console.error('Erro ao salvar no banco:', saveError);
+        return new Response(
+          JSON.stringify({ error: 'Falha ao salvar propriedade no banco de dados' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      console.log('Propriedade salva com sucesso:', savedProperty);
 
       return new Response(
-        JSON.stringify({ success: true, data: cleanedData }),
+        JSON.stringify({ 
+          success: true, 
+          data: cleanedData,
+          property_id: savedProperty.id,
+          message: 'Propriedade extraída e salva com sucesso!'
+        }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
 

@@ -6,15 +6,78 @@ import { AddPropertyForm } from '@/components/AddPropertyForm';
 import { CriteriaWeightsEditor } from '@/components/CriteriaWeightsEditor';
 import { RankingControls } from '@/components/RankingControls';
 import { Button } from '@/components/ui/button';
-import { Plus, Home, BarChart3 } from 'lucide-react';
+import { Plus, Home, BarChart3, RefreshCw } from 'lucide-react';
 import { calculateFinalScore } from '@/utils/scoreCalculator';
+import { loadSavedProperties } from '@/utils/propertyExtractor';
+import { useToast } from '@/hooks/use-toast';
 
 const Index = () => {
+  const { toast } = useToast();
   const [properties, setProperties] = useState<Property[]>([]);
   const [weights, setWeights] = useState<CriteriaWeights>(DEFAULT_WEIGHTS);
   const [showAddForm, setShowAddForm] = useState(false);
   const [sortBy, setSortBy] = useState<'finalScore' | keyof Property['scores']>('finalScore');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Carregar propriedades salvas na inicialização
+  useEffect(() => {
+    loadProperties();
+  }, []);
+
+  const loadProperties = async () => {
+    try {
+      setIsLoading(true);
+      const savedProperties = await loadSavedProperties();
+      
+      // Converter formato do banco para formato da aplicação
+      const convertedProperties: Property[] = savedProperties.map(prop => ({
+        id: prop.id,
+        title: prop.title,
+        address: prop.address,
+        bedrooms: prop.bedrooms,
+        bathrooms: prop.bathrooms,
+        parkingSpaces: prop.parking_spaces,
+        area: prop.area,
+        floor: prop.floor || '',
+        rent: prop.rent,
+        condo: prop.condo,
+        iptu: prop.iptu,
+        fireInsurance: prop.fire_insurance,
+        otherFees: prop.other_fees,
+        totalMonthlyCost: prop.total_monthly_cost,
+        images: prop.images || [],
+        sourceUrl: prop.source_url || undefined,
+        scores: {
+          location: prop.location_score,
+          internalSpace: prop.internal_space_score,
+          furniture: prop.furniture_score,
+          accessibility: prop.accessibility_score,
+          finishing: prop.finishing_score,
+          price: prop.price_score,
+        },
+        finalScore: prop.final_score
+      }));
+
+      setProperties(convertedProperties);
+      
+      if (convertedProperties.length > 0) {
+        toast({
+          title: "Propriedades carregadas",
+          description: `${convertedProperties.length} propriedades carregadas do banco de dados.`,
+        });
+      }
+    } catch (error) {
+      console.error('Erro ao carregar propriedades:', error);
+      toast({
+        title: "Erro ao carregar propriedades",
+        description: "Não foi possível carregar as propriedades salvas.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Recalcular pontuações quando os pesos mudarem
   useEffect(() => {
@@ -32,6 +95,11 @@ const Index = () => {
     };
     setProperties(prev => [...prev, propertyWithScore]);
     setShowAddForm(false);
+    
+    toast({
+      title: "Propriedade adicionada",
+      description: "A propriedade foi salva com sucesso.",
+    });
   };
 
   const handleUpdateProperty = (updatedProperty: Property) => {
@@ -82,13 +150,23 @@ const Index = () => {
                 </p>
               </div>
             </div>
-            <Button 
-              onClick={() => setShowAddForm(true)}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Adicionar Imóvel
-            </Button>
+            <div className="flex items-center space-x-3">
+              <Button 
+                onClick={loadProperties}
+                variant="outline"
+                disabled={isLoading}
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                Atualizar
+              </Button>
+              <Button 
+                onClick={() => setShowAddForm(true)}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar Imóvel
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -110,7 +188,19 @@ const Index = () => {
         </div>
 
         {/* Lista de Imóveis */}
-        {properties.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-12">
+            <div className="bg-white rounded-lg shadow-sm p-8 max-w-md mx-auto">
+              <RefreshCw className="h-12 w-12 text-blue-600 mx-auto mb-4 animate-spin" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Carregando propriedades...
+              </h3>
+              <p className="text-gray-600">
+                Aguarde enquanto carregamos suas propriedades salvas.
+              </p>
+            </div>
+          </div>
+        ) : properties.length === 0 ? (
           <div className="text-center py-12">
             <div className="bg-white rounded-lg shadow-sm p-8 max-w-md mx-auto">
               <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />

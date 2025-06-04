@@ -63,6 +63,93 @@ export type Database = {
         }
         Relationships: []
       }
+      properties: {
+        Row: {
+          accessibility_score: number
+          address: string
+          area: number
+          bathrooms: number
+          bedrooms: number
+          condo: number
+          created_at: string
+          final_score: number
+          finishing_score: number
+          fire_insurance: number
+          floor: string | null
+          furniture_score: number
+          id: string
+          images: string[] | null
+          internal_space_score: number
+          iptu: number
+          location_score: number
+          other_fees: number
+          parking_spaces: number
+          price_score: number
+          rent: number
+          source_url: string | null
+          title: string
+          total_monthly_cost: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accessibility_score?: number
+          address: string
+          area: number
+          bathrooms?: number
+          bedrooms?: number
+          condo?: number
+          created_at?: string
+          final_score?: number
+          finishing_score?: number
+          fire_insurance?: number
+          floor?: string | null
+          furniture_score?: number
+          id?: string
+          images?: string[] | null
+          internal_space_score?: number
+          iptu?: number
+          location_score?: number
+          other_fees?: number
+          parking_spaces?: number
+          price_score?: number
+          rent: number
+          source_url?: string | null
+          title: string
+          total_monthly_cost: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accessibility_score?: number
+          address?: string
+          area?: number
+          bathrooms?: number
+          bedrooms?: number
+          condo?: number
+          created_at?: string
+          final_score?: number
+          finishing_score?: number
+          fire_insurance?: number
+          floor?: string | null
+          furniture_score?: number
+          id?: string
+          images?: string[] | null
+          internal_space_score?: number
+          iptu?: number
+          location_score?: number
+          other_fees?: number
+          parking_spaces?: number
+          price_score?: number
+          rent?: number
+          source_url?: string | null
+          title?: string
+          total_monthly_cost?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
