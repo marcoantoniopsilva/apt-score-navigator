@@ -1,12 +1,157 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+
+import React, { useState, useEffect } from 'react';
+import { Property, CriteriaWeights, DEFAULT_WEIGHTS } from '@/types/property';
+import { PropertyCard } from '@/components/PropertyCard';
+import { AddPropertyForm } from '@/components/AddPropertyForm';
+import { CriteriaWeightsEditor } from '@/components/CriteriaWeightsEditor';
+import { RankingControls } from '@/components/RankingControls';
+import { Button } from '@/components/ui/button';
+import { Plus, Home, BarChart3 } from 'lucide-react';
+import { calculateFinalScore } from '@/utils/scoreCalculator';
 
 const Index = () => {
+  const [properties, setProperties] = useState<Property[]>([]);
+  const [weights, setWeights] = useState<CriteriaWeights>(DEFAULT_WEIGHTS);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [sortBy, setSortBy] = useState<'finalScore' | keyof Property['scores']>('finalScore');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+
+  // Recalcular pontuações quando os pesos mudarem
+  useEffect(() => {
+    const updatedProperties = properties.map(property => ({
+      ...property,
+      finalScore: calculateFinalScore(property.scores, weights)
+    }));
+    setProperties(updatedProperties);
+  }, [weights]);
+
+  const handleAddProperty = (property: Property) => {
+    const propertyWithScore = {
+      ...property,
+      finalScore: calculateFinalScore(property.scores, weights)
+    };
+    setProperties(prev => [...prev, propertyWithScore]);
+    setShowAddForm(false);
+  };
+
+  const handleUpdateProperty = (updatedProperty: Property) => {
+    const propertyWithScore = {
+      ...updatedProperty,
+      finalScore: calculateFinalScore(updatedProperty.scores, weights)
+    };
+    setProperties(prev => 
+      prev.map(p => p.id === updatedProperty.id ? propertyWithScore : p)
+    );
+  };
+
+  const handleDeleteProperty = (id: string) => {
+    setProperties(prev => prev.filter(p => p.id !== id));
+  };
+
+  const sortedProperties = [...properties].sort((a, b) => {
+    let aValue: number;
+    let bValue: number;
+
+    if (sortBy === 'finalScore') {
+      aValue = a.finalScore;
+      bValue = b.finalScore;
+    } else {
+      aValue = a.scores[sortBy];
+      bValue = b.scores[sortBy];
+    }
+
+    return sortOrder === 'desc' ? bValue - aValue : aValue - bValue;
+  });
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">Welcome to Your Blank App</h1>
-        <p className="text-xl text-gray-600">Start building your amazing project here!</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="bg-blue-600 p-2 rounded-lg">
+                <Home className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">
+                  Comparador de Imóveis
+                </h1>
+                <p className="text-gray-600">
+                  Encontre o melhor apartamento para alugar
+                </p>
+              </div>
+            </div>
+            <Button 
+              onClick={() => setShowAddForm(true)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Adicionar Imóvel
+            </Button>
+          </div>
+        </div>
       </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Controles */}
+        <div className="grid md:grid-cols-2 gap-6 mb-8">
+          <CriteriaWeightsEditor 
+            weights={weights} 
+            onWeightsChange={setWeights} 
+          />
+          <RankingControls
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSortByChange={setSortBy}
+            onSortOrderChange={setSortOrder}
+            propertiesCount={properties.length}
+          />
+        </div>
+
+        {/* Lista de Imóveis */}
+        {properties.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="bg-white rounded-lg shadow-sm p-8 max-w-md mx-auto">
+              <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">
+                Nenhum imóvel adicionado
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Comece adicionando imóveis para comparar e encontrar a melhor opção.
+              </p>
+              <Button 
+                onClick={() => setShowAddForm(true)}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Adicionar Primeiro Imóvel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {sortedProperties.map((property, index) => (
+              <PropertyCard
+                key={property.id}
+                property={property}
+                rank={index + 1}
+                weights={weights}
+                onUpdate={handleUpdateProperty}
+                onDelete={handleDeleteProperty}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Modal de Adicionar Imóvel */}
+      {showAddForm && (
+        <AddPropertyForm 
+          onSubmit={handleAddProperty}
+          onCancel={() => setShowAddForm(false)}
+        />
+      )}
     </div>
   );
 };
