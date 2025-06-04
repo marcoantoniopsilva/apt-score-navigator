@@ -42,16 +42,30 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
     return 'text-red-600 bg-red-50';
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    console.log('PropertyCard: Iniciando save das alterações');
+    console.log('PropertyCard: Scores editados:', editedProperty.scores);
+    
     const updatedProperty = {
       ...editedProperty,
       finalScore: calculateFinalScore(editedProperty.scores, weights)
     };
-    onUpdate(updatedProperty);
-    setIsEditing(false);
+    
+    console.log('PropertyCard: Propriedade com nova pontuação final:', updatedProperty);
+    console.log('PropertyCard: Chamando onUpdate...');
+    
+    try {
+      await onUpdate(updatedProperty);
+      console.log('PropertyCard: onUpdate executado com sucesso');
+      setIsEditing(false);
+    } catch (error) {
+      console.error('PropertyCard: Erro ao salvar alterações:', error);
+      // Manter o modo de edição se houver erro
+    }
   };
 
   const handleScoreChange = (criterion: keyof Property['scores'], value: number) => {
+    console.log(`PropertyCard: Alterando ${criterion} para ${value}`);
     setEditedProperty(prev => ({
       ...prev,
       scores: {
@@ -198,6 +212,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
                 variant="outline" 
                 size="sm" 
                 onClick={() => {
+                  console.log('PropertyCard: Cancelando edição, resetando para:', property);
                   setEditedProperty(property);
                   setIsEditing(false);
                 }}

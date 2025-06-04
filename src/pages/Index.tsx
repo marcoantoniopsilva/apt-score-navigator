@@ -38,7 +38,9 @@ const Index = () => {
   const loadProperties = async () => {
     try {
       setIsLoading(true);
+      console.log('Index: Carregando propriedades do banco...');
       const savedProperties = await loadSavedProperties();
+      console.log('Index: Propriedades carregadas do banco:', savedProperties);
       
       // Converter formato do banco para formato da aplicação
       const convertedProperties: Property[] = savedProperties.map(prop => ({
@@ -69,6 +71,7 @@ const Index = () => {
         finalScore: prop.final_score
       }));
 
+      console.log('Index: Propriedades convertidas:', convertedProperties);
       setProperties(convertedProperties);
       
       if (convertedProperties.length > 0) {
@@ -78,7 +81,7 @@ const Index = () => {
         });
       }
     } catch (error) {
-      console.error('Erro ao carregar propriedades:', error);
+      console.error('Index: Erro ao carregar propriedades:', error);
       toast({
         title: "Erro ao carregar propriedades",
         description: "Não foi possível carregar as propriedades salvas.",
@@ -91,21 +94,28 @@ const Index = () => {
 
   // Recalcular pontuações quando os pesos mudarem
   useEffect(() => {
-    const updatedProperties = properties.map(property => ({
-      ...property,
-      finalScore: calculateFinalScore(property.scores, weights)
-    }));
+    console.log('Index: Pesos alterados, recalculando pontuações...');
+    const updatedProperties = properties.map(property => {
+      const newFinalScore = calculateFinalScore(property.scores, weights);
+      console.log(`Index: Propriedade ${property.id} - nova pontuação: ${newFinalScore}`);
+      return {
+        ...property,
+        finalScore: newFinalScore
+      };
+    });
     setProperties(updatedProperties);
   }, [weights]);
 
   const handleAddProperty = async (property: Property) => {
     try {
+      console.log('Index: Adicionando nova propriedade:', property);
       const propertyWithScore = {
         ...property,
         finalScore: calculateFinalScore(property.scores, weights)
       };
       
       // Salvar no banco de dados
+      console.log('Index: Salvando no banco de dados...');
       await savePropertyToDatabase(propertyWithScore);
       
       // Atualizar o estado local
@@ -116,8 +126,9 @@ const Index = () => {
         title: "Propriedade adicionada",
         description: "A propriedade foi salva com sucesso no banco de dados.",
       });
+      console.log('Index: Propriedade adicionada com sucesso');
     } catch (error) {
-      console.error('Erro ao adicionar propriedade:', error);
+      console.error('Index: Erro ao adicionar propriedade:', error);
       toast({
         title: "Erro ao salvar",
         description: "Não foi possível salvar a propriedade. Tente novamente.",
@@ -128,35 +139,46 @@ const Index = () => {
 
   const handleUpdateProperty = async (updatedProperty: Property) => {
     try {
+      console.log('Index: Atualizando propriedade:', updatedProperty);
       const propertyWithScore = {
         ...updatedProperty,
         finalScore: calculateFinalScore(updatedProperty.scores, weights)
       };
       
-      // Atualizar no banco de dados
-      await updatePropertyInDatabase(propertyWithScore);
+      console.log('Index: Propriedade com pontuação recalculada:', propertyWithScore);
+      console.log('Index: Enviando para o banco de dados...');
       
-      // Atualizar o estado local
-      setProperties(prev => 
-        prev.map(p => p.id === updatedProperty.id ? propertyWithScore : p)
-      );
+      // Atualizar no banco de dados
+      const updatedFromDb = await updatePropertyInDatabase(propertyWithScore);
+      console.log('Index: Resposta do banco de dados:', updatedFromDb);
+      
+      // Atualizar o estado local apenas após sucesso no banco
+      setProperties(prev => {
+        const updated = prev.map(p => p.id === updatedProperty.id ? propertyWithScore : p);
+        console.log('Index: Estado local atualizado:', updated);
+        return updated;
+      });
       
       toast({
         title: "Propriedade atualizada",
         description: "As alterações foram salvas no banco de dados.",
       });
+      console.log('Index: Atualização concluída com sucesso');
     } catch (error) {
-      console.error('Erro ao atualizar propriedade:', error);
+      console.error('Index: Erro ao atualizar propriedade:', error);
       toast({
         title: "Erro ao atualizar",
         description: "Não foi possível salvar as alterações. Tente novamente.",
         variant: "destructive"
       });
+      // Não atualizar o estado local se houve erro no banco
+      throw error; // Re-lançar o erro para o PropertyCard saber que falhou
     }
   };
 
   const handleDeleteProperty = async (id: string) => {
     try {
+      console.log('Index: Deletando propriedade:', id);
       // Deletar do banco de dados
       await deletePropertyFromDatabase(id);
       
@@ -167,8 +189,9 @@ const Index = () => {
         title: "Propriedade removida",
         description: "A propriedade foi deletada do banco de dados.",
       });
+      console.log('Index: Propriedade deletada com sucesso');
     } catch (error) {
-      console.error('Erro ao deletar propriedade:', error);
+      console.error('Index: Erro ao deletar propriedade:', error);
       toast({
         title: "Erro ao deletar",
         description: "Não foi possível deletar a propriedade. Tente novamente.",
