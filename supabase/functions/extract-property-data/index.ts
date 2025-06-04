@@ -20,6 +20,40 @@ interface ExtractedPropertyData {
   iptu: number;
 }
 
+// Função para extrair JSON da resposta da IA, mesmo se estiver em markdown
+function extractJSONFromResponse(text: string): any {
+  try {
+    // Primeiro, tenta fazer parse direto
+    return JSON.parse(text);
+  } catch {
+    // Se falhar, procura por blocos de código JSON
+    const jsonBlockRegex = /```(?:json)?\s*(\{[\s\S]*?\})\s*```/;
+    const match = text.match(jsonBlockRegex);
+    
+    if (match) {
+      try {
+        return JSON.parse(match[1]);
+      } catch {
+        console.error('JSON encontrado em bloco de código não é válido:', match[1]);
+      }
+    }
+    
+    // Como último recurso, procura por qualquer objeto que pareça JSON
+    const jsonObjectRegex = /\{[\s\S]*\}/;
+    const objectMatch = text.match(jsonObjectRegex);
+    
+    if (objectMatch) {
+      try {
+        return JSON.parse(objectMatch[0]);
+      } catch {
+        console.error('Objeto JSON encontrado não é válido:', objectMatch[0]);
+      }
+    }
+    
+    throw new Error('Não foi possível extrair JSON válido da resposta');
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -88,9 +122,9 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `Você é um especialista em extração de dados de imóveis. Analise o conteúdo HTML/Markdown fornecido e extraia as informações do imóvel em formato JSON.
+            content: `Você é um especialista em extração de dados de imóveis. Analise o conteúdo HTML/Markdown fornecido e extraia as informações do imóvel.
 
-Extraia as seguintes informações:
+Retorne APENAS um objeto JSON válido (sem formatação markdown ou blocos de código) com as seguintes informações:
 - title: título do anúncio
 - address: endereço completo
 - bedrooms: número de quartos (apenas números, default 1)
@@ -102,7 +136,7 @@ Extraia as seguintes informações:
 - condo: valor do condomínio em reais (apenas números, default 0)
 - iptu: valor do IPTU em reais (apenas números, default 0)
 
-Retorne APENAS um objeto JSON válido, sem texto adicional. Se alguma informação não estiver disponível, use valores padrão razoáveis.`
+IMPORTANTE: Retorne apenas o objeto JSON, sem texto adicional, sem blocos de código markdown. Se alguma informação não estiver disponível, use valores padrão razoáveis.`
           },
           {
             role: 'user',
@@ -126,9 +160,11 @@ Retorne APENAS um objeto JSON válido, sem texto adicional. Se alguma informaç�
     const aiResponse = await openaiResponse.json();
     const extractedText = aiResponse.choices[0].message.content;
 
+    console.log('Resposta da IA:', extractedText);
+
     try {
-      // Parse the JSON response from OpenAI
-      const extractedData: ExtractedPropertyData = JSON.parse(extractedText);
+      // Use a função melhorada para extrair JSON
+      const extractedData: ExtractedPropertyData = extractJSONFromResponse(extractedText);
       
       // Validate and clean the data
       const cleanedData = {
@@ -153,7 +189,7 @@ Retorne APENAS um objeto JSON válido, sem texto adicional. Se alguma informaç�
 
     } catch (parseError) {
       console.error('Erro ao fazer parse da resposta da IA:', parseError);
-      console.log('Resposta da IA:', extractedText);
+      console.log('Resposta da IA que causou erro:', extractedText);
       
       return new Response(
         JSON.stringify({ error: 'Falha ao processar resposta da IA' }),
