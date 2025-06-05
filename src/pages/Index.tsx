@@ -5,6 +5,7 @@ import { AddPropertyForm } from '@/components/AddPropertyForm';
 import PropertyControls from '@/components/PropertyControls';
 import PropertyList from '@/components/PropertyList';
 import AppHeader from '@/components/AppHeader';
+import { MobileWeightsEditor } from '@/components/MobileWeightsEditor';
 import { calculateFinalScore } from '@/utils/scoreCalculator';
 import { usePropertyLoader } from '@/hooks/usePropertyLoader';
 import { usePropertyActions } from '@/hooks/usePropertyActions';
@@ -48,7 +49,7 @@ const Index = () => {
         isLoading={isLoading}
       />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <PropertyControls
           weights={weights}
           onWeightsChange={setWeights}
@@ -68,6 +69,11 @@ const Index = () => {
           onAddProperty={() => setShowAddForm(true)}
           sortBy={sortBy}
           sortOrder={sortOrder}
+        />
+
+        <MobileWeightsEditor
+          weights={weights}
+          onWeightsChange={setWeights}
         />
       </div>
 

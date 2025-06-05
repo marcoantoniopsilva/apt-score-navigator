@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { CriteriaWeights, Property } from '@/types/property';
-import { CriteriaWeightsEditor } from '@/components/CriteriaWeightsEditor';
 import { RankingControls } from '@/components/RankingControls';
 
 interface PropertyControlsProps {
@@ -15,8 +14,6 @@ interface PropertyControlsProps {
 }
 
 const PropertyControls: React.FC<PropertyControlsProps> = ({
-  weights,
-  onWeightsChange,
   sortBy,
   sortOrder,
   onSortByChange,
@@ -24,11 +21,7 @@ const PropertyControls: React.FC<PropertyControlsProps> = ({
   propertiesCount
 }) => {
   return (
-    <div className="grid md:grid-cols-2 gap-6 mb-8">
-      <CriteriaWeightsEditor 
-        weights={weights} 
-        onWeightsChange={onWeightsChange} 
-      />
+    <div className="mb-6">
       <RankingControls
         sortBy={sortBy}
         sortOrder={sortOrder}

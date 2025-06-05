@@ -38,15 +38,16 @@ export const CriteriaWeightsEditor: React.FC<CriteriaWeightsEditorProps> = ({
 
   return (
     <Card className="p-4">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
         <h3 className="text-lg font-semibold flex items-center">
-          <Settings className="h-5 w-5 mr-2" />
-          Pesos dos Critérios
+          <Settings className="h-5 w-5 mr-2 flex-shrink-0" />
+          <span className="truncate">Pesos dos Critérios</span>
         </h3>
         <Button
           variant="outline"
           size="sm"
           onClick={resetToDefaults}
+          className="flex-shrink-0"
         >
           <RotateCcw className="h-4 w-4 mr-1" />
           Padrão
@@ -55,9 +56,9 @@ export const CriteriaWeightsEditor: React.FC<CriteriaWeightsEditorProps> = ({
 
       <div className="space-y-3">
         {Object.entries(CRITERIA_LABELS).map(([key, label]) => (
-          <div key={key} className="flex items-center justify-between">
-            <Label className="text-sm font-medium">{label}</Label>
-            <div className="flex items-center space-x-2">
+          <div key={key} className="flex items-center justify-between gap-2">
+            <Label className="text-sm font-medium flex-1 min-w-0 truncate">{label}</Label>
+            <div className="flex items-center space-x-2 flex-shrink-0">
               <Input
                 type="number"
                 min="1"
@@ -67,9 +68,9 @@ export const CriteriaWeightsEditor: React.FC<CriteriaWeightsEditorProps> = ({
                   key as keyof CriteriaWeights,
                   parseInt(e.target.value) || 1
                 )}
-                className="w-16 text-center"
+                className="w-14 sm:w-16 text-center"
               />
-              <span className="text-xs text-gray-500 w-12">
+              <span className="text-xs text-gray-500 w-10 sm:w-12 text-right">
                 {((weights[key as keyof CriteriaWeights] / totalWeight) * 100).toFixed(0)}%
               </span>
             </div>
@@ -82,7 +83,7 @@ export const CriteriaWeightsEditor: React.FC<CriteriaWeightsEditorProps> = ({
           <span className="font-medium">Peso Total:</span>
           <span className="font-bold">{totalWeight}</span>
         </div>
-        <p className="text-xs text-gray-600 mt-1">
+        <p className="text-xs text-gray-600 mt-1 break-words">
           Pesos maiores dão mais importância ao critério no ranking final.
         </p>
       </div>
