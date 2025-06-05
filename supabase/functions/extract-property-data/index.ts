@@ -25,7 +25,8 @@ serve(async (req) => {
     }
 
     const authHeader = req.headers.get('authorization');
-    console.log('Extraindo dados para URL:', url);
+    console.log('=== INÍCIO DA EXTRAÇÃO ===');
+    console.log('URL:', url);
 
     const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
     const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
@@ -33,6 +34,12 @@ serve(async (req) => {
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!firecrawlApiKey || !openaiApiKey || !supabaseUrl || !supabaseServiceRoleKey) {
+      console.error('API keys faltando:', {
+        firecrawl: !!firecrawlApiKey,
+        openai: !!openaiApiKey,
+        supabase: !!supabaseUrl,
+        serviceRole: !!supabaseServiceRoleKey
+      });
       return new Response(
         JSON.stringify({ error: 'API keys não configuradas' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -40,25 +47,48 @@ serve(async (req) => {
     }
 
     // Validar usuário
+    console.log('Validando usuário...');
     const user = await validateUser(authHeader, supabaseUrl, supabaseServiceRoleKey);
+    console.log('Usuário validado:', user.id);
 
     // Fazer scraping do site
+    console.log('Iniciando scraping...');
     const scrapedData = await scrapeWebsite(url, firecrawlApiKey);
+    console.log('Scraping concluído. Dados disponíveis:', {
+      hasMarkdown: !!scrapedData.data?.markdown,
+      hasContent: !!scrapedData.data?.content,
+      hasHtml: !!scrapedData.data?.html,
+      htmlLength: scrapedData.data?.html?.length || 0
+    });
 
     // Extrair imagens do HTML
-    const extractedImages = scrapedData.data?.html ? extractImagesFromHTML(scrapedData.data.html) : [];
-    console.log('Imagens extraídas:', extractedImages);
+    let extractedImages: string[] = [];
+    if (scrapedData.data?.html) {
+      console.log('Extraindo imagens do HTML...');
+      extractedImages = extractImagesFromHTML(scrapedData.data.html);
+      console.log('Imagens extraídas:', extractedImages.length);
+      extractedImages.forEach((img, index) => {
+        console.log(`Imagem ${index + 1}:`, img);
+      });
+    } else {
+      console.log('Nenhum HTML disponível para extração de imagens');
+    }
 
     // Extrair dados estruturados com IA
+    console.log('Extraindo dados com IA...');
     const extractedText = await extractDataWithAI(
       scrapedData.data?.markdown || scrapedData.data?.content || 'Conteúdo não disponível',
       openaiApiKey
     );
+    console.log('Dados extraídos pela IA:', extractedText.substring(0, 200) + '...');
 
     // Processar e limpar os dados extraídos
+    console.log('Processando dados extraídos...');
     const cleanedData = processExtractedData(extractedText);
+    console.log('Dados processados:', cleanedData);
 
     // Salvar no banco de dados
+    console.log('Salvando no banco de dados...');
     const savedProperty = await savePropertyToDatabase(
       cleanedData,
       extractedImages,
@@ -67,18 +97,25 @@ serve(async (req) => {
       supabaseUrl,
       supabaseServiceRoleKey
     );
+    console.log('Propriedade salva com ID:', savedProperty.id);
+
+    const responseData = {
+      success: true, 
+      data: {
+        ...cleanedData,
+        parkingSpaces: cleanedData.parking_spaces,
+        images: extractedImages
+      },
+      property_id: savedProperty.id,
+      message: `Propriedade extraída e salva com sucesso! ${extractedImages.length > 0 ? `${extractedImages.length} imagem(ns) encontrada(s).` : 'Nenhuma imagem encontrada.'}`
+    };
+
+    console.log('=== RESPOSTA FINAL ===');
+    console.log('Dados da resposta:', responseData);
+    console.log('=== FIM DA EXTRAÇÃO ===');
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        data: {
-          ...cleanedData,
-          parkingSpaces: cleanedData.parking_spaces,
-          images: extractedImages
-        },
-        property_id: savedProperty.id,
-        message: `Propriedade extraída e salva com sucesso! ${extractedImages.length > 0 ? `${extractedImages.length} imagem(ns) encontrada(s).` : 'Nenhuma imagem encontrada.'}`
-      }),
+      JSON.stringify(responseData),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

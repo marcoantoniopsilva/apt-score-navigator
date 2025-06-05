@@ -9,9 +9,14 @@ interface PropertyImageProps {
 }
 
 export const PropertyImage: React.FC<PropertyImageProps> = ({ property, className = '' }) => {
+  console.log('PropertyImage: Renderizando para propriedade', property.id);
+  console.log('PropertyImage: Imagens disponíveis:', property.images);
+  
   const mainImage = property.images && property.images.length > 0 ? property.images[0] : null;
+  console.log('PropertyImage: Imagem principal selecionada:', mainImage);
 
   if (!mainImage) {
+    console.log('PropertyImage: Nenhuma imagem encontrada, exibindo ícone padrão');
     return (
       <div className={`bg-gray-100 flex items-center justify-center ${className}`}>
         <Home className="h-8 w-8 text-gray-400" />
@@ -19,12 +24,18 @@ export const PropertyImage: React.FC<PropertyImageProps> = ({ property, classNam
     );
   }
 
+  console.log('PropertyImage: Exibindo imagem:', mainImage);
+
   return (
     <img
       src={mainImage}
       alt={property.title}
       className={`object-cover ${className}`}
+      onLoad={() => {
+        console.log('PropertyImage: Imagem carregada com sucesso:', mainImage);
+      }}
       onError={(e) => {
+        console.error('PropertyImage: Erro ao carregar imagem:', mainImage);
         // Se a imagem falhar ao carregar, mostrar o ícone padrão
         const target = e.target as HTMLElement;
         target.style.display = 'none';
