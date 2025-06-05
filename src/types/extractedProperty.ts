@@ -1,4 +1,6 @@
 
+import { PropertyScores } from '@/types/property';
+
 export interface ExtractedPropertyData {
   title: string;
   address: string;
@@ -10,4 +12,7 @@ export interface ExtractedPropertyData {
   rent: number;
   condo: number;
   iptu: number;
+  fireInsurance: number;
+  otherFees: number;
+  scores?: PropertyScores;
 }
