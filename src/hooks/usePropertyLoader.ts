@@ -44,6 +44,7 @@ export const usePropertyLoader = () => {
             accessibility: Number(prop.accessibility_score),
             finishing: Number(prop.finishing_score),
             price: Number(prop.price_score),
+            condo: Number(prop.condo_score),
           },
           finalScore: Number(prop.final_score)
         };
@@ -56,6 +57,7 @@ export const usePropertyLoader = () => {
             accessibility_score: prop.accessibility_score,
             finishing_score: prop.finishing_score,
             price_score: prop.price_score,
+            condo_score: prop.condo_score,
           },
           scores_convertidos: converted.scores,
           final_score_banco: prop.final_score,

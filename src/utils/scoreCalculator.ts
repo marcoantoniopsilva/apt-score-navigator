@@ -8,7 +8,8 @@ export const calculateFinalScore = (scores: PropertyScores, weights: CriteriaWei
     scores.furniture * weights.furniture +
     scores.accessibility * weights.accessibility +
     scores.finishing * weights.finishing +
-    scores.price * weights.price;
+    scores.price * weights.price +
+    scores.condo * weights.condo;
 
   const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
   

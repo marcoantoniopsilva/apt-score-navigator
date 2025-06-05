@@ -27,6 +27,7 @@ export interface PropertyScores {
   accessibility: number;
   finishing: number;
   price: number;
+  condo: number;
 }
 
 export interface CriteriaWeights {
@@ -36,6 +37,7 @@ export interface CriteriaWeights {
   accessibility: number;
   finishing: number;
   price: number;
+  condo: number;
 }
 
 export const DEFAULT_WEIGHTS: CriteriaWeights = {
@@ -45,6 +47,7 @@ export const DEFAULT_WEIGHTS: CriteriaWeights = {
   accessibility: 2,
   finishing: 2,
   price: 3,
+  condo: 2,
 };
 
 export const CRITERIA_LABELS = {
@@ -54,4 +57,5 @@ export const CRITERIA_LABELS = {
   accessibility: 'Acessibilidade',
   finishing: 'Acabamento',
   price: 'Preço',
+  condo: 'Condomínio',
 };

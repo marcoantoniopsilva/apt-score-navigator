@@ -71,6 +71,7 @@ export type Database = {
           bathrooms: number
           bedrooms: number
           condo: number
+          condo_score: number
           created_at: string
           final_score: number
           finishing_score: number
@@ -99,6 +100,7 @@ export type Database = {
           bathrooms?: number
           bedrooms?: number
           condo?: number
+          condo_score?: number
           created_at?: string
           final_score?: number
           finishing_score?: number
@@ -127,6 +129,7 @@ export type Database = {
           bathrooms?: number
           bedrooms?: number
           condo?: number
+          condo_score?: number
           created_at?: string
           final_score?: number
           finishing_score?: number

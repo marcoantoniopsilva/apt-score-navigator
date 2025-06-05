@@ -34,6 +34,7 @@ export const savePropertyToDatabase = async (property: any) => {
       accessibility_score: property.scores.accessibility,
       finishing_score: property.scores.finishing,
       price_score: property.scores.price,
+      condo_score: property.scores.condo,
       final_score: property.finalScore,
       user_id: session.user.id
     };
@@ -94,6 +95,7 @@ export const updatePropertyInDatabase = async (property: any) => {
       accessibility_score: Number(property.scores.accessibility),
       finishing_score: Number(property.scores.finishing),
       price_score: Number(property.scores.price),
+      condo_score: Number(property.scores.condo),
       final_score: Number(property.finalScore),
       updated_at: new Date().toISOString()
     };
@@ -106,6 +108,7 @@ export const updatePropertyInDatabase = async (property: any) => {
       accessibility_score: propertyData.accessibility_score,
       finishing_score: propertyData.finishing_score,
       price_score: propertyData.price_score,
+      condo_score: propertyData.condo_score,
       final_score: propertyData.final_score
     });
 
@@ -130,6 +133,7 @@ export const updatePropertyInDatabase = async (property: any) => {
       accessibility_score: data.accessibility_score,
       finishing_score: data.finishing_score,
       price_score: data.price_score,
+      condo_score: data.condo_score,
       final_score: data.final_score
     });
     console.log('=== FIM DA ATUALIZAÇÃO ===');
@@ -198,6 +202,7 @@ export const loadSavedProperties = async () => {
         accessibility_score: properties[0].accessibility_score,
         finishing_score: properties[0].finishing_score,
         price_score: properties[0].price_score,
+        condo_score: properties[0].condo_score,
         final_score: properties[0].final_score
       });
     }
