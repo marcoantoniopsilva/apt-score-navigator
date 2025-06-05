@@ -51,17 +51,31 @@ serve(async (req) => {
     const user = await validateUser(authHeader, supabaseUrl, supabaseServiceRoleKey);
     console.log('Usuário validado:', user.id);
 
-    // Fazer scraping do site
+    // Fazer scraping do site com tratamento de erro melhorado
     console.log('Iniciando scraping...');
-    const scrapedData = await scrapeWebsite(url, firecrawlApiKey);
-    console.log('Scraping concluído. Dados disponíveis:', {
-      hasMarkdown: !!scrapedData.data?.markdown,
-      hasContent: !!scrapedData.data?.content,
-      hasHtml: !!scrapedData.data?.html,
-      hasExtract: !!scrapedData.data?.extract,
-      htmlLength: scrapedData.data?.html?.length || 0,
-      markdownLength: scrapedData.data?.markdown?.length || 0
-    });
+    let scrapedData;
+    
+    try {
+      scrapedData = await scrapeWebsite(url, firecrawlApiKey);
+      console.log('Scraping concluído. Dados disponíveis:', {
+        hasMarkdown: !!scrapedData.data?.markdown,
+        hasContent: !!scrapedData.data?.content,
+        hasHtml: !!scrapedData.data?.html,
+        hasExtract: !!scrapedData.data?.extract,
+        htmlLength: scrapedData.data?.html?.length || 0,
+        markdownLength: scrapedData.data?.markdown?.length || 0
+      });
+    } catch (scrapingError) {
+      console.error('Erro no scraping:', scrapingError);
+      
+      // Se o scraping falhar, ainda tentamos prosseguir com dados mínimos
+      return new Response(
+        JSON.stringify({ 
+          error: `Erro ao extrair dados do site: ${scrapingError.message}. Verifique se a URL está acessível e tente novamente em alguns minutos.` 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Extrair imagens (tentar HTML primeiro, depois Markdown)
     let extractedImages: string[] = [];
@@ -85,6 +99,16 @@ serve(async (req) => {
     // Extrair dados estruturados com IA
     console.log('Extraindo dados com IA...');
     const contentForAI = scrapedData.data?.markdown || scrapedData.data?.content || 'Conteúdo não disponível';
+    
+    if (contentForAI === 'Conteúdo não disponível') {
+      return new Response(
+        JSON.stringify({ 
+          error: 'Não foi possível extrair conteúdo suficiente do site para análise. Verifique se o site está acessível.' 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     const extractedText = await extractDataWithAI(contentForAI, openaiApiKey);
     console.log('Dados extraídos pela IA:', extractedText.substring(0, 200) + '...');
 
