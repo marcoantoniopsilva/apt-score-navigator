@@ -7,6 +7,7 @@ import { PropertyHeader } from '@/components/PropertyHeader';
 import { PropertyBasicInfo } from '@/components/PropertyBasicInfo';
 import { PropertyCosts } from '@/components/PropertyCosts';
 import { PropertyScores } from '@/components/PropertyScores';
+import { PropertyImage } from '@/components/PropertyImage';
 
 interface PropertyCardProps {
   property: Property;
@@ -76,6 +77,16 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
   return (
     <Card className="p-4 sm:p-6 hover:shadow-lg transition-shadow">
+      {/* Imagem da propriedade */}
+      {property.images && property.images.length > 0 && (
+        <div className="mb-4 rounded-lg overflow-hidden">
+          <PropertyImage 
+            property={property} 
+            className="w-full h-48 sm:h-56 object-cover"
+          />
+        </div>
+      )}
+
       <PropertyHeader
         property={property}
         rank={rank}

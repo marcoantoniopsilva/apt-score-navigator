@@ -19,6 +19,7 @@ interface ExtractedPropertyData {
   rent: number;
   condo: number;
   iptu: number;
+  images?: string[];
 }
 
 // Função para extrair JSON da resposta da IA, mesmo se estiver em markdown
@@ -52,6 +53,45 @@ function extractJSONFromResponse(text: string): any {
     }
     
     throw new Error('Não foi possível extrair JSON válido da resposta');
+  }
+}
+
+// Função para extrair imagens do HTML
+function extractImagesFromHTML(html: string): string[] {
+  const images: string[] = [];
+  
+  try {
+    // Regex para encontrar tags img com src
+    const imgRegex = /<img[^>]+src\s*=\s*["']([^"']+)["'][^>]*>/gi;
+    let match;
+    
+    while ((match = imgRegex.exec(html)) !== null) {
+      const src = match[1];
+      
+      // Filtrar apenas imagens que parecem ser fotos de propriedades
+      if (src && 
+          !src.includes('logo') && 
+          !src.includes('icon') && 
+          !src.includes('avatar') && 
+          !src.includes('banner') &&
+          (src.includes('jpg') || src.includes('jpeg') || src.includes('png') || src.includes('webp')) &&
+          (src.startsWith('http') || src.startsWith('https') || src.startsWith('//'))) {
+        
+        // Converter URLs relativas em absolutas se necessário
+        let fullUrl = src;
+        if (src.startsWith('//')) {
+          fullUrl = 'https:' + src;
+        }
+        
+        images.push(fullUrl);
+      }
+    }
+    
+    // Remover duplicatas e limitar a 5 imagens
+    return [...new Set(images)].slice(0, 5);
+  } catch (error) {
+    console.error('Erro ao extrair imagens do HTML:', error);
+    return [];
   }
 }
 
@@ -123,7 +163,7 @@ serve(async (req) => {
         url: url,
         formats: ['markdown', 'html'],
         onlyMainContent: true,
-        includeTags: ['title', 'meta', 'h1', 'h2', 'h3', 'span', 'div', 'p'],
+        includeTags: ['title', 'meta', 'h1', 'h2', 'h3', 'span', 'div', 'p', 'img'],
         excludeTags: ['script', 'style', 'nav', 'footer', 'header']
       }),
     });
@@ -139,6 +179,10 @@ serve(async (req) => {
 
     const scrapedData = await firecrawlResponse.json();
     console.log('Scraping concluído, extraindo dados estruturados...');
+
+    // Extrair imagens do HTML
+    const extractedImages = scrapedData.data?.html ? extractImagesFromHTML(scrapedData.data.html) : [];
+    console.log('Imagens extraídas:', extractedImages);
 
     // Use OpenAI to extract structured data from the scraped content
     const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -213,7 +257,7 @@ IMPORTANTE: Retorne apenas o objeto JSON, sem texto adicional, sem blocos de có
       // Calcular custo total
       const totalMonthlyCost = cleanedData.rent + cleanedData.condo + cleanedData.iptu + 50; // 50 é o padrão para seguro incêndio
 
-      // Salvar no banco de dados
+      // Salvar no banco de dados com as imagens extraídas
       const { data: savedProperty, error: saveError } = await supabase
         .from('properties')
         .insert({
@@ -232,13 +276,14 @@ IMPORTANTE: Retorne apenas o objeto JSON, sem texto adicional, sem blocos de có
           other_fees: 0,
           total_monthly_cost: totalMonthlyCost,
           source_url: url,
-          images: [],
+          images: extractedImages, // Adicionar as imagens extraídas
           location_score: 5.0,
           internal_space_score: 5.0,
           furniture_score: 5.0,
           accessibility_score: 5.0,
           finishing_score: 5.0,
           price_score: 5.0,
+          condo_score: 5.0,
           final_score: 5.0
         })
         .select()
@@ -257,9 +302,13 @@ IMPORTANTE: Retorne apenas o objeto JSON, sem texto adicional, sem blocos de có
       return new Response(
         JSON.stringify({ 
           success: true, 
-          data: cleanedData,
+          data: {
+            ...cleanedData,
+            parkingSpaces: cleanedData.parking_spaces,
+            images: extractedImages
+          },
           property_id: savedProperty.id,
-          message: 'Propriedade extraída e salva com sucesso!'
+          message: `Propriedade extraída e salva com sucesso! ${extractedImages.length > 0 ? `${extractedImages.length} imagem(ns) encontrada(s).` : 'Nenhuma imagem encontrada.'}`
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
