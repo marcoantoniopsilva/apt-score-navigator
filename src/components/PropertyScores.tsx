@@ -1,4 +1,5 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { Property, CriteriaWeights, CRITERIA_LABELS } from '@/types/property';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -25,6 +26,21 @@ export const PropertyScores: React.FC<PropertyScoresProps> = ({
   onSave,
   onCancel
 }) => {
+  // Estado local para valores temporários dos inputs
+  const [tempValues, setTempValues] = useState<Record<string, string>>({});
+
+  // Resetar valores temporários quando começar a editar
+  useEffect(() => {
+    if (isEditing) {
+      const initialTempValues: Record<string, string> = {};
+      Object.entries(editedProperty.scores).forEach(([key, value]) => {
+        initialTempValues[key] = value.toString();
+      });
+      setTempValues(initialTempValues);
+      console.log('PropertyScores: Valores temporários inicializados:', initialTempValues);
+    }
+  }, [isEditing, editedProperty.scores]);
+
   const getScoreColor = (score: number) => {
     if (score >= 8) return 'text-green-600 bg-green-50';
     if (score >= 6) return 'text-yellow-600 bg-yellow-50';
@@ -35,9 +51,25 @@ export const PropertyScores: React.FC<PropertyScoresProps> = ({
   const handleInputChange = (key: keyof Property['scores'], inputValue: string) => {
     console.log(`PropertyScores: Input change - ${key}: "${inputValue}"`);
     
-    // Permitir string vazia para que o usuário possa limpar o campo
-    if (inputValue === '') {
+    // Atualizar valor temporário
+    setTempValues(prev => ({
+      ...prev,
+      [key]: inputValue
+    }));
+  };
+
+  const handleInputBlur = (key: keyof Property['scores']) => {
+    const inputValue = tempValues[key];
+    console.log(`PropertyScores: Input blur - ${key}: "${inputValue}"`);
+    
+    // Se vazio, definir como 0
+    if (!inputValue || inputValue.trim() === '') {
+      console.log('PropertyScores: Valor vazio, definindo como 0');
       onScoreChange(key, 0);
+      setTempValues(prev => ({
+        ...prev,
+        [key]: '0'
+      }));
       return;
     }
     
@@ -46,15 +78,24 @@ export const PropertyScores: React.FC<PropertyScoresProps> = ({
     
     // Verificar se é um número válido
     if (isNaN(numericValue)) {
-      console.log('PropertyScores: Invalid number, ignoring');
+      console.log('PropertyScores: Número inválido, mantendo valor anterior');
+      // Reverter para o valor anterior
+      setTempValues(prev => ({
+        ...prev,
+        [key]: editedProperty.scores[key].toString()
+      }));
       return;
     }
     
-    // Aplicar limites sem forçar o valor máximo
+    // Aplicar limites
     const clampedValue = Math.max(0, Math.min(10, numericValue));
     console.log(`PropertyScores: Clamped value: ${clampedValue}`);
     
     onScoreChange(key, clampedValue);
+    setTempValues(prev => ({
+      ...prev,
+      [key]: clampedValue.toString()
+    }));
   };
 
   return (
@@ -71,17 +112,16 @@ export const PropertyScores: React.FC<PropertyScoresProps> = ({
               <Label className="text-sm font-medium w-full sm:w-32 flex-shrink-0">{label}:</Label>
               <div className="flex items-center space-x-2 flex-1">
                 <Input
-                  type="number"
-                  min="0"
-                  max="10"
-                  step="0.1"
-                  value={editedProperty.scores[key as keyof Property['scores']]}
+                  type="text"
+                  value={tempValues[key] || ''}
                   onChange={(e) => handleInputChange(
                     key as keyof Property['scores'], 
                     e.target.value
                   )}
+                  onBlur={() => handleInputBlur(key as keyof Property['scores'])}
                   className="w-20 text-center"
                   inputMode="decimal"
+                  placeholder="0-10"
                 />
                 <span className="text-sm text-gray-500 flex-shrink-0">
                   (peso: {weights[key as keyof CriteriaWeights]})
