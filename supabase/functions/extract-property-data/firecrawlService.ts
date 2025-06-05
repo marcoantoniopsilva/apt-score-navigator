@@ -8,13 +8,23 @@ export async function scrapeWebsite(url: string, firecrawlApiKey: string): Promi
     url: url,
     formats: ['markdown', 'html'],
     onlyMainContent: true,
-    includeTags: ['title', 'meta', 'h1', 'h2', 'h3', 'span', 'div', 'p', 'img', 'picture', 'figure'],
-    excludeTags: ['script', 'style', 'nav', 'footer', 'header', 'aside', 'menu']
+    // Melhorar configuração para extrair mais dados
+    includeTags: ['title', 'meta', 'h1', 'h2', 'h3', 'span', 'div', 'p', 'img', 'picture', 'figure', 'source'],
+    excludeTags: ['script', 'style', 'nav', 'footer', 'header', 'aside', 'menu'],
+    // Adicionar configurações para melhor extração
+    waitFor: 2000, // Aguardar 2 segundos para página carregar
+    screenshot: false, // Não precisamos de screenshot
+    fullPageScreenshot: false,
+    // Tentar extrair mais dados estruturados
+    extractorOptions: {
+      mode: 'llm-extraction',
+      extractionPrompt: 'Extract all image URLs from this page, including those in img tags, picture tags, and background images. Also extract property details.'
+    }
   };
 
   console.log('Corpo da requisição Firecrawl:', JSON.stringify(requestBody, null, 2));
 
-  const response = await fetch('https://api.firecrawl.dev/v0/scrape', {
+  const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${firecrawlApiKey}`,
@@ -37,8 +47,10 @@ export async function scrapeWebsite(url: string, firecrawlApiKey: string): Promi
     hasMarkdown: !!result.data?.markdown,
     hasHtml: !!result.data?.html,
     hasContent: !!result.data?.content,
+    hasExtract: !!result.data?.extract,
     htmlLength: result.data?.html?.length || 0,
-    markdownLength: result.data?.markdown?.length || 0
+    markdownLength: result.data?.markdown?.length || 0,
+    extractLength: result.data?.extract?.length || 0
   });
 
   return result;

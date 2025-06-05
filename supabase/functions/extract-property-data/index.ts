@@ -4,7 +4,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders } from './corsHeaders.ts';
 import { scrapeWebsite } from './firecrawlService.ts';
 import { extractDataWithAI } from './openaiService.ts';
-import { extractImagesFromHTML } from './imageExtractor.ts';
+import { extractImagesFromHTML, extractImagesFromMarkdown } from './imageExtractor.ts';
 import { processExtractedData } from './dataProcessor.ts';
 import { savePropertyToDatabase } from './databaseService.ts';
 import { validateUser } from './authService.ts';
@@ -58,28 +58,34 @@ serve(async (req) => {
       hasMarkdown: !!scrapedData.data?.markdown,
       hasContent: !!scrapedData.data?.content,
       hasHtml: !!scrapedData.data?.html,
-      htmlLength: scrapedData.data?.html?.length || 0
+      hasExtract: !!scrapedData.data?.extract,
+      htmlLength: scrapedData.data?.html?.length || 0,
+      markdownLength: scrapedData.data?.markdown?.length || 0
     });
 
-    // Extrair imagens do HTML
+    // Extrair imagens (tentar HTML primeiro, depois Markdown)
     let extractedImages: string[] = [];
-    if (scrapedData.data?.html) {
+    
+    if (scrapedData.data?.html && scrapedData.data.html.length > 0) {
       console.log('Extraindo imagens do HTML...');
       extractedImages = extractImagesFromHTML(scrapedData.data.html);
-      console.log('Imagens extraídas:', extractedImages.length);
-      extractedImages.forEach((img, index) => {
-        console.log(`Imagem ${index + 1}:`, img);
-      });
+      console.log('Imagens extraídas do HTML:', extractedImages.length);
+    } else if (scrapedData.data?.markdown && scrapedData.data.markdown.length > 0) {
+      console.log('HTML não disponível, extraindo imagens do Markdown...');
+      extractedImages = extractImagesFromMarkdown(scrapedData.data.markdown);
+      console.log('Imagens extraídas do Markdown:', extractedImages.length);
     } else {
-      console.log('Nenhum HTML disponível para extração de imagens');
+      console.log('Nenhum conteúdo disponível para extração de imagens');
     }
+
+    extractedImages.forEach((img, index) => {
+      console.log(`Imagem ${index + 1}:`, img);
+    });
 
     // Extrair dados estruturados com IA
     console.log('Extraindo dados com IA...');
-    const extractedText = await extractDataWithAI(
-      scrapedData.data?.markdown || scrapedData.data?.content || 'Conteúdo não disponível',
-      openaiApiKey
-    );
+    const contentForAI = scrapedData.data?.markdown || scrapedData.data?.content || 'Conteúdo não disponível';
+    const extractedText = await extractDataWithAI(contentForAI, openaiApiKey);
     console.log('Dados extraídos pela IA:', extractedText.substring(0, 200) + '...');
 
     // Processar e limpar os dados extraídos
