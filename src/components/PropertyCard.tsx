@@ -65,14 +65,19 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   };
 
   const handleScoreChange = (criterion: keyof Property['scores'], value: number) => {
-    console.log(`PropertyCard: Alterando ${criterion} para ${value}`);
-    setEditedProperty(prev => ({
-      ...prev,
-      scores: {
+    console.log(`PropertyCard: Alterando ${criterion} de ${editedProperty.scores[criterion]} para ${value}`);
+    
+    setEditedProperty(prev => {
+      const newScores = {
         ...prev.scores,
-        [criterion]: Math.max(0, Math.min(10, value))
-      }
-    }));
+        [criterion]: value
+      };
+      console.log(`PropertyCard: Novos scores:`, newScores);
+      return {
+        ...prev,
+        scores: newScores
+      };
+    });
   };
 
   return (

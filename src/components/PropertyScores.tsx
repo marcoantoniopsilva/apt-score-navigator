@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Property, CriteriaWeights, CRITERIA_LABELS } from '@/types/property';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +32,31 @@ export const PropertyScores: React.FC<PropertyScoresProps> = ({
     return 'text-red-600 bg-red-50';
   };
 
+  const handleInputChange = (key: keyof Property['scores'], inputValue: string) => {
+    console.log(`PropertyScores: Input change - ${key}: "${inputValue}"`);
+    
+    // Permitir string vazia para que o usuário possa limpar o campo
+    if (inputValue === '') {
+      onScoreChange(key, 0);
+      return;
+    }
+    
+    const numericValue = parseFloat(inputValue);
+    console.log(`PropertyScores: Parsed value: ${numericValue}`);
+    
+    // Verificar se é um número válido
+    if (isNaN(numericValue)) {
+      console.log('PropertyScores: Invalid number, ignoring');
+      return;
+    }
+    
+    // Aplicar limites sem forçar o valor máximo
+    const clampedValue = Math.max(0, Math.min(10, numericValue));
+    console.log(`PropertyScores: Clamped value: ${clampedValue}`);
+    
+    onScoreChange(key, clampedValue);
+  };
+
   return (
     <div>
       <h4 className="font-medium text-gray-900 mb-3 flex items-center">
@@ -52,11 +76,12 @@ export const PropertyScores: React.FC<PropertyScoresProps> = ({
                   max="10"
                   step="0.1"
                   value={editedProperty.scores[key as keyof Property['scores']]}
-                  onChange={(e) => onScoreChange(
+                  onChange={(e) => handleInputChange(
                     key as keyof Property['scores'], 
-                    parseFloat(e.target.value) || 0
+                    e.target.value
                   )}
                   className="w-20 text-center"
+                  inputMode="decimal"
                 />
                 <span className="text-sm text-gray-500 flex-shrink-0">
                   (peso: {weights[key as keyof CriteriaWeights]})
