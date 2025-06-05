@@ -24,9 +24,7 @@ serve(async (req) => {
       );
     }
 
-    // Obter o token de autorização para identificar o usuário
     const authHeader = req.headers.get('authorization');
-
     console.log('Extraindo dados para URL:', url);
 
     const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
@@ -87,7 +85,6 @@ serve(async (req) => {
   } catch (error) {
     console.error('Erro geral:', error);
     
-    // Handle specific error types with appropriate status codes
     if (error.message.includes('Token de autorização') || error.message.includes('Usuário não autenticado')) {
       return new Response(
         JSON.stringify({ error: error.message }),
