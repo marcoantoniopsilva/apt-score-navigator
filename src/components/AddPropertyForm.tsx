@@ -1,13 +1,10 @@
 import React, { useState } from 'react';
-import { Property, PropertyScores, DEFAULT_WEIGHTS } from '@/types/property';
+import { Property } from '@/types/property';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { X, Link, Plus, Calculator, AlertCircle, Info } from 'lucide-react';
-import { calculateFinalScore } from '@/utils/scoreCalculator';
+import { X } from 'lucide-react';
 import { extractPropertyFromUrl } from '@/utils/propertyExtractor';
 import { useToast } from '@/hooks/use-toast';
 
@@ -16,127 +13,129 @@ interface AddPropertyFormProps {
   onCancel: () => void;
 }
 
-export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({
-  onSubmit,
-  onCancel
-}) => {
+export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCancel }) => {
   const { toast } = useToast();
-  const [isLoading, setIsLoading] = useState(false);
-  const [urlInput, setUrlInput] = useState('');
+  const [url, setUrl] = useState('');
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractedData, setExtractedData] = useState<any>(null);
+  
   const [formData, setFormData] = useState({
     title: '',
     address: '',
-    bedrooms: 1,
-    bathrooms: 1,
+    bedrooms: 0,
+    bathrooms: 0,
     parkingSpaces: 0,
     area: 0,
     floor: '',
     rent: 0,
     condo: 0,
     iptu: 0,
-    fireInsurance: 50, // Valor padrão sugerido
-    otherFees: 0,
-    sourceUrl: ''
+    fireInsurance: 0,
+    otherFees: 0
   });
 
-  const [scores, setScores] = useState<PropertyScores>({
+  const [scores, setScores] = useState({
     location: 5,
     internalSpace: 5,
     furniture: 5,
     accessibility: 5,
     finishing: 5,
-    price: 5
+    price: 5,
+    condo: 5,
   });
 
-  const handleInputChange = (field: string, value: string | number) => {
+  const handleExtractFromUrl = async () => {
+    setIsExtracting(true);
+    try {
+      const data = await extractPropertyFromUrl(url);
+      if (data) {
+        setExtractedData(data);
+        setFormData({
+          title: data.title || '',
+          address: data.address || '',
+          bedrooms: data.bedrooms || 0,
+          bathrooms: data.bathrooms || 0,
+          parkingSpaces: data.parkingSpaces || 0,
+          area: data.area || 0,
+          floor: data.floor || '',
+          rent: data.rent || 0,
+          condo: data.condo || 0,
+          iptu: data.iptu || 0,
+          fireInsurance: data.fireInsurance || 0,
+          otherFees: data.otherFees || 0
+        });
+        setScores({
+          location: data.scores?.location || 5,
+          internalSpace: data.scores?.internalSpace || 5,
+          furniture: data.scores?.furniture || 5,
+          accessibility: data.scores?.accessibility || 5,
+          finishing: data.scores?.finishing || 5,
+          price: data.scores?.price || 5,
+          condo: data.scores?.condo || 5,
+        });
+        toast({
+          title: "Dados extraídos",
+          description: "Os dados do anúncio foram extraídos com sucesso.",
+        });
+      } else {
+        toast({
+          title: "Erro na extração",
+          description: "Não foi possível extrair os dados do anúncio.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao extrair dados da URL:", error);
+      toast({
+        title: "Erro na extração",
+        description: "Ocorreu um erro ao tentar extrair os dados do anúncio.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setFormData(prev => ({
       ...prev,
-      [field]: value
+      [name]: value
     }));
   };
 
-  const handleScoreChange = (criterion: keyof PropertyScores, value: number) => {
+  const handleScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
     setScores(prev => ({
       ...prev,
-      [criterion]: Math.max(0, Math.min(10, value))
+      [name]: parseFloat(value)
     }));
-  };
-
-  const handleExtractFromUrl = async () => {
-    if (!urlInput.trim()) {
-      toast({
-        title: "Erro",
-        description: "Por favor, insira uma URL válida",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    console.log('Iniciando extração para URL:', urlInput);
-    setIsLoading(true);
-    
-    try {
-      const extractedData = await extractPropertyFromUrl(urlInput);
-      console.log('Dados extraídos com sucesso:', extractedData);
-      
-      setFormData(prev => ({
-        ...prev,
-        ...extractedData,
-        sourceUrl: urlInput
-      }));
-      
-      toast({
-        title: "Sucesso!",
-        description: "Dados extraídos e preenchidos automaticamente. Revise as informações antes de salvar.",
-      });
-      
-    } catch (error) {
-      console.error('Erro ao extrair dados:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      
-      toast({
-        title: "Aviso",
-        description: errorMessage,
-        variant: "destructive"
-      });
-      
-      // Define a URL mesmo se a extração falhar
-      setFormData(prev => ({
-        ...prev,
-        sourceUrl: urlInput
-      }));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const calculateTotalCost = () => {
-    return formData.rent + formData.condo + formData.iptu + formData.fireInsurance + formData.otherFees;
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.title.trim() || !formData.address.trim() || formData.rent <= 0) {
-      toast({
-        title: "Erro",
-        description: "Por favor, preencha todos os campos obrigatórios",
-        variant: "destructive"
-      });
-      return;
-    }
-    
-    const property: Property = {
-      id: Date.now().toString(),
-      ...formData,
-      totalMonthlyCost: calculateTotalCost(),
-      images: [], // TODO: Implementar extração de imagens
-      scores,
-      finalScore: calculateFinalScore(scores, DEFAULT_WEIGHTS)
+    const newProperty: Property = {
+      id: crypto.randomUUID(),
+      title: formData.title,
+      address: formData.address,
+      bedrooms: Number(formData.bedrooms),
+      bathrooms: Number(formData.bathrooms),
+      parkingSpaces: Number(formData.parkingSpaces),
+      area: Number(formData.area),
+      floor: formData.floor,
+      rent: Number(formData.rent),
+      condo: Number(formData.condo),
+      iptu: Number(formData.iptu),
+      fireInsurance: Number(formData.fireInsurance),
+      otherFees: Number(formData.otherFees),
+      totalMonthlyCost: Number(formData.rent) + Number(formData.condo) + Number(formData.iptu) + Number(formData.fireInsurance) + Number(formData.otherFees),
+      images: [],
+      scores: scores,
+      finalScore: 0
     };
 
-    console.log('Propriedade criada:', property);
-    onSubmit(property);
+    onSubmit(newProperty);
   };
 
   return (
@@ -144,294 +143,302 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({
       <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
         <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Adicionar Imóvel</h2>
-            <Button variant="outline" size="sm" onClick={onCancel}>
+            <h2 className="text-2xl font-bold">Adicionar Nova Propriedade</h2>
+            <Button variant="ghost" size="sm" onClick={onCancel}>
               <X className="h-4 w-4" />
             </Button>
           </div>
 
+          {/* URL Extraction Section */}
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg">
+            <Label className="text-sm font-medium mb-2 block">
+              Extrair dados de um anúncio (opcional)
+            </Label>
+            <div className="flex space-x-2">
+              <Input
+                type="url"
+                placeholder="Cole a URL do anúncio aqui..."
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                className="flex-1"
+              />
+              <Button 
+                onClick={handleExtractFromUrl}
+                disabled={isExtracting || !url}
+              >
+                {isExtracting ? 'Extraindo...' : 'Extrair'}
+              </Button>
+            </div>
+            {extractedData && (
+              <p className="text-sm text-green-600 mt-2">
+                Dados extraídos com sucesso! Revise e ajuste conforme necessário.
+              </p>
+            )}
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Extração por URL */}
-            <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg">
-              <div className="flex items-start space-x-2 mb-3">
-                <Info className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <Label className="text-sm font-medium mb-1 flex items-center text-blue-800">
-                    <Link className="h-4 w-4 mr-2" />
-                    Extrair dados do anúncio (Funcionalidade Simulada)
-                  </Label>
-                  <p className="text-xs text-blue-700 mb-3">
-                    Esta é uma simulação para demonstração. Os dados são preenchidos automaticamente com base no domínio do site (Zap, OLX, QuintoAndar, etc.).
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex space-x-2">
-                <Input
-                  value={urlInput}
-                  onChange={(e) => setUrlInput(e.target.value)}
-                  placeholder="Cole o link do anúncio (ex: https://www.zapimoveis.com.br/...)"
-                  className="flex-1"
-                />
-                <Button 
-                  type="button" 
-                  onClick={handleExtractFromUrl}
-                  disabled={isLoading}
-                  variant="outline"
-                  className="whitespace-nowrap"
-                >
-                  {isLoading ? 'Extraindo...' : 'Extrair'}
-                </Button>
-              </div>
-            </div>
-
-            <Separator />
-
-            {/* Informações básicas */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Informações Básicas</h3>
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="title">Título*</Label>
-                  <Input
-                    id="title"
-                    value={formData.title}
-                    onChange={(e) => handleInputChange('title', e.target.value)}
-                    required
-                    placeholder="Ex: Apartamento 2 quartos em Pinheiros"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="address">Endereço*</Label>
-                  <Input
-                    id="address"
-                    value={formData.address}
-                    onChange={(e) => handleInputChange('address', e.target.value)}
-                    required
-                    placeholder="Ex: Rua Augusta, 123 - Jardins, São Paulo"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div>
-                  <Label htmlFor="bedrooms">Quartos</Label>
-                  <Input
-                    id="bedrooms"
-                    type="number"
-                    min="0"
-                    value={formData.bedrooms}
-                    onChange={(e) => handleInputChange('bedrooms', parseInt(e.target.value))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="bathrooms">Banheiros</Label>
-                  <Input
-                    id="bathrooms"
-                    type="number"
-                    min="0"
-                    value={formData.bathrooms}
-                    onChange={(e) => handleInputChange('bathrooms', parseInt(e.target.value))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="parkingSpaces">Vagas</Label>
-                  <Input
-                    id="parkingSpaces"
-                    type="number"
-                    min="0"
-                    value={formData.parkingSpaces}
-                    onChange={(e) => handleInputChange('parkingSpaces', parseInt(e.target.value))}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="area">Área (m²)</Label>
-                  <Input
-                    id="area"
-                    type="number"
-                    min="0"
-                    value={formData.area}
-                    onChange={(e) => handleInputChange('area', parseInt(e.target.value))}
-                  />
-                </div>
-              </div>
-
+            {/* Basic Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="floor">Andar</Label>
+                <Label htmlFor="title">Título</Label>
                 <Input
-                  id="floor"
-                  value={formData.floor}
-                  onChange={(e) => handleInputChange('floor', e.target.value)}
-                  placeholder="Ex: 5º andar, Térreo, Cobertura"
+                  id="title"
+                  name="title"
+                  value={formData.title}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="address">Endereço</Label>
+                <Input
+                  id="address"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleInputChange}
+                  required
                 />
               </div>
             </div>
 
-            <Separator />
-
-            {/* Custos */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold flex items-center">
-                <Calculator className="h-5 w-5 mr-2" />
-                Custos Mensais
-              </h3>
-              <div className="grid md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="rent">Aluguel (R$)*</Label>
-                  <Input
-                    id="rent"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.rent}
-                    onChange={(e) => handleInputChange('rent', parseFloat(e.target.value) || 0)}
-                    required
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="condo">Condomínio (R$)</Label>
-                  <Input
-                    id="condo"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.condo}
-                    onChange={(e) => handleInputChange('condo', parseFloat(e.target.value) || 0)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="iptu">IPTU (R$)</Label>
-                  <Input
-                    id="iptu"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.iptu}
-                    onChange={(e) => handleInputChange('iptu', parseFloat(e.target.value) || 0)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="fireInsurance">Seguro Incêndio (R$)</Label>
-                  <Input
-                    id="fireInsurance"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.fireInsurance}
-                    onChange={(e) => handleInputChange('fireInsurance', parseFloat(e.target.value) || 0)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="otherFees">Outras Taxas (R$)</Label>
-                  <Input
-                    id="otherFees"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={formData.otherFees}
-                    onChange={(e) => handleInputChange('otherFees', parseFloat(e.target.value) || 0)}
-                  />
-                </div>
-                <div className="flex items-end">
-                  <div className="w-full">
-                    <Label>Total Mensal</Label>
-                    <div className="h-10 bg-gray-100 rounded-md px-3 flex items-center font-semibold text-blue-600">
-                      R$ {calculateTotalCost().toFixed(2)}
-                    </div>
-                  </div>
-                </div>
+            {/* Property Details */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <Label htmlFor="bedrooms">Quartos</Label>
+                <Input
+                  id="bedrooms"
+                  name="bedrooms"
+                  type="number"
+                  min="0"
+                  value={formData.bedrooms}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="bathrooms">Banheiros</Label>
+                <Input
+                  id="bathrooms"
+                  name="bathrooms"
+                  type="number"
+                  min="0"
+                  value={formData.bathrooms}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="parkingSpaces">Vagas</Label>
+                <Input
+                  id="parkingSpaces"
+                  name="parkingSpaces"
+                  type="number"
+                  min="0"
+                  value={formData.parkingSpaces}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="area">Área (m²)</Label>
+                <Input
+                  id="area"
+                  name="area"
+                  type="number"
+                  min="0"
+                  value={formData.area}
+                  onChange={handleInputChange}
+                  required
+                />
               </div>
             </div>
 
-            <Separator />
+            <div>
+              <Label htmlFor="floor">Andar</Label>
+              <Input
+                id="floor"
+                name="floor"
+                value={formData.floor}
+                onChange={handleInputChange}
+              />
+            </div>
 
-            {/* Pontuações */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold">Avaliação (0-10)</h3>
-              <div className="grid md:grid-cols-2 gap-4">
+            {/* Financial Information */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div>
+                <Label htmlFor="rent">Aluguel (R$)</Label>
+                <Input
+                  id="rent"
+                  name="rent"
+                  type="number"
+                  min="0"
+                  value={formData.rent}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="condo">Condomínio (R$)</Label>
+                <Input
+                  id="condo"
+                  name="condo"
+                  type="number"
+                  min="0"
+                  value={formData.condo}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="iptu">IPTU (R$)</Label>
+                <Input
+                  id="iptu"
+                  name="iptu"
+                  type="number"
+                  min="0"
+                  value={formData.iptu}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="fireInsurance">Seguro Incêndio (R$)</Label>
+                <Input
+                  id="fireInsurance"
+                  name="fireInsurance"
+                  type="number"
+                  min="0"
+                  value={formData.fireInsurance}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div>
+                <Label htmlFor="otherFees">Outras Taxas (R$)</Label>
+                <Input
+                  id="otherFees"
+                  name="otherFees"
+                  type="number"
+                  min="0"
+                  value={formData.otherFees}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Scoring Section */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Avaliação por Critérios (0-10)</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="location">Localização</Label>
                   <Input
                     id="location"
+                    name="location"
                     type="number"
                     min="0"
                     max="10"
                     step="0.1"
                     value={scores.location}
-                    onChange={(e) => handleScoreChange('location', parseFloat(e.target.value) || 0)}
+                    onChange={handleScoreChange}
+                    required
                   />
                 </div>
                 <div>
                   <Label htmlFor="internalSpace">Espaço Interno</Label>
                   <Input
                     id="internalSpace"
+                    name="internalSpace"
                     type="number"
                     min="0"
                     max="10"
                     step="0.1"
                     value={scores.internalSpace}
-                    onChange={(e) => handleScoreChange('internalSpace', parseFloat(e.target.value) || 0)}
+                    onChange={handleScoreChange}
+                    required
                   />
                 </div>
                 <div>
                   <Label htmlFor="furniture">Mobília</Label>
                   <Input
                     id="furniture"
+                    name="furniture"
                     type="number"
                     min="0"
                     max="10"
                     step="0.1"
                     value={scores.furniture}
-                    onChange={(e) => handleScoreChange('furniture', parseFloat(e.target.value) || 0)}
+                    onChange={handleScoreChange}
+                    required
                   />
                 </div>
                 <div>
                   <Label htmlFor="accessibility">Acessibilidade</Label>
                   <Input
                     id="accessibility"
+                    name="accessibility"
                     type="number"
                     min="0"
                     max="10"
                     step="0.1"
                     value={scores.accessibility}
-                    onChange={(e) => handleScoreChange('accessibility', parseFloat(e.target.value) || 0)}
+                    onChange={handleScoreChange}
+                    required
                   />
                 </div>
                 <div>
                   <Label htmlFor="finishing">Acabamento</Label>
                   <Input
                     id="finishing"
+                    name="finishing"
                     type="number"
                     min="0"
                     max="10"
                     step="0.1"
                     value={scores.finishing}
-                    onChange={(e) => handleScoreChange('finishing', parseFloat(e.target.value) || 0)}
+                    onChange={handleScoreChange}
+                    required
                   />
                 </div>
                 <div>
                   <Label htmlFor="price">Preço</Label>
                   <Input
                     id="price"
+                    name="price"
                     type="number"
                     min="0"
                     max="10"
                     step="0.1"
                     value={scores.price}
-                    onChange={(e) => handleScoreChange('price', parseFloat(e.target.value) || 0)}
+                    onChange={handleScoreChange}
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="condo">Condomínio</Label>
+                  <Input
+                    id="condo"
+                    name="condo"
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    value={scores.condo}
+                    onChange={handleScoreChange}
+                    required
                   />
                 </div>
               </div>
             </div>
 
-            {/* Botões */}
-            <div className="flex justify-end space-x-3 pt-6">
+            {/* Action Buttons */}
+            <div className="flex justify-end space-x-4 pt-4 border-t">
               <Button type="button" variant="outline" onClick={onCancel}>
                 Cancelar
               </Button>
-              <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
-                <Plus className="h-4 w-4 mr-2" />
-                Adicionar Imóvel
+              <Button type="submit">
+                Adicionar Propriedade
               </Button>
             </div>
           </form>

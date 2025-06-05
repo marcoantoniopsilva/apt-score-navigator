@@ -31,6 +31,7 @@ export const CriteriaWeightsEditor: React.FC<CriteriaWeightsEditorProps> = ({
       accessibility: 2,
       finishing: 2,
       price: 3,
+      condo: 2,
     });
   };
 
