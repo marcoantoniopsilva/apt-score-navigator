@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Property } from '@/types/property';
 import { Button } from '@/components/ui/button';
@@ -106,14 +107,29 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
 
   const handleScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setScores(prev => ({
-      ...prev,
-      [name]: parseFloat(value)
-    }));
+    console.log(`AddPropertyForm: Score change - ${name}: "${value}"`);
+    
+    const numericValue = parseFloat(value);
+    if (!isNaN(numericValue)) {
+      const clampedValue = Math.max(0, Math.min(10, numericValue));
+      console.log(`AddPropertyForm: Setting score ${name} to ${clampedValue}`);
+      setScores(prev => ({
+        ...prev,
+        [name]: clampedValue
+      }));
+    } else if (value === '') {
+      // Permitir campo vazio temporariamente
+      setScores(prev => ({
+        ...prev,
+        [name]: 0
+      }));
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    console.log('AddPropertyForm: Submitting with scores:', scores);
     
     const newProperty: Property = {
       id: crypto.randomUUID(),
@@ -130,11 +146,13 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
       fireInsurance: Number(formData.fireInsurance),
       otherFees: Number(formData.otherFees),
       totalMonthlyCost: Number(formData.rent) + Number(formData.condo) + Number(formData.iptu) + Number(formData.fireInsurance) + Number(formData.otherFees),
-      images: [],
+      images: extractedData?.images || [],
+      sourceUrl: url || undefined,
       scores: scores,
       finalScore: 0
     };
 
+    console.log('AddPropertyForm: Created property with scores:', newProperty.scores);
     onSubmit(newProperty);
   };
 
