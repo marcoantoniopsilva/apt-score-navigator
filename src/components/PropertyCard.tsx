@@ -8,6 +8,7 @@ import { PropertyBasicInfo } from '@/components/PropertyBasicInfo';
 import { PropertyCosts } from '@/components/PropertyCosts';
 import { PropertyScores } from '@/components/PropertyScores';
 import { PropertyImage } from '@/components/PropertyImage';
+import { PropertyLocationSummary } from '@/components/PropertyLocationSummary';
 
 interface PropertyCardProps {
   property: Property;
@@ -80,6 +81,14 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
     });
   };
 
+  const handleLocationSummaryUpdate = (propertyId: string, summary: string) => {
+    const updatedProperty = {
+      ...property,
+      locationSummary: summary
+    };
+    onUpdate(updatedProperty);
+  };
+
   return (
     <Card className="p-4 sm:p-6 hover:shadow-lg transition-shadow">
       {/* Imagem da propriedade */}
@@ -112,6 +121,11 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         onScoreChange={handleScoreChange}
         onSave={handleSave}
         onCancel={handleCancel}
+      />
+
+      <PropertyLocationSummary
+        property={property}
+        onSummaryUpdate={handleLocationSummaryUpdate}
       />
 
       {property.sourceUrl && (

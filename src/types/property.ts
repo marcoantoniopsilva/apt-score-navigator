@@ -1,4 +1,3 @@
-
 export interface Property {
   id: string;
   title: string;
@@ -18,6 +17,7 @@ export interface Property {
   sourceUrl?: string;
   scores: PropertyScores;
   finalScore: number;
+  locationSummary?: string;
 }
 
 export interface PropertyScores {

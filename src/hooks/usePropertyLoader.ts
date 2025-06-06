@@ -37,6 +37,7 @@ export const usePropertyLoader = () => {
           totalMonthlyCost: prop.total_monthly_cost,
           images: prop.images || [],
           sourceUrl: prop.source_url || undefined,
+          locationSummary: prop.location_summary || undefined,
           scores: {
             location: Number(prop.location_score),
             internalSpace: Number(prop.internal_space_score),
@@ -61,7 +62,8 @@ export const usePropertyLoader = () => {
           },
           scores_convertidos: converted.scores,
           final_score_banco: prop.final_score,
-          final_score_convertido: converted.finalScore
+          final_score_convertido: converted.finalScore,
+          location_summary: converted.locationSummary
         });
         
         return converted;
