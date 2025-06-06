@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Property } from '@/types/property';
 import { loadSavedProperties } from '@/services/propertyDatabaseService';
 import { useToast } from '@/hooks/use-toast';
@@ -10,9 +10,18 @@ export const usePropertyLoader = () => {
   const { user } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const isLoadingRef = useRef(false);
+  const lastUserRef = useRef<string | null>(null);
 
-  const loadProperties = async () => {
+  const loadProperties = useCallback(async () => {
+    // Evitar múltiplas chamadas simultâneas
+    if (isLoadingRef.current) {
+      console.log('PropertyLoader: Carregamento já em andamento, ignorando...');
+      return;
+    }
+
     try {
+      isLoadingRef.current = true;
       setIsLoading(true);
       console.log('=== INÍCIO LOAD PROPERTIES ===');
       console.log('PropertyLoader: Limpando estado atual...');
@@ -62,22 +71,6 @@ export const usePropertyLoader = () => {
           finalScore: Number(prop.final_score)
         };
         
-        console.log(`PropertyLoader: Propriedade ${prop.id} convertida:`, {
-          scores_do_banco: {
-            location_score: prop.location_score,
-            internal_space_score: prop.internal_space_score,
-            furniture_score: prop.furniture_score,
-            accessibility_score: prop.accessibility_score,
-            finishing_score: prop.finishing_score,
-            price_score: prop.price_score,
-            condo_score: prop.condo_score,
-          },
-          scores_convertidos: converted.scores,
-          final_score_banco: prop.final_score,
-          final_score_convertido: converted.finalScore,
-          location_summary: converted.locationSummary
-        });
-        
         return converted;
       });
 
@@ -101,25 +94,25 @@ export const usePropertyLoader = () => {
       });
     } finally {
       setIsLoading(false);
+      isLoadingRef.current = false;
     }
-  };
-
-  // Usar useRef para controlar se já está carregando
-  const isLoadingRef = React.useRef(false);
+  }, [toast]);
 
   useEffect(() => {
-    if (user && !isLoadingRef.current) {
-      console.log('PropertyLoader: Usuário logado, carregando propriedades...');
-      isLoadingRef.current = true;
-      loadProperties().finally(() => {
-        isLoadingRef.current = false;
-      });
-    } else if (!user) {
-      console.log('PropertyLoader: Usuário não logado, limpando propriedades...');
+    // Verificar se o usuário mudou
+    const currentUserId = user?.id || null;
+    
+    if (currentUserId && currentUserId !== lastUserRef.current) {
+      console.log('PropertyLoader: Novo usuário detectado, carregando propriedades...');
+      lastUserRef.current = currentUserId;
+      loadProperties();
+    } else if (!currentUserId && lastUserRef.current) {
+      console.log('PropertyLoader: Usuário deslogado, limpando propriedades...');
+      lastUserRef.current = null;
       setProperties([]);
       setIsLoading(false);
     }
-  }, [user]); // Manter apenas user como dependência
+  }, [user, loadProperties]);
 
   return {
     properties,

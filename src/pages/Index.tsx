@@ -1,10 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { CriteriaWeights, DEFAULT_WEIGHTS } from '@/types/property';
 import { AddPropertyForm } from '@/components/AddPropertyForm';
 import PropertyControls from '@/components/PropertyControls';
 import PropertyList from '@/components/PropertyList';
 import AppHeader from '@/components/AppHeader';
+import { AppExplanation } from '@/components/AppExplanation';
 import { MobileWeightsEditor } from '@/components/MobileWeightsEditor';
 import { calculateFinalScore } from '@/utils/scoreCalculator';
 import { usePropertyLoader } from '@/hooks/usePropertyLoader';
@@ -25,12 +26,12 @@ const Index = () => {
     handleDeleteProperty
   } = usePropertyActions(properties, setProperties, weights, loadProperties);
 
-  // Recalcular pontuações quando os pesos mudarem
-  useEffect(() => {
-    if (properties.length === 0) return; // Evitar processamento desnecessário
+  // Usar useMemo para recalcular pontuações apenas quando pesos mudarem
+  const propertiesWithUpdatedScores = useMemo(() => {
+    if (properties.length === 0) return [];
     
-    console.log('Index: Pesos alterados, recalculando pontuações...');
-    const updatedProperties = properties.map(property => {
+    console.log('Index: Recalculando pontuações com novos pesos...');
+    return properties.map(property => {
       const newFinalScore = calculateFinalScore(property.scores, weights);
       console.log(`Index: Propriedade ${property.id} - nova pontuação: ${newFinalScore}`);
       return {
@@ -38,8 +39,22 @@ const Index = () => {
         finalScore: newFinalScore
       };
     });
-    setProperties(updatedProperties);
-  }, [weights]); // Remover properties da dependência para evitar loops
+  }, [properties, weights]);
+
+  // Atualizar o estado apenas quando necessário
+  useEffect(() => {
+    if (propertiesWithUpdatedScores.length > 0) {
+      // Verificar se realmente houve mudança nas pontuações finais
+      const scoresChanged = propertiesWithUpdatedScores.some((prop, index) => 
+        properties[index] && prop.finalScore !== properties[index].finalScore
+      );
+      
+      if (scoresChanged) {
+        console.log('Index: Atualizando propriedades com novas pontuações...');
+        setProperties(propertiesWithUpdatedScores);
+      }
+    }
+  }, [propertiesWithUpdatedScores, setProperties]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -52,6 +67,8 @@ const Index = () => {
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <AppExplanation />
+        
         <PropertyControls
           weights={weights}
           onWeightsChange={setWeights}
