@@ -12,7 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 export const usePropertyActions = (
   properties: Property[],
   setProperties: React.Dispatch<React.SetStateAction<Property[]>>,
-  weights: CriteriaWeights
+  weights: CriteriaWeights,
+  loadProperties: () => Promise<void>
 ) => {
   const { toast } = useToast();
   const [showAddForm, setShowAddForm] = useState(false);
@@ -28,7 +29,10 @@ export const usePropertyActions = (
       console.log('PropertyActions: Salvando no banco de dados...');
       await savePropertyToDatabase(propertyWithScore);
       
-      setProperties(prev => [...prev, propertyWithScore]);
+      // Em vez de adicionar ao estado local, recarregar as propriedades do banco
+      console.log('PropertyActions: Recarregando propriedades do banco...');
+      await loadProperties();
+      
       setShowAddForm(false);
       
       toast({

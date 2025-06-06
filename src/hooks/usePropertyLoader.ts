@@ -104,16 +104,22 @@ export const usePropertyLoader = () => {
     }
   };
 
+  // Usar useRef para controlar se já está carregando
+  const isLoadingRef = React.useRef(false);
+
   useEffect(() => {
-    if (user) {
+    if (user && !isLoadingRef.current) {
       console.log('PropertyLoader: Usuário logado, carregando propriedades...');
-      loadProperties();
-    } else {
+      isLoadingRef.current = true;
+      loadProperties().finally(() => {
+        isLoadingRef.current = false;
+      });
+    } else if (!user) {
       console.log('PropertyLoader: Usuário não logado, limpando propriedades...');
       setProperties([]);
       setIsLoading(false);
     }
-  }, [user]);
+  }, [user]); // Manter apenas user como dependência
 
   return {
     properties,

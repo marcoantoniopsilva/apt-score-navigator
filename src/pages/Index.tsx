@@ -23,10 +23,12 @@ const Index = () => {
     handleAddProperty,
     handleUpdateProperty,
     handleDeleteProperty
-  } = usePropertyActions(properties, setProperties, weights);
+  } = usePropertyActions(properties, setProperties, weights, loadProperties);
 
   // Recalcular pontuações quando os pesos mudarem
   useEffect(() => {
+    if (properties.length === 0) return; // Evitar processamento desnecessário
+    
     console.log('Index: Pesos alterados, recalculando pontuações...');
     const updatedProperties = properties.map(property => {
       const newFinalScore = calculateFinalScore(property.scores, weights);
@@ -37,7 +39,7 @@ const Index = () => {
       };
     });
     setProperties(updatedProperties);
-  }, [weights]);
+  }, [weights]); // Remover properties da dependência para evitar loops
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
