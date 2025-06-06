@@ -184,7 +184,7 @@ export const loadSavedProperties = async () => {
     
     const { data: properties, error } = await supabase
       .from('properties')
-      .select('*')
+      .select('*, location_summary')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -203,7 +203,8 @@ export const loadSavedProperties = async () => {
         finishing_score: properties[0].finishing_score,
         price_score: properties[0].price_score,
         condo_score: properties[0].condo_score,
-        final_score: properties[0].final_score
+        final_score: properties[0].final_score,
+        location_summary: (properties[0] as any).location_summary
       });
     }
     

@@ -37,7 +37,7 @@ export const usePropertyLoader = () => {
           totalMonthlyCost: prop.total_monthly_cost,
           images: prop.images || [],
           sourceUrl: prop.source_url || undefined,
-          locationSummary: prop.location_summary || undefined,
+          locationSummary: (prop as any).location_summary || undefined,
           scores: {
             location: Number(prop.location_score),
             internalSpace: Number(prop.internal_space_score),
