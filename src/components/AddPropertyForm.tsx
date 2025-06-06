@@ -83,19 +83,26 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
     const { name, value } = e.target;
     console.log(`AddPropertyForm: Score change - ${name}: "${value}"`);
     
-    const numericValue = parseFloat(value);
-    if (!isNaN(numericValue)) {
-      const clampedValue = Math.max(0, Math.min(10, numericValue));
-      console.log(`AddPropertyForm: Setting score ${name} to ${clampedValue}`);
+    // Permitir valores vazios durante a digitação
+    if (value === '') {
       setScores(prev => ({
         ...prev,
-        [name]: clampedValue
+        [name]: ''
       }));
-    } else if (value === '') {
-      // Permitir campo vazio temporariamente
+      return;
+    }
+    
+    const numericValue = parseFloat(value);
+    console.log(`AddPropertyForm: Parsed value: ${numericValue}`);
+    
+    // Verificar se é um número válido
+    if (!isNaN(numericValue)) {
+      // Aplicar limites apenas se necessário, mas não forçar para 10
+      const finalValue = Math.max(0, Math.min(10, numericValue));
+      console.log(`AddPropertyForm: Setting score ${name} to ${finalValue}`);
       setScores(prev => ({
         ...prev,
-        [name]: 0
+        [name]: finalValue
       }));
     }
   };
@@ -104,6 +111,13 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
     e.preventDefault();
     
     console.log('AddPropertyForm: Submitting with scores:', scores);
+    
+    // Garantir que todos os scores sejam números válidos
+    const validatedScores = Object.entries(scores).reduce((acc, [key, value]) => {
+      const numValue = typeof value === 'string' ? parseFloat(value) : value;
+      acc[key] = isNaN(numValue) ? 5 : Math.max(0, Math.min(10, numValue));
+      return acc;
+    }, {} as any);
     
     const newProperty: Property = {
       id: crypto.randomUUID(),
@@ -122,7 +136,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
       totalMonthlyCost: Number(formData.rent) + Number(formData.condo) + Number(formData.iptu) + Number(formData.fireInsurance) + Number(formData.otherFees),
       images: extractedData?.images || [],
       sourceUrl: url || undefined,
-      scores: scores,
+      scores: validatedScores,
       finalScore: 0
     };
 

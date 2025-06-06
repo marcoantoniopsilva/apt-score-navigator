@@ -26,7 +26,7 @@ export const PropertyScores: React.FC<PropertyScoresProps> = ({
   onSave,
   onCancel
 }) => {
-  // Estado local para valores temporários dos inputs
+  // Estado local para valores temporários dos inputs (como strings para permitir edição)
   const [tempValues, setTempValues] = useState<Record<string, string>>({});
 
   // Resetar valores temporários quando começar a editar
@@ -51,7 +51,7 @@ export const PropertyScores: React.FC<PropertyScoresProps> = ({
   const handleInputChange = (key: keyof Property['scores'], inputValue: string) => {
     console.log(`PropertyScores: Input change - ${key}: "${inputValue}"`);
     
-    // Atualizar valor temporário
+    // Atualizar valor temporário diretamente sem validação
     setTempValues(prev => ({
       ...prev,
       [key]: inputValue
@@ -62,7 +62,7 @@ export const PropertyScores: React.FC<PropertyScoresProps> = ({
     const inputValue = tempValues[key];
     console.log(`PropertyScores: Input blur - ${key}: "${inputValue}"`);
     
-    // Se vazio, definir como 0
+    // Se vazio, manter 0
     if (!inputValue || inputValue.trim() === '') {
       console.log('PropertyScores: Valor vazio, definindo como 0');
       onScoreChange(key, 0);
@@ -87,11 +87,13 @@ export const PropertyScores: React.FC<PropertyScoresProps> = ({
       return;
     }
     
-    // Aplicar limites
+    // Aplicar limites apenas se necessário
     const clampedValue = Math.max(0, Math.min(10, numericValue));
-    console.log(`PropertyScores: Clamped value: ${clampedValue}`);
+    console.log(`PropertyScores: Final value: ${clampedValue}`);
     
     onScoreChange(key, clampedValue);
+    
+    // Atualizar o valor temporário com o resultado final
     setTempValues(prev => ({
       ...prev,
       [key]: clampedValue.toString()
@@ -112,7 +114,10 @@ export const PropertyScores: React.FC<PropertyScoresProps> = ({
               <Label className="text-sm font-medium w-full sm:w-32 flex-shrink-0">{label}:</Label>
               <div className="flex items-center space-x-2 flex-1">
                 <Input
-                  type="text"
+                  type="number"
+                  min="0"
+                  max="10"
+                  step="0.1"
                   value={tempValues[key] || ''}
                   onChange={(e) => handleInputChange(
                     key as keyof Property['scores'], 
@@ -120,7 +125,6 @@ export const PropertyScores: React.FC<PropertyScoresProps> = ({
                   )}
                   onBlur={() => handleInputBlur(key as keyof Property['scores'])}
                   className="w-20 text-center"
-                  inputMode="decimal"
                   placeholder="0-10"
                 />
                 <span className="text-sm text-gray-500 flex-shrink-0">
