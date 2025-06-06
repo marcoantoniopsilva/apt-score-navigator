@@ -97,6 +97,7 @@ export const updatePropertyInDatabase = async (property: any) => {
       price_score: Number(property.scores.price),
       condo_score: Number(property.scores.condo),
       final_score: Number(property.finalScore),
+      location_summary: property.locationSummary || null,
       updated_at: new Date().toISOString()
     };
 
@@ -184,7 +185,7 @@ export const loadSavedProperties = async () => {
     
     const { data: properties, error } = await supabase
       .from('properties')
-      .select('*, location_summary')
+      .select('*')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -204,7 +205,7 @@ export const loadSavedProperties = async () => {
         price_score: properties[0].price_score,
         condo_score: properties[0].condo_score,
         final_score: properties[0].final_score,
-        location_summary: (properties[0] as any).location_summary
+        location_summary: properties[0].location_summary
       });
     }
     

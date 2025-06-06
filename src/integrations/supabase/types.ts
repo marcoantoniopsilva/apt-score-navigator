@@ -83,6 +83,7 @@ export type Database = {
           internal_space_score: number
           iptu: number
           location_score: number
+          location_summary: string | null
           other_fees: number
           parking_spaces: number
           price_score: number
@@ -112,6 +113,7 @@ export type Database = {
           internal_space_score?: number
           iptu?: number
           location_score?: number
+          location_summary?: string | null
           other_fees?: number
           parking_spaces?: number
           price_score?: number
@@ -141,6 +143,7 @@ export type Database = {
           internal_space_score?: number
           iptu?: number
           location_score?: number
+          location_summary?: string | null
           other_fees?: number
           parking_spaces?: number
           price_score?: number
