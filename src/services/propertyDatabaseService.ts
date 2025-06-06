@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 // Função para salvar uma nova propriedade no banco
@@ -181,11 +180,21 @@ export const deletePropertyFromDatabase = async (propertyId: string) => {
 export const loadSavedProperties = async () => {
   try {
     console.log('=== INÍCIO DO CARREGAMENTO ===');
-    console.log('loadSavedProperties: Carregando propriedades...');
+    console.log('loadSavedProperties: Verificando autenticação...');
+    
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      console.log('loadSavedProperties: Usuário não autenticado');
+      return [];
+    }
+
+    console.log('loadSavedProperties: Carregando propriedades para o usuário:', session.user.id);
     
     const { data: properties, error } = await supabase
       .from('properties')
       .select('*')
+      .eq('user_id', session.user.id)
       .order('created_at', { ascending: false });
 
     if (error) {

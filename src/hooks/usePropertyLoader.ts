@@ -15,9 +15,21 @@ export const usePropertyLoader = () => {
     try {
       setIsLoading(true);
       console.log('=== INÍCIO LOAD PROPERTIES ===');
+      console.log('PropertyLoader: Limpando estado atual...');
+      
+      // Limpar estado primeiro para evitar duplicação
+      setProperties([]);
+      
       console.log('PropertyLoader: Carregando propriedades do banco...');
       const savedProperties = await loadSavedProperties();
       console.log('PropertyLoader: Propriedades carregadas do banco:', savedProperties);
+      
+      if (!savedProperties || savedProperties.length === 0) {
+        console.log('PropertyLoader: Nenhuma propriedade encontrada');
+        setProperties([]);
+        console.log('=== FIM LOAD PROPERTIES ===');
+        return;
+      }
       
       const convertedProperties: Property[] = savedProperties.map(prop => {
         const converted = {
@@ -81,6 +93,7 @@ export const usePropertyLoader = () => {
       }
     } catch (error) {
       console.error('PropertyLoader: Erro ao carregar propriedades:', error);
+      setProperties([]); // Limpar estado em caso de erro
       toast({
         title: "Erro ao carregar propriedades",
         description: "Não foi possível carregar as propriedades salvas.",
@@ -93,7 +106,12 @@ export const usePropertyLoader = () => {
 
   useEffect(() => {
     if (user) {
+      console.log('PropertyLoader: Usuário logado, carregando propriedades...');
       loadProperties();
+    } else {
+      console.log('PropertyLoader: Usuário não logado, limpando propriedades...');
+      setProperties([]);
+      setIsLoading(false);
     }
   }, [user]);
 
