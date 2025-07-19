@@ -111,8 +111,14 @@ const Index = () => {
           canCompare={comparisonMode ? canCompare : false}
           onCompare={comparisonMode ? openComparison : undefined}
           onClearSelection={comparisonMode ? clearSelection : undefined}
-          onActivateComparison={() => setComparisonMode(true)}
-          onDeactivateComparison={() => setComparisonMode(false)}
+          onActivateComparison={() => {
+            console.log('Ativando modo comparação');
+            setComparisonMode(true);
+          }}
+          onDeactivateComparison={() => {
+            console.log('Desativando modo comparação');
+            setComparisonMode(false);
+          }}
           comparisonMode={comparisonMode}
         />
 

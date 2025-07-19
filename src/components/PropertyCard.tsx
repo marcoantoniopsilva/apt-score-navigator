@@ -36,6 +36,9 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   const [editedProperty, setEditedProperty] = useState(property);
 
   console.log('PropertyCard: isEditing =', isEditing);
+  console.log(`PropertyCard ${property.id}: showComparisonCheckbox =`, showComparisonCheckbox);
+  console.log(`PropertyCard ${property.id}: isSelected =`, isSelected);
+  console.log(`PropertyCard ${property.id}: onToggleSelection exists =`, !!onToggleSelection);
 
   const handleEditToggle = () => {
     console.log('PropertyCard: Toggling edit mode from', isEditing, 'to', !isEditing);

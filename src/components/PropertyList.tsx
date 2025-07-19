@@ -65,6 +65,7 @@ const PropertyList: React.FC<PropertyListProps> = ({
   });
 
   // Debug logs
+  console.log('PropertyList: comparisonMode:', comparisonMode);
   console.log('PropertyList: onToggleSelection exists:', !!onToggleSelection);
   console.log('PropertyList: selectedCount:', selectedCount);
   console.log('PropertyList: canCompare:', canCompare);
@@ -80,7 +81,7 @@ const PropertyList: React.FC<PropertyListProps> = ({
   return (
     <div className="space-y-6">
       {/* Botão para ativar comparação sempre visível */}
-      {!comparisonMode && (
+      {!comparisonMode && properties.length > 1 && (
         <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -93,7 +94,10 @@ const PropertyList: React.FC<PropertyListProps> = ({
               </span>
             </div>
             <Button
-              onClick={onActivateComparison}
+              onClick={() => {
+                console.log('Clicando para ativar comparação');
+                onActivateComparison?.();
+              }}
               size="sm"
               className="flex items-center gap-2"
             >
@@ -105,7 +109,7 @@ const PropertyList: React.FC<PropertyListProps> = ({
       )}
 
       {/* Barra de comparação ativa */}
-      {selectedCount > 0 && (
+      {comparisonMode && (
         <div className="sticky top-4 z-30 bg-white border border-gray-200 rounded-lg shadow-lg p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
