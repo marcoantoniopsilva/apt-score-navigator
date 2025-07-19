@@ -100,14 +100,14 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   };
 
   return (
-    <Card className={`p-4 sm:p-6 hover:shadow-lg transition-shadow relative ${isSelected ? 'ring-2 ring-blue-500' : ''}`}>
+    <Card className={`p-4 sm:p-6 hover:shadow-lg transition-shadow relative ${isSelected ? 'ring-2 ring-blue-500 bg-blue-50' : ''}`}>
       {/* Checkbox de comparação */}
       {showComparisonCheckbox && onToggleSelection && (
-        <div className="absolute top-4 right-4 z-10">
+        <div className="absolute top-2 right-2 z-20 bg-white rounded-full p-1 shadow-lg border">
           <Checkbox
             checked={isSelected}
             onCheckedChange={onToggleSelection}
-            className="bg-white border-gray-300 shadow-sm"
+            className="bg-white border-gray-400 data-[state=checked]:bg-blue-600 data-[state=checked]:border-blue-600"
           />
         </div>
       )}
