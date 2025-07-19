@@ -48,21 +48,20 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `Você é um especialista em análise de localização urbana no Brasil. Com base no endereço fornecido, elabore um resumo conciso e informativo sobre a região, abordando os seguintes pontos:
+            content: `Você é um especialista em análise de localização urbana no Brasil. Analise a localização do imóvel e gere um resumo claro e útil para quem busca alugar ou comprar, abordando os seguintes pontos:
 
-• Segurança: Nível geral de segurança da região
-• Pontos turísticos: Principais atrações próximas
-• Acessibilidade: Transporte público, metrô, ônibus
-• Trânsito: Condições típicas de tráfego
-• Áreas verdes: Parques e praças próximas
-• Saúde: Hospitais e clínicas na região
-• Vida social: Bares, restaurantes, centros culturais
+• Nível de segurança (criminalidade, policiamento)
+• Acessibilidade (ônibus, metrô, bike, carro)  
+• Comércio e serviços próximos
+• Lazer, parques, vida noturna
+• Perfil típico dos moradores da região
+• Considerações gerais (vantagens e pontos de atenção)
 
-Seja objetivo e equilibrado, mencionando aspectos positivos e negativos quando relevantes. Mantenha o texto em português brasileiro, com no máximo 300 palavras, em formato de parágrafo corrido.`
+Seja objetivo e equilibrado, destacando os aspectos mais relevantes. Mantenha o texto em português brasileiro, com no máximo 300 palavras, em formato de parágrafo corrido.`
           },
           {
             role: 'user',
-            content: `Analise a localização do seguinte endereço: ${address}`
+            content: `Endereço: ${address}`
           }
         ],
         temperature: 0.7,
