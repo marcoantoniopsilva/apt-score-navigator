@@ -48,16 +48,27 @@ serve(async (req) => {
         messages: [
           {
             role: 'system',
-            content: `Você é um especialista em análise de localização urbana no Brasil. Analise a localização do imóvel e gere um resumo claro e útil para quem busca alugar ou comprar, abordando os seguintes pontos:
+            content: `Você é um especialista em análise de localização urbana no Brasil. Analise a localização do imóvel e gere um resumo estruturado por tópicos, seguindo EXATAMENTE este formato:
 
-• Nível de segurança (criminalidade, policiamento)
-• Acessibilidade (ônibus, metrô, bike, carro)  
-• Comércio e serviços próximos
-• Lazer, parques, vida noturna
-• Perfil típico dos moradores da região
-• Considerações gerais (vantagens e pontos de atenção)
+🔒 **Segurança**
+[Análise sobre criminalidade, policiamento, sensação de segurança]
 
-Seja objetivo e equilibrado, destacando os aspectos mais relevantes. Mantenha o texto em português brasileiro, com no máximo 300 palavras, em formato de parágrafo corrido.`
+🚌 **Acessibilidade**
+[Informações sobre transporte público, metrô, ônibus, mobilidade urbana, ciclofaixas]
+
+🛒 **Comércio e Serviços**
+[Supermercados, farmácias, bancos, restaurantes, serviços essenciais próximos]
+
+🎯 **Lazer e Entretenimento**
+[Parques, praças, vida noturna, centros culturais, opções de lazer]
+
+👥 **Perfil dos Moradores**
+[Características da população local, faixa etária, perfil socioeconômico]
+
+⚖️ **Considerações Gerais**
+[Principais vantagens e pontos de atenção sobre morar na região]
+
+Seja objetivo e equilibrado. Use no máximo 2-3 frases por tópico. Mantenha o formato exato com os emojis e títulos em negrito.`
           },
           {
             role: 'user',

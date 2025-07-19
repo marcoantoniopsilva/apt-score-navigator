@@ -92,9 +92,14 @@ export const PropertyLocationSummary: React.FC<PropertyLocationSummaryProps> = (
       </div>
 
       {summary ? (
-        <Card className="p-4 bg-blue-50 border-blue-200">
-          <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap">
-            {summary}
+        <Card className="p-4 bg-gray-50 border-gray-200">
+          <div className="text-sm text-gray-700 leading-relaxed">
+            <div 
+              className="space-y-3"
+              dangerouslySetInnerHTML={{
+                __html: summary.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+              }}
+            />
           </div>
         </Card>
       ) : (
