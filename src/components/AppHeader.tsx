@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Home, LogOut, RefreshCw, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { SubscriptionStatus } from './SubscriptionStatus';
 
 interface AppHeaderProps {
   title: string;

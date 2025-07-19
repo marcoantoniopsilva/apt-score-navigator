@@ -13,14 +13,39 @@ import { usePropertyLoader } from '@/hooks/usePropertyLoader';
 import { usePropertyActions } from '@/hooks/usePropertyActions';
 import { usePropertySorting } from '@/hooks/usePropertySorting';
 import { usePropertyComparison } from '@/hooks/usePropertyComparison';
+import { useSubscription } from '@/hooks/useSubscription';
+import { SubscriptionStatus } from '@/components/SubscriptionStatus';
+import { UpgradeModal } from '@/components/UpgradeModal';
+import { toast } from 'sonner';
 
 const Index = () => {
   const [weights, setWeights] = useState<CriteriaWeights>(DEFAULT_WEIGHTS);
   const [comparisonMode, setComparisonMode] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
   const { properties, setProperties, isLoading, loadProperties } = usePropertyLoader();
   const { sortBy, sortOrder, setSortBy, setSortOrder } = usePropertySorting();
+  const { isPro, loading: subscriptionLoading } = useSubscription();
   
+  // Verificar limites do plano gratuito
+  const handleAddPropertyWithLimits = () => {
+    if (!isPro && properties.length >= 5) {
+      toast.error('Limite de 5 propriedades atingido. Faça upgrade para o plano Pro para adicionar mais propriedades.');
+      setShowUpgradeModal(true);
+      return;
+    }
+    setShowAddForm(true);
+  };
+
+  const handleComparisonWithLimits = () => {
+    if (!isPro) {
+      toast.error('Funcionalidade de comparação disponível apenas no plano Pro.');
+      setShowUpgradeModal(true);
+      return;
+    }
+    setComparisonMode(true);
+  };
+
   const {
     showAddForm,
     setShowAddForm,
@@ -77,13 +102,17 @@ const Index = () => {
       <AppHeader 
         title="Comparador de Imóveis"
         subtitle="Encontre o melhor apartamento para alugar"
-        onAddProperty={() => setShowAddForm(true)}
+        onAddProperty={handleAddPropertyWithLimits}
         onRefresh={loadProperties}
         isLoading={isLoading}
       />
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <AppExplanation />
+        
+        <div className="mb-6">
+          <SubscriptionStatus />
+        </div>
         
         <PropertyControls
           weights={weights}
@@ -101,7 +130,7 @@ const Index = () => {
           isLoading={isLoading}
           onUpdate={handleUpdateProperty}
           onDelete={handleDeleteProperty}
-          onAddProperty={() => setShowAddForm(true)}
+          onAddProperty={handleAddPropertyWithLimits}
           sortBy={sortBy}
           sortOrder={sortOrder}
           selectedProperties={comparisonMode ? selectedProperties : undefined}
@@ -111,10 +140,7 @@ const Index = () => {
           canCompare={comparisonMode ? canCompare : false}
           onCompare={comparisonMode ? openComparison : undefined}
           onClearSelection={comparisonMode ? clearSelection : undefined}
-          onActivateComparison={() => {
-            console.log('Ativando modo comparação');
-            setComparisonMode(true);
-          }}
+          onActivateComparison={handleComparisonWithLimits}
           onDeactivateComparison={() => {
             console.log('Desativando modo comparação');
             setComparisonMode(false);
@@ -142,6 +168,11 @@ const Index = () => {
           onClose={closeComparison}
         />
       )}
+
+      <UpgradeModal 
+        open={showUpgradeModal} 
+        onOpenChange={setShowUpgradeModal} 
+      />
     </div>
   );
 };
