@@ -4,6 +4,9 @@ import { Property, CriteriaWeights } from '@/types/property';
 import { PropertyCard } from '@/components/PropertyCard';
 import LoadingState from '@/components/LoadingState';
 import EmptyState from '@/components/EmptyState';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { BarChart3, X } from 'lucide-react';
 
 interface PropertyListProps {
   properties: Property[];
@@ -14,6 +17,13 @@ interface PropertyListProps {
   onAddProperty: () => void;
   sortBy: 'finalScore' | keyof Property['scores'];
   sortOrder: 'asc' | 'desc';
+  selectedProperties?: Property[];
+  onToggleSelection?: (property: Property) => void;
+  isPropertySelected?: (propertyId: string) => boolean;
+  selectedCount?: number;
+  canCompare?: boolean;
+  onCompare?: () => void;
+  onClearSelection?: () => void;
 }
 
 const PropertyList: React.FC<PropertyListProps> = ({
@@ -24,7 +34,14 @@ const PropertyList: React.FC<PropertyListProps> = ({
   onDelete,
   onAddProperty,
   sortBy,
-  sortOrder
+  sortOrder,
+  selectedProperties = [],
+  onToggleSelection,
+  isPropertySelected,
+  selectedCount = 0,
+  canCompare = false,
+  onCompare,
+  onClearSelection
 }) => {
   const sortedProperties = [...properties].sort((a, b) => {
     let aValue: number;
@@ -51,6 +68,44 @@ const PropertyList: React.FC<PropertyListProps> = ({
 
   return (
     <div className="space-y-6">
+      {/* Barra de comparação */}
+      {selectedCount > 0 && (
+        <div className="sticky top-4 z-30 bg-white border border-gray-200 rounded-lg shadow-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <BarChart3 className="h-5 w-5 text-gray-700" />
+              <span className="font-medium text-gray-900">
+                Comparar Imóveis
+              </span>
+              <Badge variant="secondary">
+                {selectedCount}/3 selecionados
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onClearSelection}
+                className="flex items-center gap-2"
+              >
+                <X className="h-4 w-4" />
+                Limpar
+              </Button>
+              <Button
+                onClick={onCompare}
+                disabled={!canCompare}
+                size="sm"
+                className="flex items-center gap-2"
+              >
+                <BarChart3 className="h-4 w-4" />
+                Comparar {selectedCount > 0 ? `(${selectedCount})` : ''}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lista de propriedades */}
       {sortedProperties.map((property, index) => (
         <PropertyCard
           key={property.id}
@@ -59,6 +114,9 @@ const PropertyList: React.FC<PropertyListProps> = ({
           weights={weights}
           onUpdate={onUpdate}
           onDelete={onDelete}
+          isSelected={isPropertySelected ? isPropertySelected(property.id) : false}
+          onToggleSelection={onToggleSelection ? () => onToggleSelection(property) : undefined}
+          showComparisonCheckbox={!!onToggleSelection}
         />
       ))}
     </div>

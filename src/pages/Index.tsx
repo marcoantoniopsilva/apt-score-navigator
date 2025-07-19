@@ -7,10 +7,12 @@ import PropertyList from '@/components/PropertyList';
 import AppHeader from '@/components/AppHeader';
 import { AppExplanation } from '@/components/AppExplanation';
 import { MobileWeightsEditor } from '@/components/MobileWeightsEditor';
+import { PropertyComparison } from '@/components/PropertyComparison';
 import { calculateFinalScore } from '@/utils/scoreCalculator';
 import { usePropertyLoader } from '@/hooks/usePropertyLoader';
 import { usePropertyActions } from '@/hooks/usePropertyActions';
 import { usePropertySorting } from '@/hooks/usePropertySorting';
+import { usePropertyComparison } from '@/hooks/usePropertyComparison';
 
 const Index = () => {
   const [weights, setWeights] = useState<CriteriaWeights>(DEFAULT_WEIGHTS);
@@ -25,6 +27,19 @@ const Index = () => {
     handleUpdateProperty,
     handleDeleteProperty
   } = usePropertyActions(properties, setProperties, weights, loadProperties);
+
+  const {
+    selectedProperties,
+    isComparisonOpen,
+    togglePropertySelection,
+    removeProperty,
+    clearSelection,
+    openComparison,
+    closeComparison,
+    isPropertySelected,
+    selectedCount,
+    canCompare
+  } = usePropertyComparison();
 
   // Usar useMemo para recalcular pontuações apenas quando pesos mudarem
   const propertiesWithUpdatedScores = useMemo(() => {
@@ -88,6 +103,13 @@ const Index = () => {
           onAddProperty={() => setShowAddForm(true)}
           sortBy={sortBy}
           sortOrder={sortOrder}
+          selectedProperties={selectedProperties}
+          onToggleSelection={togglePropertySelection}
+          isPropertySelected={isPropertySelected}
+          selectedCount={selectedCount}
+          canCompare={canCompare}
+          onCompare={openComparison}
+          onClearSelection={clearSelection}
         />
 
         <MobileWeightsEditor
@@ -100,6 +122,14 @@ const Index = () => {
         <AddPropertyForm 
           onSubmit={handleAddProperty}
           onCancel={() => setShowAddForm(false)}
+        />
+      )}
+
+      {isComparisonOpen && (
+        <PropertyComparison
+          properties={selectedProperties}
+          onRemoveProperty={removeProperty}
+          onClose={closeComparison}
         />
       )}
     </div>

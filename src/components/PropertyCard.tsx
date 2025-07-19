@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Property, CriteriaWeights } from '@/types/property';
 import { Card } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { calculateFinalScore } from '@/utils/scoreCalculator';
 import { PropertyHeader } from '@/components/PropertyHeader';
 import { PropertyBasicInfo } from '@/components/PropertyBasicInfo';
@@ -16,6 +17,9 @@ interface PropertyCardProps {
   weights: CriteriaWeights;
   onUpdate: (property: Property) => void;
   onDelete: (id: string) => void;
+  isSelected?: boolean;
+  onToggleSelection?: () => void;
+  showComparisonCheckbox?: boolean;
 }
 
 export const PropertyCard: React.FC<PropertyCardProps> = ({
@@ -23,7 +27,10 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   rank,
   weights,
   onUpdate,
-  onDelete
+  onDelete,
+  isSelected = false,
+  onToggleSelection,
+  showComparisonCheckbox = false
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedProperty, setEditedProperty] = useState(property);
@@ -90,7 +97,18 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
   };
 
   return (
-    <Card className="p-4 sm:p-6 hover:shadow-lg transition-shadow">
+    <Card className={`p-4 sm:p-6 hover:shadow-lg transition-shadow relative ${isSelected ? 'ring-2 ring-blue-500' : ''}`}>
+      {/* Checkbox de comparação */}
+      {showComparisonCheckbox && onToggleSelection && (
+        <div className="absolute top-4 right-4 z-10">
+          <Checkbox
+            checked={isSelected}
+            onCheckedChange={onToggleSelection}
+            className="bg-white border-gray-300 shadow-sm"
+          />
+        </div>
+      )}
+
       {/* Imagem da propriedade */}
       {property.images && property.images.length > 0 && (
         <div className="mb-4 rounded-lg overflow-hidden">
