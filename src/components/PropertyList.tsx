@@ -24,6 +24,9 @@ interface PropertyListProps {
   canCompare?: boolean;
   onCompare?: () => void;
   onClearSelection?: () => void;
+  onActivateComparison?: () => void;
+  onDeactivateComparison?: () => void;
+  comparisonMode?: boolean;
 }
 
 const PropertyList: React.FC<PropertyListProps> = ({
@@ -41,7 +44,10 @@ const PropertyList: React.FC<PropertyListProps> = ({
   selectedCount = 0,
   canCompare = false,
   onCompare,
-  onClearSelection
+  onClearSelection,
+  onActivateComparison,
+  onDeactivateComparison,
+  comparisonMode = false
 }) => {
   const sortedProperties = [...properties].sort((a, b) => {
     let aValue: number;
@@ -58,6 +64,11 @@ const PropertyList: React.FC<PropertyListProps> = ({
     return sortOrder === 'desc' ? bValue - aValue : aValue - bValue;
   });
 
+  // Debug logs
+  console.log('PropertyList: onToggleSelection exists:', !!onToggleSelection);
+  console.log('PropertyList: selectedCount:', selectedCount);
+  console.log('PropertyList: canCompare:', canCompare);
+
   if (isLoading) {
     return <LoadingState />;
   }
@@ -68,7 +79,32 @@ const PropertyList: React.FC<PropertyListProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Barra de comparação */}
+      {/* Botão para ativar comparação sempre visível */}
+      {!comparisonMode && (
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <BarChart3 className="h-5 w-5 text-gray-700" />
+              <span className="font-medium text-gray-900">
+                Modo Comparação
+              </span>
+              <span className="text-sm text-gray-600">
+                Compare até 3 imóveis lado a lado
+              </span>
+            </div>
+            <Button
+              onClick={onActivateComparison}
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <BarChart3 className="h-4 w-4" />
+              Ativar Comparação
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Barra de comparação ativa */}
       {selectedCount > 0 && (
         <div className="sticky top-4 z-30 bg-white border border-gray-200 rounded-lg shadow-lg p-4">
           <div className="flex items-center justify-between">
@@ -82,6 +118,18 @@ const PropertyList: React.FC<PropertyListProps> = ({
               </Badge>
             </div>
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  onClearSelection?.();
+                  onDeactivateComparison?.();
+                }}
+                className="flex items-center gap-2 text-gray-500"
+              >
+                <X className="h-4 w-4" />
+                Sair do Modo
+              </Button>
               <Button
                 variant="outline"
                 size="sm"

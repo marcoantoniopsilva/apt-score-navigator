@@ -16,6 +16,7 @@ import { usePropertyComparison } from '@/hooks/usePropertyComparison';
 
 const Index = () => {
   const [weights, setWeights] = useState<CriteriaWeights>(DEFAULT_WEIGHTS);
+  const [comparisonMode, setComparisonMode] = useState(false);
   
   const { properties, setProperties, isLoading, loadProperties } = usePropertyLoader();
   const { sortBy, sortOrder, setSortBy, setSortOrder } = usePropertySorting();
@@ -103,13 +104,16 @@ const Index = () => {
           onAddProperty={() => setShowAddForm(true)}
           sortBy={sortBy}
           sortOrder={sortOrder}
-          selectedProperties={selectedProperties}
-          onToggleSelection={togglePropertySelection}
-          isPropertySelected={isPropertySelected}
-          selectedCount={selectedCount}
-          canCompare={canCompare}
-          onCompare={openComparison}
-          onClearSelection={clearSelection}
+          selectedProperties={comparisonMode ? selectedProperties : undefined}
+          onToggleSelection={comparisonMode ? togglePropertySelection : undefined}
+          isPropertySelected={comparisonMode ? isPropertySelected : undefined}
+          selectedCount={comparisonMode ? selectedCount : 0}
+          canCompare={comparisonMode ? canCompare : false}
+          onCompare={comparisonMode ? openComparison : undefined}
+          onClearSelection={comparisonMode ? clearSelection : undefined}
+          onActivateComparison={() => setComparisonMode(true)}
+          onDeactivateComparison={() => setComparisonMode(false)}
+          comparisonMode={comparisonMode}
         />
 
         <MobileWeightsEditor
