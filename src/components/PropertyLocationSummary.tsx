@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Property } from '@/types/property';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -19,6 +19,13 @@ export const PropertyLocationSummary: React.FC<PropertyLocationSummaryProps> = (
   const [isGenerating, setIsGenerating] = useState(false);
   const [summary, setSummary] = useState(property.locationSummary || '');
   const { toast } = useToast();
+
+  // Gerar resumo automaticamente quando há endereço mas não há resumo
+  useEffect(() => {
+    if (property.address && !property.locationSummary && !summary && !isGenerating) {
+      generateLocationSummary();
+    }
+  }, [property.address, property.locationSummary]);
 
   const generateLocationSummary = async () => {
     if (!property.address) {
@@ -75,37 +82,50 @@ export const PropertyLocationSummary: React.FC<PropertyLocationSummaryProps> = (
           <MapPin className="h-4 w-4 mr-2" />
           Resumo da Localização
         </h4>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={generateLocationSummary}
-          disabled={isGenerating}
-          className="flex items-center gap-2"
-        >
-          {isGenerating ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <RefreshCw className="h-4 w-4" />
-          )}
-          {isGenerating ? 'Gerando...' : summary ? 'Atualizar' : 'Gerar Resumo'}
-        </Button>
+        {summary && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={generateLocationSummary}
+            disabled={isGenerating}
+            className="flex items-center gap-2 text-gray-500 hover:text-gray-700"
+          >
+            {isGenerating ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4" />
+            )}
+            {isGenerating ? 'Gerando...' : 'Atualizar'}
+          </Button>
+        )}
       </div>
 
       {summary ? (
         <Card className="p-4 bg-gray-50 border-gray-200">
           <div className="text-sm text-gray-700 leading-relaxed">
             <div 
-              className="space-y-3"
+              className="space-y-4"
               dangerouslySetInnerHTML={{
-                __html: summary.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                __html: summary
+                  .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                  .replace(/\n\n/g, '</p><p>')
+                  .replace(/^/, '<p>')
+                  .replace(/$/, '</p>')
               }}
             />
+          </div>
+        </Card>
+      ) : isGenerating ? (
+        <Card className="p-4 bg-gray-50 border-gray-200">
+          <div className="text-sm text-gray-500 text-center flex items-center justify-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Gerando resumo da localização...
           </div>
         </Card>
       ) : (
         <Card className="p-4 bg-gray-50 border-gray-200">
           <div className="text-sm text-gray-500 text-center">
-            Clique em "Gerar Resumo" para obter informações detalhadas sobre a localização desta propriedade.
+            Resumo da localização será gerado automaticamente.
           </div>
         </Card>
       )}
