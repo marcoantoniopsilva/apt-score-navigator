@@ -2,18 +2,37 @@
 import { PropertyScores, CriteriaWeights } from '@/types/property';
 
 export const calculateFinalScore = (scores: PropertyScores, weights: CriteriaWeights): number => {
-  const totalWeightedScore = 
-    scores.location * weights.location +
-    scores.internalSpace * weights.internalSpace +
-    scores.furniture * weights.furniture +
-    scores.accessibility * weights.accessibility +
-    scores.finishing * weights.finishing +
-    scores.price * weights.price +
-    scores.condo * weights.condo;
-
-  const totalWeight = Object.values(weights).reduce((sum, weight) => sum + weight, 0);
+  console.log('calculateFinalScore: scores recebidos:', scores);
+  console.log('calculateFinalScore: weights recebidos:', weights);
   
-  return totalWeightedScore / totalWeight;
+  // Calcular pontuação ponderada dinamicamente baseado nos critérios disponíveis
+  let totalWeightedScore = 0;
+  let totalWeight = 0;
+  
+  // Iterar pelos critérios que têm tanto score quanto peso
+  Object.keys(weights).forEach(criteriaKey => {
+    const score = scores[criteriaKey];
+    const weight = weights[criteriaKey];
+    
+    if (typeof score === 'number' && !isNaN(score) && typeof weight === 'number' && !isNaN(weight)) {
+      totalWeightedScore += score * weight;
+      totalWeight += weight;
+      console.log(`calculateFinalScore: ${criteriaKey} - score: ${score}, weight: ${weight}, contribuição: ${score * weight}`);
+    }
+  });
+  
+  console.log('calculateFinalScore: totalWeightedScore:', totalWeightedScore);
+  console.log('calculateFinalScore: totalWeight:', totalWeight);
+  
+  if (totalWeight === 0) {
+    console.warn('calculateFinalScore: Peso total é zero, retornando 5 como padrão');
+    return 5;
+  }
+  
+  const finalScore = totalWeightedScore / totalWeight;
+  console.log('calculateFinalScore: resultado final:', finalScore);
+  
+  return finalScore;
 };
 
 export const getScoreColor = (score: number): string => {

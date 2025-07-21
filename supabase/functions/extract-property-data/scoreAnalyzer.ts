@@ -92,7 +92,16 @@ JSON de resposta:`;
 
     // Tentar parsear o JSON da resposta
     try {
-      const scores = JSON.parse(content);
+      // Remover formatação markdown se presente
+      let cleanContent = content.trim();
+      if (cleanContent.startsWith('```json')) {
+        cleanContent = cleanContent.replace(/```json\n?/, '').replace(/\n?```$/, '');
+      } else if (cleanContent.startsWith('```')) {
+        cleanContent = cleanContent.replace(/```\n?/, '').replace(/\n?```$/, '');
+      }
+      
+      console.log('Conteúdo limpo para parsing:', cleanContent);
+      const scores = JSON.parse(cleanContent);
       console.log('Scores sugeridos:', scores);
       
       // Validar e limitar scores entre 0 e 10
