@@ -109,30 +109,39 @@ export const PropertyScores: React.FC<PropertyScoresProps> = ({
       
       {isEditing ? (
         <div className="space-y-3">
-          {Object.entries(CRITERIA_LABELS).map(([key, label]) => (
-            <div key={key} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-              <Label className="text-sm font-medium w-full sm:w-32 flex-shrink-0">{label}:</Label>
-              <div className="flex items-center space-x-2 flex-1">
-                <Input
-                  type="number"
-                  min="0"
-                  max="10"
-                  step="0.1"
-                  value={tempValues[key] || ''}
-                  onChange={(e) => handleInputChange(
-                    key as keyof Property['scores'], 
-                    e.target.value
-                  )}
-                  onBlur={() => handleInputBlur(key as keyof Property['scores'])}
-                  className="w-20 text-center"
-                  placeholder="0-10"
-                />
-                <span className="text-sm text-gray-500 flex-shrink-0">
-                  (peso: {weights[key as keyof CriteriaWeights]})
-                </span>
+          {Object.entries(CRITERIA_LABELS).map(([key, label]) => {
+            const weight = weights[key as keyof CriteriaWeights];
+            
+            // Só mostrar critérios que têm peso válido
+            if (typeof weight !== 'number' || isNaN(weight)) {
+              return null;
+            }
+            
+            return (
+              <div key={key} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                <Label className="text-sm font-medium w-full sm:w-32 flex-shrink-0">{label}:</Label>
+                <div className="flex items-center space-x-2 flex-1">
+                  <Input
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    value={tempValues[key] || ''}
+                    onChange={(e) => handleInputChange(
+                      key as keyof Property['scores'], 
+                      e.target.value
+                    )}
+                    onBlur={() => handleInputBlur(key as keyof Property['scores'])}
+                    className="w-20 text-center"
+                    placeholder="0-10"
+                  />
+                  <span className="text-sm text-gray-500 flex-shrink-0">
+                    (peso: {weight.toFixed(0)})
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          }).filter(Boolean)}
           <div className="flex flex-col sm:flex-row gap-2 pt-3 border-t">
             <Button onClick={onSave} size="sm" className="flex-1 sm:flex-none">
               Salvar
@@ -152,6 +161,12 @@ export const PropertyScores: React.FC<PropertyScoresProps> = ({
           {Object.entries(CRITERIA_LABELS).map(([key, label]) => {
             const score = property.scores[key as keyof Property['scores']];
             const weight = weights[key as keyof CriteriaWeights];
+            
+            // Só mostrar critérios que existem nas pontuações e nos pesos
+            if (typeof score !== 'number' || typeof weight !== 'number' || isNaN(score) || isNaN(weight)) {
+              return null;
+            }
+            
             const weightedScore = score * weight;
             
             return (
@@ -167,7 +182,7 @@ export const PropertyScores: React.FC<PropertyScoresProps> = ({
                 </div>
               </div>
             );
-          })}
+          }).filter(Boolean)}
         </div>
       )}
     </div>
