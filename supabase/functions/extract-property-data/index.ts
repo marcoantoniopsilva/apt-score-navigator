@@ -1,15 +1,16 @@
 
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from './corsHeaders.ts';
 import { scrapeWebsite } from './firecrawlService.ts';
 import { extractDataWithAI } from './openaiService.ts';
 import { extractImagesFromHTML, extractImagesFromMarkdown } from './imageExtractor.ts';
 import { processExtractedData } from './dataProcessor.ts';
 import { savePropertyToDatabase } from './databaseService.ts';
-import { validateUser } from './authService.ts';
 
-serve(async (req) => {
+console.log('=== FUNCTION STARTED ===');
+
+Deno.serve(async (req) => {
+  console.log('=== REQUEST RECEIVED ===', req.method);
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -46,17 +47,44 @@ serve(async (req) => {
       );
     }
 
-    // Validar usuário
+    // Validar usuário usando autenticação integrada
     console.log('Validando usuário...');
-    const user = await validateUser(authHeader, supabaseUrl, supabaseServiceRoleKey);
+    const supabaseClient = createClient(supabaseUrl, supabaseServiceRoleKey);
+    
+    if (!authHeader) {
+      console.error('Token de autorização ausente');
+      return new Response(
+        JSON.stringify({ error: 'Token de autorização é obrigatório' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token);
+    
+    if (authError || !user) {
+      console.error('Erro de autenticação:', authError);
+      return new Response(
+        JSON.stringify({ error: 'Usuário não autenticado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     console.log('Usuário validado:', user.id);
 
-    // Fazer scraping do site com tratamento de erro melhorado
+    // Fazer scraping do site com timeout
     console.log('Iniciando scraping...');
     let scrapedData;
     
     try {
-      scrapedData = await scrapeWebsite(url, firecrawlApiKey);
+      // Adicionar timeout de 30 segundos para scraping
+      const scrapingPromise = scrapeWebsite(url, firecrawlApiKey);
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout no scraping')), 30000);
+      });
+      
+      scrapedData = await Promise.race([scrapingPromise, timeoutPromise]);
+      
       console.log('Scraping concluído. Dados disponíveis:', {
         hasMarkdown: !!scrapedData.data?.markdown,
         hasContent: !!scrapedData.data?.content,
@@ -68,7 +96,6 @@ serve(async (req) => {
     } catch (scrapingError) {
       console.error('Erro no scraping:', scrapingError);
       
-      // Se o scraping falhar, ainda tentamos prosseguir com dados mínimos
       return new Response(
         JSON.stringify({ 
           error: `Erro ao extrair dados do site: ${scrapingError.message}. Verifique se a URL está acessível e tente novamente em alguns minutos.` 
@@ -96,7 +123,7 @@ serve(async (req) => {
       console.log(`Imagem ${index + 1}:`, img);
     });
 
-    // Extrair dados estruturados com IA
+    // Extrair dados estruturados com IA com timeout
     console.log('Extraindo dados com IA...');
     const contentForAI = scrapedData.data?.markdown || scrapedData.data?.content || 'Conteúdo não disponível';
     
@@ -109,25 +136,58 @@ serve(async (req) => {
       );
     }
     
-    const extractedText = await extractDataWithAI(contentForAI, openaiApiKey);
-    console.log('Dados extraídos pela IA:', extractedText.substring(0, 200) + '...');
+    let extractedText;
+    try {
+      // Timeout de 20 segundos para OpenAI
+      const aiPromise = extractDataWithAI(contentForAI, openaiApiKey);
+      const aiTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout na extração com IA')), 20000);
+      });
+      
+      extractedText = await Promise.race([aiPromise, aiTimeoutPromise]);
+      console.log('Dados extraídos pela IA:', extractedText.substring(0, 200) + '...');
+    } catch (aiError) {
+      console.error('Erro na extração com IA:', aiError);
+      return new Response(
+        JSON.stringify({ 
+          error: `Erro na análise com IA: ${aiError.message}` 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Processar e limpar os dados extraídos
     console.log('Processando dados extraídos...');
     const cleanedData = processExtractedData(extractedText);
     console.log('Dados processados:', cleanedData);
 
-    // Salvar no banco de dados
+    // Salvar no banco de dados com timeout
     console.log('Salvando no banco de dados...');
-    const savedProperty = await savePropertyToDatabase(
-      cleanedData,
-      extractedImages,
-      url,
-      user.id,
-      supabaseUrl,
-      supabaseServiceRoleKey
-    );
-    console.log('Propriedade salva com ID:', savedProperty.id);
+    let savedProperty;
+    try {
+      const dbPromise = savePropertyToDatabase(
+        cleanedData,
+        extractedImages,
+        url,
+        user.id,
+        supabaseUrl,
+        supabaseServiceRoleKey
+      );
+      const dbTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout no salvamento')), 10000);
+      });
+      
+      savedProperty = await Promise.race([dbPromise, dbTimeoutPromise]);
+      console.log('Propriedade salva com ID:', savedProperty.id);
+    } catch (dbError) {
+      console.error('Erro no salvamento:', dbError);
+      return new Response(
+        JSON.stringify({ 
+          error: `Erro ao salvar no banco: ${dbError.message}` 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const responseData = {
       success: true, 
