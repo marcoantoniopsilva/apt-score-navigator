@@ -22,8 +22,12 @@ export const UrlExtractionForm: React.FC<UrlExtractionFormProps> = ({
   const [extractedData, setExtractedData] = useState<any>(null);
 
   const handleExtractFromUrl = async () => {
+    console.log('UrlExtractionForm: Botão clicado, iniciando extração');
+    console.log('UrlExtractionForm: URL:', url);
+    
     setIsExtracting(true);
     try {
+      console.log('UrlExtractionForm: Chamando extractPropertyFromUrl...');
       const data = await extractPropertyFromUrl(url);
       if (data) {
         setExtractedData(data);
