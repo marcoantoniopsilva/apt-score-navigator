@@ -2,3 +2,6 @@ project_id = "eepkixxqvelppxzfwoin"
 
 [functions.extract-property-data]
 verify_jwt = false
+
+[functions.test-extract]
+verify_jwt = false

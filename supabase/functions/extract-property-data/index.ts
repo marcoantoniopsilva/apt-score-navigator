@@ -1,4 +1,6 @@
 
+import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { corsHeaders } from './corsHeaders.ts';
 import { scrapeWebsite } from './firecrawlService.ts';
@@ -9,8 +11,8 @@ import { savePropertyToDatabase } from './databaseService.ts';
 
 console.log('=== FUNCTION STARTED ===');
 
-Deno.serve(async (req) => {
-  console.log('=== REQUEST RECEIVED ===', req.method);
+serve(async (req) => {
+  console.log('=== REQUEST RECEIVED ===', req.method, new Date().toISOString());
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
