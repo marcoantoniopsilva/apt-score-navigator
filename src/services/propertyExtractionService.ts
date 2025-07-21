@@ -18,9 +18,22 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
     console.log('Chamando edge function para extração...');
     
     // Obter o token de sessão atual
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    console.log('Verificando sessão:', {
+      hasSession: !!session,
+      sessionError: sessionError,
+      userId: session?.user?.id,
+      token: session?.access_token ? 'Present' : 'Missing'
+    });
+    
+    if (sessionError) {
+      console.error('Erro ao obter sessão:', sessionError);
+      throw new Error(`Erro de sessão: ${sessionError.message}`);
+    }
     
     if (!session) {
+      console.error('Nenhuma sessão encontrada');
       throw new Error('Usuário não autenticado. Faça login para extrair propriedades.');
     }
 
