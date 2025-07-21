@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 export const usePropertyActions = (
   properties: Property[],
   setProperties: React.Dispatch<React.SetStateAction<Property[]>>,
-  weights: CriteriaWeights,
+  criteriaWeights: CriteriaWeights,
   loadProperties: () => Promise<void>
 ) => {
   const { toast } = useToast();
@@ -23,7 +23,7 @@ export const usePropertyActions = (
       console.log('PropertyActions: Adicionando nova propriedade:', property);
       const propertyWithScore = {
         ...property,
-        finalScore: calculateFinalScore(property.scores, weights)
+        finalScore: calculateFinalScore(property.scores, criteriaWeights)
       };
       
       console.log('PropertyActions: Salvando no banco de dados...');
@@ -58,7 +58,7 @@ export const usePropertyActions = (
       
       const propertyWithScore = {
         ...updatedProperty,
-        finalScore: calculateFinalScore(updatedProperty.scores, weights)
+        finalScore: calculateFinalScore(updatedProperty.scores, criteriaWeights)
       };
       
       console.log('PropertyActions: Propriedade com pontuação recalculada:', propertyWithScore);
