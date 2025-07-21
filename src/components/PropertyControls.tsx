@@ -6,9 +6,9 @@ import { RankingControls } from '@/components/RankingControls';
 interface PropertyControlsProps {
   weights: CriteriaWeights;
   onWeightsChange: (weights: CriteriaWeights) => void;
-  sortBy: 'finalScore' | keyof Property['scores'];
+  sortBy: string;
   sortOrder: 'asc' | 'desc';
-  onSortByChange: (sortBy: 'finalScore' | keyof Property['scores']) => void;
+  onSortByChange: (sortBy: string) => void;
   onSortOrderChange: (sortOrder: 'asc' | 'desc') => void;
   propertiesCount: number;
 }

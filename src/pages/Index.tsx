@@ -16,6 +16,7 @@ import { usePropertySorting } from '@/hooks/usePropertySorting';
 import { usePropertyComparison } from '@/hooks/usePropertyComparison';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { useCriteria } from '@/hooks/useCriteria';
 import { SubscriptionStatus } from '@/components/SubscriptionStatus';
 import { UpgradeModal } from '@/components/UpgradeModal';
 import { UserProfileType } from '@/types/onboarding';
@@ -23,7 +24,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const Index = () => {
-  const [weights, setWeights] = useState<CriteriaWeights>(DEFAULT_WEIGHTS);
   const [comparisonMode, setComparisonMode] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
@@ -31,25 +31,17 @@ const Index = () => {
   const { sortBy, sortOrder, setSortBy, setSortOrder } = usePropertySorting();
   const { isPro, loading: subscriptionLoading } = useSubscription();
   
+  // Hook de critérios dinâmicos (substitui o sistema de pesos estático)
+  const { criteriaWeights, updateCriteriaWeight } = useCriteria();
+  
   // Hook do onboarding
   const {
     hasCompletedOnboarding,
     showOnboarding,
     setShowOnboarding,
     saveOnboardingData,
-    getUserCriteriaWeights,
     isLoading: onboardingLoading
   } = useOnboarding();
-
-  // Inicializar pesos com os do usuário se disponíveis
-  useEffect(() => {
-    if (hasCompletedOnboarding && !onboardingLoading) {
-      const userWeights = getUserCriteriaWeights();
-      if (userWeights) {
-        setWeights(userWeights);
-      }
-    }
-  }, [hasCompletedOnboarding, onboardingLoading, getUserCriteriaWeights]);
 
   // Mostrar onboarding para usuários autenticados que não completaram
   useEffect(() => {
@@ -87,11 +79,7 @@ const Index = () => {
       
       if (result.success) {
         setShowOnboarding(false);
-        // Aplica os novos pesos imediatamente
-        const userWeights = getUserCriteriaWeights();
-        if (userWeights) {
-          setWeights(userWeights);
-        }
+        // Os critérios serão atualizados automaticamente pelo useCriteria hook
       }
     }
   };
@@ -121,7 +109,7 @@ const Index = () => {
     handleAddProperty,
     handleUpdateProperty,
     handleDeleteProperty
-  } = usePropertyActions(properties, setProperties, weights, loadProperties);
+  } = usePropertyActions(properties, setProperties, criteriaWeights, loadProperties);
 
   const {
     selectedProperties,
@@ -142,14 +130,14 @@ const Index = () => {
     
     console.log('Index: Recalculando pontuações com novos pesos...');
     return properties.map(property => {
-      const newFinalScore = calculateFinalScore(property.scores, weights);
+      const newFinalScore = calculateFinalScore(property.scores, criteriaWeights);
       console.log(`Index: Propriedade ${property.id} - nova pontuação: ${newFinalScore}`);
       return {
         ...property,
         finalScore: newFinalScore
       };
     });
-  }, [properties, weights]);
+  }, [properties, criteriaWeights]);
 
   // Atualizar o estado apenas quando necessário
   useEffect(() => {
@@ -184,8 +172,13 @@ const Index = () => {
         </div>
         
         <PropertyControls
-          weights={weights}
-          onWeightsChange={setWeights}
+          weights={criteriaWeights}
+          onWeightsChange={(newWeights) => {
+            // Atualiza cada critério individualmente
+            Object.entries(newWeights).forEach(([key, weight]) => {
+              updateCriteriaWeight(key, weight);
+            });
+          }}
           sortBy={sortBy}
           sortOrder={sortOrder}
           onSortByChange={setSortBy}
@@ -195,7 +188,7 @@ const Index = () => {
 
         <PropertyList
           properties={properties}
-          weights={weights}
+          weights={criteriaWeights}
           isLoading={isLoading}
           onUpdate={handleUpdateProperty}
           onDelete={handleDeleteProperty}
@@ -218,8 +211,13 @@ const Index = () => {
         />
 
         <MobileWeightsEditor
-          weights={weights}
-          onWeightsChange={setWeights}
+          weights={criteriaWeights}
+          onWeightsChange={(newWeights) => {
+            // Atualiza cada critério individualmente
+            Object.entries(newWeights).forEach(([key, weight]) => {
+              updateCriteriaWeight(key, weight);
+            });
+          }}
         />
       </div>
 

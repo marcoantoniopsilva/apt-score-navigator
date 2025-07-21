@@ -21,24 +21,23 @@ export interface Property {
 }
 
 export interface PropertyScores {
-  location: number;
-  internalSpace: number;
-  furniture: number;
-  accessibility: number;
-  finishing: number;
-  price: number;
-  condo: number;
+  [key: string]: number; // Critérios dinâmicos baseados na seleção do usuário
 }
 
 export interface CriteriaWeights {
-  location: number;
-  internalSpace: number;
-  furniture: number;
-  accessibility: number;
-  finishing: number;
-  price: number;
-  condo: number;
+  [key: string]: number; // Pesos dinâmicos baseados na seleção do usuário
 }
+
+// Critérios padrão para usuários sem onboarding
+export const DEFAULT_CRITERIA_KEYS = [
+  'location',
+  'internalSpace', 
+  'furniture',
+  'accessibility',
+  'finishing',
+  'price',
+  'condo'
+] as const;
 
 export const DEFAULT_WEIGHTS: CriteriaWeights = {
   location: 3,

@@ -1,15 +1,16 @@
 
 import React from 'react';
-import { Property, CRITERIA_LABELS } from '@/types/property';
+import { Property } from '@/types/property';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { BarChart3, ArrowUpDown } from 'lucide-react';
+import { useCriteria } from '@/hooks/useCriteria';
 
 interface RankingControlsProps {
-  sortBy: 'finalScore' | keyof Property['scores'];
+  sortBy: string;
   sortOrder: 'asc' | 'desc';
-  onSortByChange: (value: 'finalScore' | keyof Property['scores']) => void;
+  onSortByChange: (value: string) => void;
   onSortOrderChange: (value: 'asc' | 'desc') => void;
   propertiesCount: number;
 }
@@ -21,12 +22,14 @@ export const RankingControls: React.FC<RankingControlsProps> = ({
   onSortOrderChange,
   propertiesCount
 }) => {
+  const { activeCriteria } = useCriteria();
+  
   const getSortOptions = () => {
     const options = [
       { value: 'finalScore', label: 'Pontuação Final' },
-      ...Object.entries(CRITERIA_LABELS).map(([key, label]) => ({
-        value: key,
-        label: label
+      ...activeCriteria.map(criterion => ({
+        value: criterion.key,
+        label: criterion.label
       }))
     ];
     return options;
@@ -80,7 +83,7 @@ export const RankingControls: React.FC<RankingControlsProps> = ({
           <p className="text-xs text-gray-600">
             {sortBy === 'finalScore' 
               ? 'Ranking baseado na pontuação ponderada de todos os critérios.'
-              : `Ranking baseado apenas no critério: ${CRITERIA_LABELS[sortBy as keyof typeof CRITERIA_LABELS]}.`
+              : `Ranking baseado apenas no critério: ${activeCriteria.find(c => c.key === sortBy)?.label || sortBy}.`
             }
           </p>
         </div>
