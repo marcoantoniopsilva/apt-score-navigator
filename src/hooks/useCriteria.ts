@@ -37,7 +37,15 @@ export const useCriteria = () => {
 
   // Atualiza critérios ativos baseado no onboarding do usuário
   useEffect(() => {
+    console.log('useCriteria: Atualizando critérios...', {
+      hasCompletedOnboarding,
+      userPreferences: userPreferences.length,
+      preferences: userPreferences
+    });
+
     if (hasCompletedOnboarding && userPreferences.length > 0) {
+      console.log('useCriteria: Usando critérios personalizados do usuário');
+      
       // Usuário completou onboarding - usar seus critérios
       const userCriteria = userPreferences.map(pref => ({
         key: pref.criterio_nome,
@@ -45,6 +53,7 @@ export const useCriteria = () => {
         weight: pref.peso
       }));
 
+      console.log('useCriteria: Critérios personalizados:', userCriteria);
       setActiveCriteria(userCriteria);
 
       // Criar objeto de pesos
@@ -52,8 +61,12 @@ export const useCriteria = () => {
       userPreferences.forEach(pref => {
         weights[pref.criterio_nome] = Math.max(1, Math.round(pref.peso / 20)); // Converte escala 0-100 para 1-5
       });
+      
+      console.log('useCriteria: Pesos calculados:', weights);
       setCriteriaWeights(weights);
     } else {
+      console.log('useCriteria: Usando critérios padrão');
+      
       // Usuário não completou onboarding - usar critérios padrão
       const defaultCriteria = DEFAULT_CRITERIA_KEYS.map(key => ({
         key,
@@ -61,6 +74,7 @@ export const useCriteria = () => {
         weight: DEFAULT_WEIGHTS[key] || 3
       }));
 
+      console.log('useCriteria: Critérios padrão:', defaultCriteria);
       setActiveCriteria(defaultCriteria);
       setCriteriaWeights(DEFAULT_WEIGHTS);
     }

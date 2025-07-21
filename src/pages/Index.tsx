@@ -32,7 +32,7 @@ const Index = () => {
   const { isPro, loading: subscriptionLoading } = useSubscription();
   
   // Hook de critérios dinâmicos (substitui o sistema de pesos estático)
-  const { criteriaWeights, updateCriteriaWeight } = useCriteria();
+  const { criteriaWeights, updateCriteriaWeight, activeCriteria, getWeightsObject } = useCriteria();
   
   // Hook do onboarding
   const {
@@ -216,6 +216,12 @@ const Index = () => {
             // Atualiza cada critério individualmente
             Object.entries(newWeights).forEach(([key, weight]) => {
               updateCriteriaWeight(key, weight);
+            });
+          }}
+          onReset={() => {
+            // Reset para valores padrão dos critérios ativos
+            activeCriteria.forEach(criterion => {
+              updateCriteriaWeight(criterion.key, 3);
             });
           }}
         />
