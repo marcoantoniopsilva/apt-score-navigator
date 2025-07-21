@@ -44,6 +44,8 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
       }
     });
 
+    console.log('Resposta da edge function:', { data, error });
+
     if (error) {
       console.error('Erro na edge function:', error);
       throw new Error(`Erro ao extrair dados: ${error.message}`);
