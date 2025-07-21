@@ -62,10 +62,14 @@ export const useCriteria = () => {
         const profileWeights = PERFIL_PESOS_SUGERIDOS[userProfile.profile_type];
         const weights: CriteriaWeights = {};
         
+        // Calcular pesos relativos preservando a hierarquia
+        const maxProfileWeight = Math.max(...Object.values(profileWeights || {}));
+        
         userPreferences.forEach(pref => {
           // Usar peso do perfil se disponível, senão usar peso salvo
           const profileWeight = profileWeights?.[pref.criterio_nome] || pref.peso;
-          weights[pref.criterio_nome] = Math.max(1, Math.round(profileWeight / 20)); // Converte escala 0-100 para 1-5
+          // Distribui pesos de 1 a 5 baseado na proporção relativa
+          weights[pref.criterio_nome] = Math.max(1, Math.round((profileWeight / maxProfileWeight) * 5)); 
         });
         
         console.log('useCriteria: Pesos baseados no perfil:', weights);
@@ -87,8 +91,11 @@ export const useCriteria = () => {
 
           // Criar objeto de pesos
           const weights: CriteriaWeights = {};
+          const maxWeight = Math.max(...Object.values(profileWeights));
+          
           Object.entries(profileWeights).forEach(([key, weight]) => {
-            weights[key] = Math.max(1, Math.round(weight / 20)); // Converte escala 0-100 para 1-5
+            // Distribui pesos de 1 a 5 baseado na proporção relativa
+            weights[key] = Math.max(1, Math.round((weight / maxWeight) * 5));
           });
           
           console.log('useCriteria: Pesos do perfil calculados:', weights);
