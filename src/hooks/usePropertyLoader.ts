@@ -59,14 +59,14 @@ export const usePropertyLoader = () => {
           images: prop.images || [],
           sourceUrl: prop.source_url || undefined,
           locationSummary: prop.location_summary || undefined,
-          scores: {
-            location: Number(prop.location_score),
-            internalSpace: Number(prop.internal_space_score),
-            furniture: Number(prop.furniture_score),
-            accessibility: Number(prop.accessibility_score),
-            finishing: Number(prop.finishing_score),
-            price: Number(prop.price_score),
-            condo: Number(prop.condo_score),
+          scores: (prop.scores as any) || {
+            location: 5,
+            internalSpace: 5,
+            furniture: 5,
+            accessibility: 5,
+            finishing: 5,
+            price: 5,
+            condo: 5,
           },
           finalScore: Number(prop.final_score)
         };

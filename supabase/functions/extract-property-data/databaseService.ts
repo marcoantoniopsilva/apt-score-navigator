@@ -40,13 +40,16 @@ export async function savePropertyToDatabase(
       total_monthly_cost: totalMonthlyCost,
       source_url: url,
       images: extractedImages,
-      location_score: 5.0,
-      internal_space_score: 5.0,
-      furniture_score: 5.0,
-      accessibility_score: 5.0,
-      finishing_score: 5.0,
-      price_score: 5.0,
-      condo_score: 5.0,
+      scores: {
+        // Scores padrão - serão definidos pelo usuário baseado em seus critérios
+        location: 5,
+        internalSpace: 5,
+        furniture: 5,
+        accessibility: 5,
+        finishing: 5,
+        price: 5,
+        condo: 5
+      },
       final_score: 5.0
     })
     .select()
