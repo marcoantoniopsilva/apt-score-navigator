@@ -230,6 +230,69 @@ export type Database = {
         }
         Relationships: []
       }
+      user_criteria_preferences: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          criterio_nome: string
+          id: string
+          peso: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          criterio_nome: string
+          id?: string
+          peso?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          criterio_nome?: string
+          id?: string
+          peso?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          created_at: string
+          id: string
+          objetivo_principal: string
+          profile_type: string
+          situacao_moradia: string
+          updated_at: string
+          user_id: string
+          valor_principal: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          objetivo_principal: string
+          profile_type: string
+          situacao_moradia: string
+          updated_at?: string
+          user_id: string
+          valor_principal: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          objetivo_principal?: string
+          profile_type?: string
+          situacao_moradia?: string
+          updated_at?: string
+          user_id?: string
+          valor_principal?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -8,14 +8,18 @@ import AppHeader from '@/components/AppHeader';
 import { AppExplanation } from '@/components/AppExplanation';
 import { MobileWeightsEditor } from '@/components/MobileWeightsEditor';
 import { PropertyComparison } from '@/components/PropertyComparison';
+import { OnboardingFlow } from '@/components/OnboardingFlow';
 import { calculateFinalScore } from '@/utils/scoreCalculator';
 import { usePropertyLoader } from '@/hooks/usePropertyLoader';
 import { usePropertyActions } from '@/hooks/usePropertyActions';
 import { usePropertySorting } from '@/hooks/usePropertySorting';
 import { usePropertyComparison } from '@/hooks/usePropertyComparison';
 import { useSubscription } from '@/hooks/useSubscription';
+import { useOnboarding } from '@/hooks/useOnboarding';
 import { SubscriptionStatus } from '@/components/SubscriptionStatus';
 import { UpgradeModal } from '@/components/UpgradeModal';
+import { UserProfileType } from '@/types/onboarding';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const Index = () => {
@@ -26,6 +30,71 @@ const Index = () => {
   const { properties, setProperties, isLoading, loadProperties } = usePropertyLoader();
   const { sortBy, sortOrder, setSortBy, setSortOrder } = usePropertySorting();
   const { isPro, loading: subscriptionLoading } = useSubscription();
+  
+  // Hook do onboarding
+  const {
+    hasCompletedOnboarding,
+    showOnboarding,
+    setShowOnboarding,
+    saveOnboardingData,
+    getUserCriteriaWeights,
+    isLoading: onboardingLoading
+  } = useOnboarding();
+
+  // Inicializar pesos com os do usuário se disponíveis
+  useEffect(() => {
+    if (hasCompletedOnboarding && !onboardingLoading) {
+      const userWeights = getUserCriteriaWeights();
+      if (userWeights) {
+        setWeights(userWeights);
+      }
+    }
+  }, [hasCompletedOnboarding, onboardingLoading, getUserCriteriaWeights]);
+
+  // Mostrar onboarding para usuários autenticados que não completaram
+  useEffect(() => {
+    const checkShouldShowOnboarding = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user && !hasCompletedOnboarding && !onboardingLoading) {
+        // Aguarda um pouco para não mostrar imediatamente ao fazer login
+        setTimeout(() => {
+          setShowOnboarding(true);
+        }, 1000);
+      }
+    };
+
+    checkShouldShowOnboarding();
+  }, [hasCompletedOnboarding, onboardingLoading, setShowOnboarding]);
+
+  // Função para completar onboarding
+  const handleOnboardingComplete = async (
+    profile: UserProfileType,
+    criteria: string[],
+    weights: Record<string, number>
+  ) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (session?.user) {
+      const result = await saveOnboardingData(
+        session.user.id,
+        profile,
+        'objetivo_principal', // Você pode ajustar isso baseado no profile
+        'situacao_moradia',   // Você pode ajustar isso baseado no profile  
+        'valor_principal',    // Você pode ajustar isso baseado no profile
+        weights
+      );
+      
+      if (result.success) {
+        setShowOnboarding(false);
+        // Aplica os novos pesos imediatamente
+        const userWeights = getUserCriteriaWeights();
+        if (userWeights) {
+          setWeights(userWeights);
+        }
+      }
+    }
+  };
   
   // Verificar limites do plano gratuito
   const handleAddPropertyWithLimits = () => {
@@ -173,6 +242,13 @@ const Index = () => {
         open={showUpgradeModal} 
         onOpenChange={setShowUpgradeModal} 
       />
+
+      {showOnboarding && (
+        <OnboardingFlow
+          onComplete={handleOnboardingComplete}
+          onClose={() => setShowOnboarding(false)}
+        />
+      )}
     </div>
   );
 };
