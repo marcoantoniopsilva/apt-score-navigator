@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Property } from '@/types/property';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -9,6 +9,7 @@ import { PropertyBasicForm } from './forms/PropertyBasicForm';
 import { PropertyDetailsForm } from './forms/PropertyDetailsForm';
 import { PropertyFinancialForm } from './forms/PropertyFinancialForm';
 import { PropertyScoresForm } from './forms/PropertyScoresForm';
+import { useCriteria } from '@/hooks/useCriteria';
 
 interface AddPropertyFormProps {
   onSubmit: (property: Property) => void;
@@ -18,6 +19,8 @@ interface AddPropertyFormProps {
 export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCancel }) => {
   const [url, setUrl] = useState('');
   const [extractedData, setExtractedData] = useState<any>(null);
+  const { activeCriteria, getCriteriaLabel } = useCriteria();
+  const [suggestedScores, setSuggestedScores] = useState<Record<string, number>>({});
   
   const [formData, setFormData] = useState({
     title: '',
@@ -34,15 +37,19 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
     otherFees: 0
   });
 
-  const [scores, setScores] = useState({
-    location: 5,
-    internalSpace: 5,
-    furniture: 5,
-    accessibility: 5,
-    finishing: 5,
-    price: 5,
-    condo: 5,
-  });
+  // Inicializar scores baseado nos critérios dinâmicos
+  const [scores, setScores] = useState<Record<string, number>>({});
+
+  // Atualizar scores quando os critérios mudarem
+  useEffect(() => {
+    if (activeCriteria.length > 0) {
+      const initialScores: Record<string, number> = {};
+      activeCriteria.forEach(criterio => {
+        initialScores[criterio.key] = 5; // Score padrão
+      });
+      setScores(initialScores);
+    }
+  }, [activeCriteria]);
 
   const handleDataExtracted = (data: any) => {
     setExtractedData(data);
@@ -60,15 +67,16 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
       fireInsurance: data.fireInsurance || 0,
       otherFees: data.otherFees || 0
     });
-    setScores({
-      location: data.scores?.location || 5,
-      internalSpace: data.scores?.internalSpace || 5,
-      furniture: data.scores?.furniture || 5,
-      accessibility: data.scores?.accessibility || 5,
-      finishing: data.scores?.finishing || 5,
-      price: data.scores?.price || 5,
-      condo: data.scores?.condo || 5,
-    });
+    
+    // Atualizar scores baseado nos dados extraídos ou usar scores sugeridos
+    if (data.scores && typeof data.scores === 'object') {
+      const newScores: Record<string, number> = {};
+      activeCriteria.forEach(criterio => {
+        newScores[criterio.key] = data.scores[criterio.key] || 5;
+      });
+      setScores(newScores);
+      setSuggestedScores(data.scores); // Guardar as sugestões
+    }
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,11 +91,11 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
     const { name, value } = e.target;
     console.log(`AddPropertyForm: Score change - ${name}: "${value}"`);
     
-    // Permitir valores vazios durante a digitação
+    // Permitir valores vazios durante a digitação, mas manter como 0
     if (value === '') {
       setScores(prev => ({
         ...prev,
-        [name]: ''
+        [name]: 0
       }));
       return;
     }
@@ -180,6 +188,9 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
             <PropertyScoresForm
               scores={scores}
               onScoreChange={handleScoreChange}
+              activeCriteria={activeCriteria}
+              suggestedScores={suggestedScores}
+              getCriteriaLabel={getCriteriaLabel}
             />
 
             {/* Action Buttons */}

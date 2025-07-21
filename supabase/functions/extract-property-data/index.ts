@@ -8,6 +8,7 @@ import { extractDataWithAI } from './openaiService.ts';
 import { extractImagesFromHTML, extractImagesFromMarkdown } from './imageExtractor.ts';
 import { processExtractedData } from './dataProcessor.ts';
 import { savePropertyToDatabase } from './databaseService.ts';
+import { generateScoreSuggestions } from './scoreAnalyzer.ts';
 
 console.log('=== FUNCTION STARTED ===');
 
@@ -163,6 +164,40 @@ serve(async (req) => {
     const cleanedData = processExtractedData(extractedText);
     console.log('Dados processados:', cleanedData);
 
+    // Buscar perfil do usuário para gerar sugestões de scores
+    console.log('Buscando perfil do usuário para análise...');
+    let userProfile = null;
+    let suggestedScores = {};
+    
+    try {
+      const { data: profile } = await supabaseClient
+        .from('user_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+      
+      if (profile) {
+        userProfile = profile;
+        console.log('Perfil encontrado:', profile.profile_type);
+        
+        // Gerar sugestões de scores baseado no perfil
+        console.log('Gerando sugestões de scores...');
+        suggestedScores = await generateScoreSuggestions(
+          contentForAI,
+          cleanedData,
+          profile,
+          openaiApiKey
+        );
+        
+        console.log('Sugestões geradas:', suggestedScores);
+      } else {
+        console.log('Perfil do usuário não encontrado, usando scores padrão');
+      }
+    } catch (profileError) {
+      console.error('Erro ao buscar perfil:', profileError);
+      // Continuar sem sugestões se não conseguir buscar o perfil
+    }
+
     // Salvar no banco de dados com timeout
     console.log('Salvando no banco de dados...');
     let savedProperty;
@@ -196,10 +231,11 @@ serve(async (req) => {
       data: {
         ...cleanedData,
         parkingSpaces: cleanedData.parking_spaces,
-        images: extractedImages
+        images: extractedImages,
+        scores: suggestedScores // Incluir as sugestões de scores na resposta
       },
       property_id: savedProperty.id,
-      message: `Propriedade extraída e salva com sucesso! ${extractedImages.length > 0 ? `${extractedImages.length} imagem(ns) encontrada(s).` : 'Nenhuma imagem encontrada.'}`
+      message: `Propriedade extraída e salva com sucesso! ${extractedImages.length > 0 ? `${extractedImages.length} imagem(ns) encontrada(s).` : 'Nenhuma imagem encontrada.'}${Object.keys(suggestedScores).length > 0 ? ' Sugestões de avaliação foram geradas baseadas no seu perfil.' : ''}`
     };
 
     console.log('=== RESPOSTA FINAL ===');

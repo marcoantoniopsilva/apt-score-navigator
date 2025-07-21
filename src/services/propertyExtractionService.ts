@@ -37,24 +37,6 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
       throw new Error('Usuário não autenticado. Faça login para extrair propriedades.');
     }
 
-    // Teste inicial - chamando função de teste
-    console.log('TESTE: Chamando função de teste primeiro...');
-    const testResult = await supabase.functions.invoke('test-extract', {
-      body: { url, test: true },
-      headers: {
-        Authorization: `Bearer ${session.access_token}`
-      }
-    });
-    
-    console.log('Resultado do teste:', testResult);
-    
-    if (testResult.error) {
-      console.error('Erro na função de teste:', testResult.error);
-      throw new Error(`Erro na função de teste: ${testResult.error.message}`);
-    }
-    
-    console.log('Função de teste funcionou, agora chamando extract-property-data...');
-    
     const { data, error } = await supabase.functions.invoke('extract-property-data', {
       body: { url },
       headers: {
