@@ -18,12 +18,22 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
     console.log('propertyExtractionService: Iniciando processo de extração');
     console.log('propertyExtractionService: Chamando edge function para extração...');
     
-    // Obter o token de sessão atual
+    // Obter o token de sessão atual com timeout
     console.log('propertyExtractionService: Buscando sessão do usuário...');
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    const sessionPromise = supabase.auth.getSession();
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Timeout ao buscar sessão')), 5000);
+    });
+    
+    const { data: { session }, error: sessionError } = await Promise.race([
+      sessionPromise,
+      timeoutPromise
+    ]) as any;
+    
     console.log('propertyExtractionService: Sessão obtida');
     
-    console.log('Verificando sessão:', {
+    console.log('propertyExtractionService: Verificando sessão:', {
       hasSession: !!session,
       sessionError: sessionError,
       userId: session?.user?.id,
@@ -31,12 +41,12 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
     });
     
     if (sessionError) {
-      console.error('Erro ao obter sessão:', sessionError);
+      console.error('propertyExtractionService: Erro ao obter sessão:', sessionError);
       throw new Error(`Erro de sessão: ${sessionError.message}`);
     }
     
     if (!session) {
-      console.error('Nenhuma sessão encontrada');
+      console.error('propertyExtractionService: Nenhuma sessão encontrada');
       throw new Error('Usuário não autenticado. Faça login para extrair propriedades.');
     }
 
