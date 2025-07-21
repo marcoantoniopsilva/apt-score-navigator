@@ -1,9 +1,26 @@
 
 import { PropertyScores, CriteriaWeights } from '@/types/property';
+import { hasLegacyCriteria, migrateLegacyScores, areScoresCompatible } from './criteriaCompatibility';
 
 export const calculateFinalScore = (scores: PropertyScores, weights: CriteriaWeights): number => {
   console.log('calculateFinalScore: scores recebidos:', scores);
   console.log('calculateFinalScore: weights recebidos:', weights);
+  
+  let workingScores = scores;
+  
+  // Verificar se os scores são compatíveis com os weights
+  if (!areScoresCompatible(scores, weights)) {
+    console.log('calculateFinalScore: Scores incompatíveis detectados');
+    
+    // Se tem critérios legados, tentar migrar
+    if (hasLegacyCriteria(scores)) {
+      console.log('calculateFinalScore: Migrando critérios legados');
+      workingScores = migrateLegacyScores(scores, weights);
+    } else {
+      console.warn('calculateFinalScore: Critérios incompatíveis e não-legados, usando valor padrão');
+      return 5;
+    }
+  }
   
   // Calcular pontuação ponderada dinamicamente baseado nos critérios disponíveis
   let totalWeightedScore = 0;
@@ -11,7 +28,7 @@ export const calculateFinalScore = (scores: PropertyScores, weights: CriteriaWei
   
   // Iterar pelos critérios que têm tanto score quanto peso
   Object.keys(weights).forEach(criteriaKey => {
-    const score = scores[criteriaKey];
+    const score = workingScores[criteriaKey];
     const weight = weights[criteriaKey];
     
     if (typeof score === 'number' && !isNaN(score) && typeof weight === 'number' && !isNaN(weight)) {

@@ -1,11 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
-import { Property, CriteriaWeights, CRITERIA_LABELS } from '@/types/property';
+import { Property, CriteriaWeights } from '@/types/property';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Star } from 'lucide-react';
+import { hasLegacyCriteria, migrateLegacyScores, areScoresCompatible } from '@/utils/criteriaCompatibility';
+import { useCriteria } from '@/hooks/useCriteria';
 
 interface PropertyScoresProps {
   property: Property;
@@ -26,20 +28,37 @@ export const PropertyScores: React.FC<PropertyScoresProps> = ({
   onSave,
   onCancel
 }) => {
+  const { getCriteriaLabel } = useCriteria();
+  
   // Estado local para valores temporários dos inputs (como strings para permitir edição)
   const [tempValues, setTempValues] = useState<Record<string, string>>({});
+  
+  // Determinar scores compatíveis - migrar se necessário
+  const [workingScores, setWorkingScores] = useState<Property['scores']>(property.scores);
+  
+  useEffect(() => {
+    let scoresToUse = property.scores;
+    
+    // Verificar se precisa migrar scores antigos
+    if (!areScoresCompatible(property.scores, weights) && hasLegacyCriteria(property.scores)) {
+      console.log('PropertyScores: Migrando scores antigos para critérios do perfil');
+      scoresToUse = migrateLegacyScores(property.scores, weights);
+    }
+    
+    setWorkingScores(scoresToUse);
+  }, [property.scores, weights]);
 
   // Resetar valores temporários quando começar a editar
   useEffect(() => {
     if (isEditing) {
       const initialTempValues: Record<string, string> = {};
-      Object.entries(editedProperty.scores).forEach(([key, value]) => {
-        initialTempValues[key] = value.toString();
+      Object.entries(workingScores).forEach(([key, value]) => {
+        initialTempValues[key] = value?.toString() || '0';
       });
       setTempValues(initialTempValues);
       console.log('PropertyScores: Valores temporários inicializados:', initialTempValues);
     }
-  }, [isEditing, editedProperty.scores]);
+  }, [isEditing, workingScores]);
 
   const getScoreColor = (score: number) => {
     if (score >= 8) return 'text-green-600 bg-green-50';
@@ -109,13 +128,13 @@ export const PropertyScores: React.FC<PropertyScoresProps> = ({
       
       {isEditing ? (
         <div className="space-y-3">
-          {Object.entries(CRITERIA_LABELS).map(([key, label]) => {
-            const weight = weights[key as keyof CriteriaWeights];
-            
+          {Object.entries(weights).map(([key, weight]) => {
             // Só mostrar critérios que têm peso válido
             if (typeof weight !== 'number' || isNaN(weight)) {
               return null;
             }
+            
+            const label = getCriteriaLabel(key);
             
             return (
               <div key={key} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
@@ -158,9 +177,9 @@ export const PropertyScores: React.FC<PropertyScoresProps> = ({
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-          {Object.entries(CRITERIA_LABELS).map(([key, label]) => {
-            const score = property.scores[key as keyof Property['scores']];
-            const weight = weights[key as keyof CriteriaWeights];
+          {Object.entries(weights).map(([key, weight]) => {
+            const score = workingScores[key as keyof Property['scores']];
+            const label = getCriteriaLabel(key);
             
             // Só mostrar critérios que existem nas pontuações e nos pesos
             if (typeof score !== 'number' || typeof weight !== 'number' || isNaN(score) || isNaN(weight)) {
