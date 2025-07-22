@@ -74,8 +74,15 @@ export const usePropertyLoader = () => {
         return converted;
       });
 
-      console.log('PropertyLoader: Propriedades convertidas:', convertedProperties);
-      setProperties(convertedProperties);
+      // Deduplicar por ID para evitar propriedades duplicadas
+      const uniqueProperties = convertedProperties.filter((property, index, self) => 
+        index === self.findIndex(p => p.id === property.id)
+      );
+
+      console.log('PropertyLoader: Propriedades convertidas:', uniqueProperties);
+      console.log('PropertyLoader: Total de propriedades únicas:', uniqueProperties.length);
+      
+      setProperties(uniqueProperties);
       console.log('=== FIM LOAD PROPERTIES ===');
       
       if (convertedProperties.length > 0) {
@@ -105,6 +112,10 @@ export const usePropertyLoader = () => {
     if (currentUserId && currentUserId !== lastUserRef.current) {
       console.log('PropertyLoader: Novo usuário detectado, carregando propriedades...');
       lastUserRef.current = currentUserId;
+      
+      // Limpar propriedades antes de carregar para evitar duplicação
+      setProperties([]);
+      
       loadProperties();
     } else if (!currentUserId && lastUserRef.current) {
       console.log('PropertyLoader: Usuário deslogado, limpando propriedades...');
@@ -112,7 +123,7 @@ export const usePropertyLoader = () => {
       setProperties([]);
       setIsLoading(false);
     }
-  }, [user, loadProperties]);
+  }, [user?.id, loadProperties]);
 
   return {
     properties,

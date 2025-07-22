@@ -96,13 +96,15 @@ export const updatePropertyInDatabase = async (property: any) => {
       .from('properties')
       .update(propertyData)
       .eq('id', property.id)
-      .eq('user_id', session.user.id)
       .select()
-      .single();
+      .maybeSingle();
 
     if (error) {
-      console.error('updatePropertyInDatabase: Erro ao atualizar:', error);
-      throw new Error('Falha ao atualizar propriedade no banco de dados');
+      console.error('updatePropertyInDatabase: Erro detalhado:', error);
+      console.error('updatePropertyInDatabase: Código do erro:', error.code);
+      console.error('updatePropertyInDatabase: Mensagem:', error.message);
+      console.error('updatePropertyInDatabase: Detalhes:', error.details);
+      throw new Error(`Falha ao atualizar propriedade: ${error.message}`);
     }
 
     console.log('updatePropertyInDatabase: Propriedade atualizada no banco:', data);
