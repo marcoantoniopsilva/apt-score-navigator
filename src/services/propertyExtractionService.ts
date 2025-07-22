@@ -18,18 +18,10 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
     console.log('propertyExtractionService: Iniciando processo de extração');
     console.log('propertyExtractionService: Chamando edge function para extração...');
     
-    // Obter o token de sessão atual com timeout
+    // Obter o token de sessão atual
     console.log('propertyExtractionService: Buscando sessão do usuário...');
     
-    const sessionPromise = supabase.auth.getSession();
-    const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error('Timeout ao buscar sessão')), 5000);
-    });
-    
-    const { data: { session }, error: sessionError } = await Promise.race([
-      sessionPromise,
-      timeoutPromise
-    ]) as any;
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
     console.log('propertyExtractionService: Sessão obtida');
     
