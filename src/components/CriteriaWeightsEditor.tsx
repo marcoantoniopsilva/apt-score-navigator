@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Settings, RotateCcw } from 'lucide-react';
-import { ActiveCriterion } from '@/contexts/CriteriaContext';
+import { ActiveCriterion } from '@/hooks/useCriteria';
 
 interface CriteriaWeightsEditorProps {
   weights: CriteriaWeights;

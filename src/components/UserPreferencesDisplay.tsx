@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, DollarSign, Target, Settings } from 'lucide-react';
 import { UserProfile } from '@/types/onboarding';
-import { useCriteriaContext } from '@/contexts/CriteriaContext';
 
 interface UserPreferencesDisplayProps {
   userProfile: UserProfile;
@@ -58,13 +57,6 @@ export const UserPreferencesDisplay: React.FC<UserPreferencesDisplayProps> = ({
   userProfile,
   onEdit
 }) => {
-  const { refreshCriteriaFromProfile } = useCriteriaContext();
-
-  const handleEdit = () => {
-    onEdit();
-    // Após o modal fechar, os critérios serão atualizados automaticamente
-    // via evento 'criteria-updated' disparado pelo useOnboarding
-  };
   return (
     <Card className="mb-6 bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
       <CardHeader>
@@ -76,7 +68,7 @@ export const UserPreferencesDisplay: React.FC<UserPreferencesDisplayProps> = ({
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={handleEdit}
+            onClick={onEdit}
             className="text-primary border-primary/30 hover:bg-primary/10"
           >
             <Settings className="h-4 w-4 mr-2" />
