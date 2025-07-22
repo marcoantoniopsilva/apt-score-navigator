@@ -30,11 +30,40 @@ export const usePropertyActions = (
       const savedProperty = await savePropertyToDatabase(propertyWithScore);
       console.log('PropertyActions: Propriedade salva, resposta do banco:', savedProperty);
       
-      // Adicionar apenas a nova propriedade ao estado local, sem recarregar tudo
-      console.log('PropertyActions: Adicionando ao estado local...');
+      // Usar a propriedade retornada do banco (com ID correto) em vez da local
+      const propertyFromDb: Property = {
+        id: savedProperty.id,
+        title: savedProperty.title,
+        address: savedProperty.address,
+        bedrooms: savedProperty.bedrooms,
+        bathrooms: savedProperty.bathrooms,
+        parkingSpaces: savedProperty.parking_spaces,
+        area: savedProperty.area,
+        floor: savedProperty.floor || '',
+        rent: savedProperty.rent,
+        condo: savedProperty.condo,
+        iptu: savedProperty.iptu,
+        fireInsurance: savedProperty.fire_insurance,
+        otherFees: savedProperty.other_fees,
+        totalMonthlyCost: savedProperty.total_monthly_cost,
+        images: savedProperty.images || [],
+        sourceUrl: savedProperty.source_url || undefined,
+        locationSummary: savedProperty.location_summary || undefined,
+        scores: (savedProperty.scores as any) || propertyWithScore.scores,
+        finalScore: Number(savedProperty.final_score)
+      };
+      
+      console.log('PropertyActions: Adicionando ao estado local a propriedade do banco:', propertyFromDb);
       setProperties(prev => {
-        const newProperties = [...prev, propertyWithScore];
-        console.log('PropertyActions: Estado atualizado com nova propriedade');
+        // Verificar se a propriedade já existe para evitar duplicatas
+        const exists = prev.find(p => p.id === propertyFromDb.id);
+        if (exists) {
+          console.log('PropertyActions: Propriedade já existe no estado, ignorando...');
+          return prev;
+        }
+        
+        const newProperties = [...prev, propertyFromDb];
+        console.log('PropertyActions: Estado atualizado com nova propriedade do banco');
         return newProperties;
       });
       
