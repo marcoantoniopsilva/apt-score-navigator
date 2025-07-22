@@ -34,7 +34,7 @@ export const UrlExtractionForm: React.FC<UrlExtractionFormProps> = ({
         onDataExtracted(data);
         toast({
           title: "Dados extraídos",
-          description: "Os dados do anúncio foram extraídos com sucesso.",
+          description: "Os dados foram extraídos e preenchidos no formulário. Revise e clique em 'Adicionar Propriedade' para salvar.",
         });
       } else {
         toast({
