@@ -239,6 +239,7 @@ const Index = () => {
 
       {showAddForm && (
         <AddPropertyForm 
+          key={`add-form-${Date.now()}`} // Força remontagem para limpar estado
           onSubmit={handleAddProperty}
           onCancel={() => setShowAddForm(false)}
         />

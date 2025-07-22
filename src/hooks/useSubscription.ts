@@ -19,12 +19,19 @@ export const useSubscription = () => {
 
   const checkSubscription = async () => {
     if (!user || !session) {
+      setSubscriptionData({
+        subscribed: false,
+        subscription_tier: null,
+        subscription_end: null,
+      });
       setLoading(false);
       return;
     }
 
     try {
       setLoading(true);
+      console.log('useSubscription: Verificando assinatura para usuário:', user.id);
+      
       const { data, error } = await supabase.functions.invoke('check-subscription', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -32,19 +39,24 @@ export const useSubscription = () => {
       });
 
       if (error) {
-        console.error('Error checking subscription:', error);
+        console.error('useSubscription: Erro ao verificar assinatura:', error);
+        // Em caso de erro, manter estado anterior em vez de resetar
         return;
       }
 
       if (data) {
-        setSubscriptionData({
+        const newSubscriptionData = {
           subscribed: data.subscribed || false,
           subscription_tier: data.subscription_tier || null,
           subscription_end: data.subscription_end || null,
-        });
+        };
+        
+        console.log('useSubscription: Dados da assinatura recebidos:', newSubscriptionData);
+        setSubscriptionData(newSubscriptionData);
       }
     } catch (error) {
-      console.error('Error checking subscription:', error);
+      console.error('useSubscription: Erro geral ao verificar assinatura:', error);
+      // Em caso de erro, não resetar o estado
     } finally {
       setLoading(false);
     }
@@ -104,8 +116,23 @@ export const useSubscription = () => {
   };
 
   useEffect(() => {
+    console.log('useSubscription: useEffect disparado - user:', !!user, 'session:', !!session);
     checkSubscription();
-  }, [user, session]);
+    
+    // Listener para quando a página volta a ter foco
+    const handleFocus = () => {
+      console.log('useSubscription: Página voltou ao foco, revalidando assinatura');
+      if (user && session) {
+        checkSubscription();
+      }
+    };
+    
+    window.addEventListener('focus', handleFocus);
+    
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, [user?.id, session?.access_token]); // Dependências mais específicas
 
   const isPro = subscriptionData.subscribed;
 
