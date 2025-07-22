@@ -1,7 +1,10 @@
 export interface OnboardingAnswers {
+  intencao: 'alugar' | 'comprar';
   objetivo_principal: 'morar_conforto' | 'investir' | 'alugar_depois' | 'primeiro_imovel' | 'tranquilidade';
   situacao_moradia: 'sozinho' | 'com_parceiro' | 'com_filhos' | 'com_familiares' | 'nao_sei';
   valor_principal: 'preco' | 'localizacao' | 'comodidade' | 'estilo' | 'tamanho' | 'silencio' | 'seguranca';
+  faixa_preco: string;
+  regiao_referencia: string;
 }
 
 export type UserProfileType = 
@@ -15,9 +18,12 @@ export interface UserProfile {
   id?: string;
   user_id: string;
   profile_type: UserProfileType;
+  intencao: string;
   objetivo_principal: string;
   situacao_moradia: string;
   valor_principal: string;
+  faixa_preco?: string;
+  regiao_referencia?: string;
   created_at?: string;
   updated_at?: string;
 }

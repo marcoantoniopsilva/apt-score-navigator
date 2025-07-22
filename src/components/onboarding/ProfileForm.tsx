@@ -22,41 +22,71 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ onComplete, onBack }) 
   const [currentStep, setCurrentStep] = useState(0);
   const [answers, setAnswers] = useState<Partial<OnboardingAnswers>>({});
 
-  const questions: Question[] = [
-    {
-      title: 'Qual é seu objetivo principal com o imóvel?',
-      name: 'objetivo_principal',
-       options: [
+  const getQuestions = (): Question[] => {
+    const baseQuestions: Question[] = [
+      {
+        title: 'Você está interessado em alugar ou comprar?',
+        name: 'intencao',
+        options: [
+          { value: 'alugar', label: 'Alugar um imóvel' },
+          { value: 'comprar', label: 'Comprar um imóvel' }
+        ]
+      }
+    ];
+
+    // Pergunta sobre objetivo varia baseado na intenção
+    const intencao = answers.intencao as 'alugar' | 'comprar';
+    
+    let objetivoOptions;
+    if (intencao === 'alugar') {
+      objetivoOptions = [
+        { value: 'morar_conforto', label: 'Morar com conforto' },
+        { value: 'tranquilidade', label: 'Quero mais tranquilidade' }
+      ];
+    } else {
+      objetivoOptions = [
         { value: 'morar_conforto', label: 'Morar com conforto' },
         { value: 'investir', label: 'Investir para valorizar' },
         { value: 'alugar_depois', label: 'Comprar para alugar' },
         { value: 'primeiro_imovel', label: 'Primeiro imóvel' },
         { value: 'tranquilidade', label: 'Quero mais tranquilidade' }
-      ]
-    },
-    {
-      title: 'Você vai morar com...',
-      name: 'situacao_moradia',
-       options: [
-        { value: 'sozinho', label: 'Sozinho' },
-        { value: 'com_parceiro', label: 'Parceiro(a)' },
-        { value: 'com_filhos', label: 'Filhos' },
-        { value: 'com_familiares', label: 'Familiares' },
-        { value: 'nao_sei', label: 'Ainda não sei' }
-      ]
-    },
-    {
-      title: 'O que mais te incomoda em um imóvel?',
-      name: 'valor_principal',
-       options: [
-        { value: 'silencio', label: 'Muito barulho' },
-        { value: 'seguranca', label: 'Região perigosa' },
-        { value: 'tamanho', label: 'Pouco espaço' },
-        { value: 'localizacao', label: 'Longe de tudo' },
-        { value: 'preco', label: 'Preço alto' }
-      ]
+      ];
     }
-  ];
+
+    const dynamicQuestions: Question[] = [
+      {
+        title: 'Qual é seu objetivo principal com o imóvel?',
+        name: 'objetivo_principal',
+        options: objetivoOptions
+      },
+      {
+        title: 'Você vai morar com...',
+        name: 'situacao_moradia',
+        options: [
+          { value: 'sozinho', label: 'Sozinho' },
+          { value: 'com_parceiro', label: 'Parceiro(a)' },
+          { value: 'com_filhos', label: 'Filhos' },
+          { value: 'com_familiares', label: 'Familiares' },
+          { value: 'nao_sei', label: 'Ainda não sei' }
+        ]
+      },
+      {
+        title: 'O que mais te incomoda em um imóvel?',
+        name: 'valor_principal',
+        options: [
+          { value: 'silencio', label: 'Muito barulho' },
+          { value: 'seguranca', label: 'Região perigosa' },
+          { value: 'tamanho', label: 'Pouco espaço' },
+          { value: 'localizacao', label: 'Longe de tudo' },
+          { value: 'preco', label: 'Preço alto' }
+        ]
+      }
+    ];
+
+    return [...baseQuestions, ...dynamicQuestions];
+  };
+
+  const questions = getQuestions();
 
   const currentQuestion = questions[currentStep];
 

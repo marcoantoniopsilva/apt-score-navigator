@@ -3,6 +3,7 @@ import { OnboardingIntro } from './OnboardingIntro';
 import { ProfileForm } from './ProfileForm';
 import { EnhancedCriteriaSelection } from './EnhancedCriteriaSelection';
 import { EnhancedWeightsEditor } from './EnhancedWeightsEditor';
+import { PreferencesForm } from './PreferencesForm';
 import { OnboardingSuccess } from './OnboardingSuccess';
 import { 
   OnboardingAnswers, 
@@ -25,6 +26,7 @@ export enum OnboardingStep {
   PROFILE,
   CRITERIA,
   WEIGHTS,
+  PREFERENCES,
   SUCCESS
 }
 
@@ -127,6 +129,18 @@ export const EnhancedOnboardingFlow: React.FC<EnhancedOnboardingFlowProps> = ({
 
   const handleWeightsComplete = (finalWeights: Record<string, number>) => {
     setWeights(finalWeights);
+    setCurrentStep(OnboardingStep.PREFERENCES);
+  };
+
+  const handlePreferencesComplete = (faixaPreco: string, regiaoReferencia: string) => {
+    if (answers) {
+      const updatedAnswers = {
+        ...answers,
+        faixa_preco: faixaPreco,
+        regiao_referencia: regiaoReferencia
+      };
+      setAnswers(updatedAnswers);
+    }
     setCurrentStep(OnboardingStep.SUCCESS);
   };
 
@@ -172,6 +186,15 @@ export const EnhancedOnboardingFlow: React.FC<EnhancedOnboardingFlowProps> = ({
             criteria={selectedCriteria}
             initialWeights={weights}
             onComplete={handleWeightsComplete}
+            onBack={handleBack}
+          />
+        );
+      
+      case OnboardingStep.PREFERENCES:
+        return (
+          <PreferencesForm
+            intencao={answers?.intencao as 'alugar' | 'comprar'}
+            onComplete={handlePreferencesComplete}
             onBack={handleBack}
           />
         );
