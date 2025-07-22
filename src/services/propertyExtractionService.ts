@@ -63,21 +63,22 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
 
     console.log('Dados extraídos com sucesso:', data.data);
     
-    // Retornar os dados para preenchimento do formulário
+    // Retornar os dados exatamente como vêm da edge function, apenas com mapeamento correto
     const extractedData = data.data;
+    
     return {
       title: extractedData.title || '',
       address: extractedData.address || '',
-      bedrooms: extractedData.bedrooms || 0,
-      bathrooms: extractedData.bathrooms || 0,
-      parkingSpaces: extractedData.parking_spaces || extractedData.parkingSpaces || 0,
-      area: extractedData.area || 0,
+      bedrooms: Number(extractedData.bedrooms) || 0,
+      bathrooms: Number(extractedData.bathrooms) || 0,
+      parkingSpaces: Number(extractedData.parking_spaces) || 0,
+      area: Number(extractedData.area) || 0,
       floor: extractedData.floor || '',
-      rent: extractedData.rent || 0,
-      condo: extractedData.condo || 0,
-      iptu: extractedData.iptu || 0,
-      fireInsurance: extractedData.fire_insurance || extractedData.fireInsurance || 50,
-      otherFees: extractedData.other_fees || extractedData.otherFees || 0,
+      rent: Number(extractedData.rent) || 0,
+      condo: Number(extractedData.condo) || 0,
+      iptu: Number(extractedData.iptu) || 0,
+      fireInsurance: Number(extractedData.fire_insurance) || 50,
+      otherFees: Number(extractedData.other_fees) || 0,
       images: extractedData.images || [],
       scores: extractedData.scores || {}
     };

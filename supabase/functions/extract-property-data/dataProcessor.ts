@@ -19,6 +19,8 @@ export function processExtractedData(extractedText: string): any {
     rent: Math.max(0, Number(extractedData.rent) || 0),
     condo: Math.max(0, Number(extractedData.condo) || 0),
     iptu: Math.max(0, Number(extractedData.iptu) || 0),
+    fire_insurance: Math.max(0, Number(extractedData.fireInsurance) || 50),
+    other_fees: Math.max(0, Number(extractedData.otherFees) || 0),
   };
 
   return cleanedData;
