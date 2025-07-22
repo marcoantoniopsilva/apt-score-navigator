@@ -100,10 +100,17 @@ export const usePropertyActions = (
 
   const handleDeleteProperty = async (id: string) => {
     try {
-      console.log('PropertyActions: Deletando propriedade:', id);
-      await deletePropertyFromDatabase(id);
+      console.log('PropertyActions: Iniciando exclusão da propriedade:', id);
+      console.log('PropertyActions: Propriedades atuais no estado:', properties.map(p => ({ id: p.id, title: p.title })));
       
-      setProperties(prev => prev.filter(p => p.id !== id));
+      await deletePropertyFromDatabase(id);
+      console.log('PropertyActions: Propriedade deletada do banco com sucesso');
+      
+      setProperties(prev => {
+        const filtered = prev.filter(p => p.id !== id);
+        console.log('PropertyActions: Estado atualizado, propriedades restantes:', filtered.map(p => ({ id: p.id, title: p.title })));
+        return filtered;
+      });
       
       toast({
         title: "Propriedade removida",

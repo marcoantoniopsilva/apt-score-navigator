@@ -123,29 +123,37 @@ export const updatePropertyInDatabase = async (property: any) => {
 // Função para deletar uma propriedade
 export const deletePropertyFromDatabase = async (propertyId: string) => {
   try {
-    console.log('Deletando propriedade do banco:', propertyId);
+    console.log('deletePropertyFromDatabase: Iniciando exclusão da propriedade:', propertyId);
     
     const { data: { session } } = await supabase.auth.getSession();
     
     if (!session) {
+      console.error('deletePropertyFromDatabase: Usuário não autenticado');
       throw new Error('Usuário não autenticado');
     }
 
-    const { error } = await supabase
+    console.log('deletePropertyFromDatabase: Usuário autenticado:', session.user.id);
+    console.log('deletePropertyFromDatabase: Executando query de delete...');
+
+    const { data, error } = await supabase
       .from('properties')
       .delete()
       .eq('id', propertyId)
-      .eq('user_id', session.user.id);
+      .eq('user_id', session.user.id)
+      .select();
 
     if (error) {
-      console.error('Erro ao deletar propriedade:', error);
-      throw new Error('Falha ao deletar propriedade do banco de dados');
+      console.error('deletePropertyFromDatabase: Erro detalhado:', error);
+      console.error('deletePropertyFromDatabase: Código do erro:', error.code);
+      console.error('deletePropertyFromDatabase: Mensagem:', error.message);
+      throw new Error(`Falha ao deletar propriedade: ${error.message}`);
     }
 
-    console.log('Propriedade deletada com sucesso');
+    console.log('deletePropertyFromDatabase: Resposta do delete:', data);
+    console.log('deletePropertyFromDatabase: Propriedade deletada com sucesso');
 
   } catch (error) {
-    console.error('Erro ao deletar propriedade:', error);
+    console.error('deletePropertyFromDatabase: Erro geral:', error);
     throw error;
   }
 };
