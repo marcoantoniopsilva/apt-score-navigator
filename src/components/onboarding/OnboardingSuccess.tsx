@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { CheckCircle2 } from 'lucide-react';
@@ -9,6 +9,18 @@ interface OnboardingSuccessProps {
 }
 
 export const OnboardingSuccess: React.FC<OnboardingSuccessProps> = ({ onComplete }) => {
+  const [isCompleting, setIsCompleting] = useState(false);
+
+  const handleComplete = async () => {
+    if (isCompleting) return; // Evita múltiplos cliques
+    
+    setIsCompleting(true);
+    try {
+      await onComplete();
+    } finally {
+      setIsCompleting(false);
+    }
+  };
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -30,10 +42,11 @@ export const OnboardingSuccess: React.FC<OnboardingSuccessProps> = ({ onComplete
           
           <Button 
             size="lg" 
-            onClick={onComplete} 
+            onClick={handleComplete}
+            disabled={isCompleting}
             className="w-full max-w-xs"
           >
-            Começar a explorar
+            {isCompleting ? 'Finalizando...' : 'Começar a explorar'}
           </Button>
         </CardContent>
       </Card>

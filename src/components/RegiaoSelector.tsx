@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 
 interface LocalidadeSuggestion {
   nome: string;
-  tipo: 'estado' | 'municipio';
+  tipo: 'estado' | 'municipio' | 'bairro';
   uf?: string;
 }
 
@@ -73,13 +73,16 @@ export const RegiaoSelector: React.FC<RegiaoSelectorProps> = ({
       buscarSugestoes(newValue);
     }, 300);
 
+    // Cleanup do timeout anterior se existir
     return () => clearTimeout(timeoutId);
   };
 
   const handleSelectSuggestion = (suggestion: LocalidadeSuggestion) => {
-    const displayValue = suggestion.tipo === 'municipio' && suggestion.uf 
-      ? `${suggestion.nome}, ${suggestion.uf}`
-      : suggestion.nome;
+    let displayValue = suggestion.nome;
+    
+    if ((suggestion.tipo === 'municipio' || suggestion.tipo === 'bairro') && suggestion.uf) {
+      displayValue = `${suggestion.nome}, ${suggestion.uf}`;
+    }
     
     setInputValue(displayValue);
     onChange(displayValue);
@@ -158,7 +161,8 @@ export const RegiaoSelector: React.FC<RegiaoSelectorProps> = ({
                     <MapPin className="w-3 h-3 text-muted-foreground" />
                     <span>{suggestion.nome}</span>
                     <Badge variant="outline" className="ml-auto text-xs">
-                      {suggestion.tipo === 'municipio' ? suggestion.uf : 'Estado'}
+                      {suggestion.tipo === 'municipio' ? suggestion.uf : 
+                       suggestion.tipo === 'bairro' ? suggestion.uf : 'Estado'}
                     </Badge>
                   </button>
                 ))}
