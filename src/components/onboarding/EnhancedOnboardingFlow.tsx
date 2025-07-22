@@ -145,8 +145,17 @@ export const EnhancedOnboardingFlow: React.FC<EnhancedOnboardingFlowProps> = ({
   };
 
   const handleFinalComplete = () => {
+    console.log('EnhancedOnboardingFlow: handleFinalComplete chamada');
+    console.log('EnhancedOnboardingFlow: profileType:', profileType);
+    console.log('EnhancedOnboardingFlow: answers:', answers);
+    console.log('EnhancedOnboardingFlow: selectedCriteria:', selectedCriteria);
+    console.log('EnhancedOnboardingFlow: weights:', weights);
+    
     if (profileType && answers && selectedCriteria.length > 0) {
+      console.log('EnhancedOnboardingFlow: Chamando onComplete');
       onComplete(profileType, answers, selectedCriteria, weights);
+    } else {
+      console.error('EnhancedOnboardingFlow: Dados incompletos para finalizar onboarding');
     }
   };
 

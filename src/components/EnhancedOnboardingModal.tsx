@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { EnhancedOnboardingFlow } from './onboarding/EnhancedOnboardingFlow';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,11 +27,18 @@ export const EnhancedOnboardingModal: React.FC<EnhancedOnboardingModalProps> = (
     criteria: string[],
     weights: Record<string, number>
   ) => {
+    console.log('EnhancedOnboardingModal: handleOnboardingComplete chamada');
+    console.log('EnhancedOnboardingModal: profile:', profile);
+    console.log('EnhancedOnboardingModal: answers:', answers);
+    console.log('EnhancedOnboardingModal: criteria:', criteria);
+    console.log('EnhancedOnboardingModal: weights:', weights);
+    
     setIsSubmitting(true);
     try {
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
+        console.log('EnhancedOnboardingModal: Salvando dados do onboarding...');
         const result = await saveEnhancedOnboardingData(
           session.user.id,
           profile,
@@ -39,9 +47,16 @@ export const EnhancedOnboardingModal: React.FC<EnhancedOnboardingModalProps> = (
           weights
         );
         
+        console.log('EnhancedOnboardingModal: Resultado do salvamento:', result);
+        
         if (result.success) {
+          console.log('EnhancedOnboardingModal: Fechando modal...');
           onOpenChange(false);
+        } else {
+          console.error('EnhancedOnboardingModal: Erro ao salvar dados:', result.error);
         }
+      } else {
+        console.error('EnhancedOnboardingModal: Usuário não autenticado');
       }
     } catch (error) {
       console.error('Error completing onboarding:', error);
@@ -53,6 +68,9 @@ export const EnhancedOnboardingModal: React.FC<EnhancedOnboardingModalProps> = (
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl p-0 h-[90vh] overflow-y-auto bg-background">
+        <VisuallyHidden>
+          <DialogTitle>Configuração do Perfil de Usuário</DialogTitle>
+        </VisuallyHidden>
         <EnhancedOnboardingFlow
           onComplete={handleOnboardingComplete}
           onClose={() => onOpenChange(false)}

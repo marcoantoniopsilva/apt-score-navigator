@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RegiaoSelector } from '@/components/RegiaoSelector';
 
 interface PreferencesFormProps {
   intencao: 'alugar' | 'comprar';
@@ -75,17 +75,11 @@ export const PreferencesForm: React.FC<PreferencesFormProps> = ({
           </Select>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="regiao">
-            Bairro ou região de referência
-          </Label>
-          <Input
-            id="regiao"
-            placeholder="Ex: Vila Madalena, Copacabana, Centro..."
-            value={regiaoReferencia}
-            onChange={(e) => setRegiaoReferencia(e.target.value)}
-          />
-        </div>
+        <RegiaoSelector
+          value={regiaoReferencia}
+          onChange={setRegiaoReferencia}
+          placeholder="Ex: Vila Madalena, São Paulo, Centro..."
+        />
 
         <div className="flex gap-3 pt-4">
           <Button variant="outline" onClick={onBack} className="flex-1">
