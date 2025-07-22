@@ -26,31 +26,31 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ onComplete, onBack }) 
     {
       title: 'Qual é seu objetivo principal com o imóvel?',
       name: 'objetivo_principal',
-      options: [
-        { value: 'morar', label: 'Morar com conforto' },
+       options: [
+        { value: 'morar_conforto', label: 'Morar com conforto' },
         { value: 'investir', label: 'Investir para valorizar' },
         { value: 'alugar_depois', label: 'Comprar para alugar' },
-        { value: 'morar', label: 'Primeiro imóvel' },
-        { value: 'morar', label: 'Quero mais tranquilidade' }
+        { value: 'primeiro_imovel', label: 'Primeiro imóvel' },
+        { value: 'tranquilidade', label: 'Quero mais tranquilidade' }
       ]
     },
     {
       title: 'Você vai morar com...',
       name: 'situacao_moradia',
-      options: [
+       options: [
         { value: 'sozinho', label: 'Sozinho' },
         { value: 'com_parceiro', label: 'Parceiro(a)' },
         { value: 'com_filhos', label: 'Filhos' },
-        { value: 'com_filhos', label: 'Familiares' },
-        { value: 'sozinho', label: 'Ainda não sei' }
+        { value: 'com_familiares', label: 'Familiares' },
+        { value: 'nao_sei', label: 'Ainda não sei' }
       ]
     },
     {
       title: 'O que mais te incomoda em um imóvel?',
       name: 'valor_principal',
-      options: [
+       options: [
         { value: 'silencio', label: 'Muito barulho' },
-        { value: 'localizacao', label: 'Região perigosa' },
+        { value: 'seguranca', label: 'Região perigosa' },
         { value: 'tamanho', label: 'Pouco espaço' },
         { value: 'localizacao', label: 'Longe de tudo' },
         { value: 'preco', label: 'Preço alto' }

@@ -53,6 +53,7 @@ export const EnhancedCriteriaSelection: React.FC<EnhancedCriteriaSelectionProps>
 
   const handleSubmit = () => {
     if (isValid) {
+      console.log("Submitting selected criteria:", selectedCriteria);
       onComplete(selectedCriteria);
     }
   };

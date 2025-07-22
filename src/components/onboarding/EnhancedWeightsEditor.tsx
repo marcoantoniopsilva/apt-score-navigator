@@ -32,6 +32,14 @@ export const EnhancedWeightsEditor: React.FC<EnhancedWeightsEditorProps> = ({
 
   // Ensure all criteria have weights
   useEffect(() => {
+    console.log("EnhancedWeightsEditor - Received criteria:", criteria);
+    console.log("EnhancedWeightsEditor - Initial weights:", initialWeights);
+    
+    if (criteria.length === 0) {
+      console.error("No criteria received in EnhancedWeightsEditor");
+      return;
+    }
+    
     const updatedWeights = { ...weights };
     let needsUpdate = false;
 
@@ -42,10 +50,16 @@ export const EnhancedWeightsEditor: React.FC<EnhancedWeightsEditorProps> = ({
       }
     });
 
-    if (needsUpdate) {
+    if (needsUpdate || Object.keys(updatedWeights).length === 0) {
+      console.log("EnhancedWeightsEditor - Updating weights:", updatedWeights);
       setWeights(updatedWeights);
     }
-  }, [criteria]);
+    
+    // If we still have no weights, distribute equally
+    if (Object.keys(updatedWeights).length === 0 && criteria.length > 0) {
+      distributeEqually();
+    }
+  }, [criteria, initialWeights]);
 
   const handleWeightChange = (criteriaId: string, value: number) => {
     setWeights(prev => ({
@@ -181,27 +195,38 @@ export const EnhancedWeightsEditor: React.FC<EnhancedWeightsEditorProps> = ({
           </Alert>
 
           <div className="space-y-6">
-            {criteria.map(criteriaId => (
-              <div key={criteriaId} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{getCriteriaIcon(criteriaId)}</span>
-                    <span className="font-medium">{getCriteriaLabel(criteriaId)}</span>
-                  </div>
-                  <Badge variant={weights[criteriaId] > 20 ? "default" : "outline"}>
-                    {weights[criteriaId] || 0}%
-                  </Badge>
+            {criteria.length === 0 ? (
+              <Alert className="bg-yellow-50 border-yellow-300">
+                <div className="flex items-center gap-2">
+                  <Info className="h-4 w-4 text-yellow-500" />
+                  <AlertDescription>
+                    Nenhum critério selecionado. Por favor, volte e selecione alguns critérios.
+                  </AlertDescription>
                 </div>
-                <Slider
-                  value={[weights[criteriaId] || 0]}
-                  min={0}
-                  max={100}
-                  step={1}
-                  onValueChange={(values) => handleSliderChange(criteriaId, values)}
-                  className="pt-2"
-                />
-              </div>
-            ))}
+              </Alert>
+            ) : (
+              criteria.map(criteriaId => (
+                <div key={criteriaId} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{getCriteriaIcon(criteriaId)}</span>
+                      <span className="font-medium">{getCriteriaLabel(criteriaId)}</span>
+                    </div>
+                    <Badge variant={weights[criteriaId] > 20 ? "default" : "outline"}>
+                      {weights[criteriaId] || 0}%
+                    </Badge>
+                  </div>
+                  <Slider
+                    value={[weights[criteriaId] || 0]}
+                    min={0}
+                    max={100}
+                    step={1}
+                    onValueChange={(values) => handleSliderChange(criteriaId, values)}
+                    className="pt-2"
+                  />
+                </div>
+              ))
+            )}
           </div>
 
           <div className="mt-8 flex items-center justify-between">

@@ -1,7 +1,7 @@
 export interface OnboardingAnswers {
-  objetivo_principal: 'morar' | 'investir' | 'alugar_depois';
-  situacao_moradia: 'sozinho' | 'com_parceiro' | 'com_filhos' | 'outro';
-  valor_principal: 'preco' | 'localizacao' | 'comodidade' | 'estilo' | 'tamanho' | 'silencio';
+  objetivo_principal: 'morar_conforto' | 'investir' | 'alugar_depois' | 'primeiro_imovel' | 'tranquilidade';
+  situacao_moradia: 'sozinho' | 'com_parceiro' | 'com_filhos' | 'com_familiares' | 'nao_sei';
+  valor_principal: 'preco' | 'localizacao' | 'comodidade' | 'estilo' | 'tamanho' | 'silencio' | 'seguranca';
 }
 
 export type UserProfileType = 

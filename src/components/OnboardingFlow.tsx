@@ -29,7 +29,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, onCl
       return 'investidor';
     }
     
-    if (answers.objetivo_principal === 'morar' && 
+    if ((answers.objetivo_principal === 'morar_conforto' || answers.objetivo_principal === 'primeiro_imovel') && 
         (answers.valor_principal === 'preco' || answers.situacao_moradia === 'sozinho')) {
       return 'primeira_compra';
     }
@@ -43,7 +43,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, onCl
       return 'familia_com_filhos';
     }
     
-    if (answers.situacao_moradia === 'outro' && 
+    if ((answers.situacao_moradia === 'com_familiares' || answers.situacao_moradia === 'nao_sei') && 
         (answers.valor_principal === 'silencio' || answers.valor_principal === 'comodidade')) {
       return 'aposentado_tranquilo';
     }

@@ -43,13 +43,16 @@ export const EnhancedOnboardingFlow: React.FC<EnhancedOnboardingFlowProps> = ({
   // Define o perfil com base nas respostas
   const defineProfile = (answers: OnboardingAnswers): UserProfileType => {
     // Lógica para definir o perfil com base nas respostas
+    console.log("Defining profile based on answers:", answers);
+    
     if (answers.objetivo_principal === 'investir') {
       return 'investidor';
     } else if (answers.situacao_moradia === 'com_filhos') {
       return 'familia_com_filhos';
     } else if (answers.valor_principal === 'silencio') {
       return 'aposentado_tranquilo';
-    } else if (answers.objetivo_principal === 'morar' && answers.situacao_moradia === 'sozinho') {
+    } else if ((answers.objetivo_principal === 'morar_conforto' || answers.objetivo_principal === 'primeiro_imovel') 
+              && answers.situacao_moradia === 'sozinho') {
       return 'profissional_solteiro';
     } else {
       return 'primeira_compra';
@@ -110,11 +113,13 @@ export const EnhancedOnboardingFlow: React.FC<EnhancedOnboardingFlowProps> = ({
   };
 
   const handleCriteriaComplete = (criteria: string[]) => {
+    console.log("Selected criteria:", criteria);
     setSelectedCriteria(criteria);
     
     if (profileType) {
       const suggestedWeights = suggestWeights(profileType, criteria);
       setWeights(suggestedWeights);
+      console.log("Suggested weights:", suggestedWeights);
     }
     
     setCurrentStep(OnboardingStep.WEIGHTS);
