@@ -79,14 +79,22 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
     console.log('AddPropertyForm: Atualizando formData para:', newFormData);
     setFormData(newFormData);
     
-    // Atualizar scores baseado nos dados extraídos ou usar scores sugeridos
+    // Atualizar scores baseado nos dados extraídos
     if (data.scores && typeof data.scores === 'object') {
+      console.log('AddPropertyForm: Scores recebidos:', data.scores);
+      console.log('AddPropertyForm: Critérios ativos:', activeCriteria);
+      
       const newScores: Record<string, number> = {};
+      
+      // Mapear scores extraídos para critérios ativos
       activeCriteria.forEach(criterio => {
+        // Usar o score extraído se existir, senão usar 5 como padrão
         newScores[criterio.key] = data.scores[criterio.key] || 5;
       });
+      
+      console.log('AddPropertyForm: Scores mapeados:', newScores);
       setScores(newScores);
-      setSuggestedScores(data.scores); // Guardar as sugestões
+      setSuggestedScores(data.scores); // Guardar as sugestões originais
     }
   };
 
