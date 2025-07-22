@@ -56,7 +56,7 @@ export const SubscriptionStatus = () => {
     }
   };
 
-  if (loading) {
+  if (loading && !isPro) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center p-6">

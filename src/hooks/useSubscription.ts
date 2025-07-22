@@ -15,7 +15,7 @@ export const useSubscription = () => {
     subscription_tier: null,
     subscription_end: null,
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Iniciar como false para evitar carregamento infinito
   const [error, setError] = useState<string | null>(null);
   
   // Refs para controle de requisições e estado
