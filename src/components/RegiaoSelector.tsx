@@ -11,6 +11,7 @@ interface LocalidadeSuggestion {
   nome: string;
   tipo: 'estado' | 'municipio' | 'bairro';
   uf?: string;
+  cidade?: string;
 }
 
 interface RegiaoSelectorProps {
@@ -69,25 +70,25 @@ export const RegiaoSelector: React.FC<RegiaoSelectorProps> = ({
     setShowSuggestions(true);
     
     // Debounce da busca
-    const timeoutId = setTimeout(() => {
+    setTimeout(() => {
       buscarSugestoes(newValue);
     }, 300);
-
-    // Cleanup do timeout anterior se existir
-    return () => clearTimeout(timeoutId);
   };
 
   const handleSelectSuggestion = (suggestion: LocalidadeSuggestion) => {
     let displayValue = suggestion.nome;
     
-    if ((suggestion.tipo === 'municipio' || suggestion.tipo === 'bairro') && suggestion.uf) {
+    // Adicionamos a cidade/UF ao nome do bairro ou município para melhor identificação
+    if (suggestion.tipo === 'municipio' && suggestion.uf) {
       displayValue = `${suggestion.nome}, ${suggestion.uf}`;
+    } else if (suggestion.tipo === 'bairro' && suggestion.cidade && suggestion.uf) {
+      displayValue = `${suggestion.nome}, ${suggestion.cidade}, ${suggestion.uf}`;
     }
     
     setInputValue(displayValue);
     onChange(displayValue);
-    setShowSuggestions(false);
     setSuggestions([]);
+    setShowSuggestions(false);
   };
 
   const handleSelectPopular = (location: string) => {
@@ -97,11 +98,22 @@ export const RegiaoSelector: React.FC<RegiaoSelectorProps> = ({
   };
 
   const handleInputBlur = () => {
-    // Delay para permitir clique nas sugestões
+    // Aguardamos um pouco para que o clique na sugestão seja processado primeiro
     setTimeout(() => {
-      setShowSuggestions(false);
-      onChange(inputValue);
-    }, 200);
+      if (document.activeElement !== document.getElementById('regiao')) {
+        setShowSuggestions(false);
+        onChange(inputValue);
+      }
+    }, 150);
+  };
+
+  // Focus handler para mostrar as sugestões
+  const handleInputFocus = () => {
+    setShowSuggestions(true);
+    // Se o input estiver vazio, buscar sugestões iniciais
+    if (!inputValue.trim() && !suggestions.length) {
+      setTimeout(() => buscarSugestoes('a'), 100);
+    }
   };
 
   const clearInput = () => {
@@ -125,7 +137,7 @@ export const RegiaoSelector: React.FC<RegiaoSelectorProps> = ({
               id="regiao"
               value={inputValue}
               onChange={handleInputChange}
-              onFocus={() => setShowSuggestions(true)}
+              onFocus={handleInputFocus}
               onBlur={handleInputBlur}
               placeholder={placeholder}
               className="pl-10 pr-10"
@@ -155,14 +167,30 @@ export const RegiaoSelector: React.FC<RegiaoSelectorProps> = ({
                   <button
                     key={index}
                     type="button"
-                    onClick={() => handleSelectSuggestion(suggestion)}
+                    onMouseDown={(e) => {
+                      // Usar onMouseDown em vez de onClick para garantir que o evento ocorra antes do onBlur
+                      e.preventDefault();
+                      handleSelectSuggestion(suggestion);
+                    }}
                     className="w-full text-left px-3 py-2 hover:bg-accent rounded-sm flex items-center gap-2"
                   >
                     <MapPin className="w-3 h-3 text-muted-foreground" />
-                    <span>{suggestion.nome}</span>
-                    <Badge variant="outline" className="ml-auto text-xs">
-                      {suggestion.tipo === 'municipio' ? suggestion.uf : 
-                       suggestion.tipo === 'bairro' ? suggestion.uf : 'Estado'}
+                    <div className="flex-1">
+                      <span className="block">{suggestion.nome}</span>
+                      {suggestion.tipo === 'bairro' && suggestion.cidade && suggestion.uf && (
+                        <span className="text-xs text-muted-foreground">
+                          {suggestion.cidade}, {suggestion.uf}
+                        </span>
+                      )}
+                      {suggestion.tipo === 'municipio' && suggestion.uf && (
+                        <span className="text-xs text-muted-foreground">
+                          {suggestion.uf}
+                        </span>
+                      )}
+                    </div>
+                    <Badge variant="outline" className="text-xs">
+                      {suggestion.tipo === 'municipio' ? 'Cidade' : 
+                       suggestion.tipo === 'bairro' ? 'Bairro' : 'Estado'}
                     </Badge>
                   </button>
                 ))}
@@ -191,7 +219,11 @@ export const RegiaoSelector: React.FC<RegiaoSelectorProps> = ({
                   <button
                     key={location}
                     type="button"
-                    onClick={() => handleSelectPopular(location)}
+                    onMouseDown={(e) => {
+                      // Usar onMouseDown em vez de onClick para garantir que o evento ocorra antes do onBlur
+                      e.preventDefault();
+                      handleSelectPopular(location);
+                    }}
                     className="w-full text-left px-3 py-2 hover:bg-accent rounded-sm flex items-center gap-2"
                   >
                     <MapPin className="w-3 h-3 text-muted-foreground" />

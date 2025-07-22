@@ -14,6 +14,13 @@ interface Municipio {
   codigo_ibge: string;
 }
 
+export interface LocalidadeSugestao {
+  nome: string;
+  tipo: 'estado' | 'municipio' | 'bairro';
+  uf?: string;
+  cidade?: string;
+}
+
 export class LocalidadeService {
   private static BASE_URL = 'https://brasilapi.com.br/api';
 
@@ -40,7 +47,7 @@ export class LocalidadeService {
   }
 
   // Busca localidades includindo bairros conhecidos
-  static async buscarLocalidades(termo: string): Promise<Array<{nome: string, tipo: 'estado' | 'municipio' | 'bairro', uf?: string}>> {
+  static async buscarLocalidades(termo: string): Promise<Array<{nome: string, tipo: 'estado' | 'municipio' | 'bairro', uf?: string, cidade?: string}>> {
     try {
       const resultados = [];
 
@@ -96,7 +103,7 @@ export class LocalidadeService {
   }
 
   // Lista de bairros conhecidos das principais cidades
-  private static getBairrosConhecidos(termo: string): Array<{nome: string, tipo: 'bairro', uf: string}> {
+  private static getBairrosConhecidos(termo: string): Array<{nome: string, tipo: 'bairro', uf: string, cidade?: string}> {
     const bairrosSP = [
       'Vila Madalena', 'Pinheiros', 'Jardins', 'Moema', 'Itaim Bibi', 'Vila Olimpia',
       'Perdizes', 'Higienópolis', 'Liberdade', 'Bela Vista', 'Consolação', 'Santa Cecília',
@@ -122,9 +129,9 @@ export class LocalidadeService {
     ];
 
     const todosBairros = [
-      ...bairrosSP.map(b => ({nome: b, tipo: 'bairro' as const, uf: 'SP'})),
-      ...bairrosRJ.map(b => ({nome: b, tipo: 'bairro' as const, uf: 'RJ'})),
-      ...bairrosBH.map(b => ({nome: b, tipo: 'bairro' as const, uf: 'MG'}))
+      ...bairrosSP.map(b => ({nome: b, tipo: 'bairro' as const, uf: 'SP', cidade: 'São Paulo'})),
+      ...bairrosRJ.map(b => ({nome: b, tipo: 'bairro' as const, uf: 'RJ', cidade: 'Rio de Janeiro'})),
+      ...bairrosBH.map(b => ({nome: b, tipo: 'bairro' as const, uf: 'MG', cidade: 'Belo Horizonte'}))
     ];
 
     return todosBairros

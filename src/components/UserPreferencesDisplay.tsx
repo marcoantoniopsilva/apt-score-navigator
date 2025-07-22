@@ -29,6 +29,30 @@ const getObjetivoLabel = (objetivo: string) => {
   }
 };
 
+const getProfileTypeLabel = (profileType: string) => {
+  switch (profileType) {
+    case 'investidor': return 'Investidor';
+    case 'primeira_compra': return 'Primeira compra';
+    case 'profissional_solteiro': return 'Profissional solteiro';
+    case 'familia_com_filhos': return 'Família com filhos';
+    case 'aposentado_tranquilo': return 'Aposentado tranquilo';
+    default: return profileType;
+  }
+};
+
+const getValorPrincipalLabel = (valor: string) => {
+  switch (valor) {
+    case 'preco': return 'Preço';
+    case 'localizacao': return 'Localização';
+    case 'comodidade': return 'Comodidade';
+    case 'estilo': return 'Estilo';
+    case 'tamanho': return 'Tamanho';
+    case 'silencio': return 'Silêncio';
+    case 'seguranca': return 'Segurança';
+    default: return valor;
+  }
+};
+
 export const UserPreferencesDisplay: React.FC<UserPreferencesDisplayProps> = ({
   userProfile,
   onEdit
@@ -53,31 +77,49 @@ export const UserPreferencesDisplay: React.FC<UserPreferencesDisplayProps> = ({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex items-center gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-1">PERFIL</p>
             <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-              {getIntencaoLabel(userProfile.intencao)}
+              {getProfileTypeLabel(userProfile.profile_type)}
             </Badge>
-            <span className="text-sm text-muted-foreground">
-              {getObjetivoLabel(userProfile.objetivo_principal)}
-            </span>
+          </div>
+          
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-1">INTENÇÃO</p>
+            <p className="text-sm font-medium">
+              {getIntencaoLabel(userProfile.intencao)}
+            </p>
+          </div>
+          
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-1">PRIORIDADE</p>
+            <p className="text-sm font-medium">
+              {getValorPrincipalLabel(userProfile.valor_principal)}
+            </p>
           </div>
           
           {userProfile.faixa_preco && (
-            <div className="flex items-center gap-2">
-              <DollarSign className="h-4 w-4 text-green-600" />
-              <span className="text-sm font-medium">
-                {userProfile.faixa_preco}
-              </span>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">ORÇAMENTO</p>
+              <div className="flex items-center gap-1">
+                <DollarSign className="h-3 w-3 text-green-600" />
+                <span className="text-sm font-medium">
+                  {userProfile.faixa_preco}
+                </span>
+              </div>
             </div>
           )}
           
           {userProfile.regiao_referencia && (
-            <div className="flex items-center gap-2">
-              <MapPin className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium">
-                {userProfile.regiao_referencia}
-              </span>
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">REGIÃO</p>
+              <div className="flex items-center gap-1">
+                <MapPin className="h-3 w-3 text-blue-600" />
+                <span className="text-sm font-medium">
+                  {userProfile.regiao_referencia}
+                </span>
+              </div>
             </div>
           )}
         </div>
