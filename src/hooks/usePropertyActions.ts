@@ -132,14 +132,17 @@ export const usePropertyActions = (
       console.log('PropertyActions: Iniciando exclusão da propriedade:', id);
       console.log('PropertyActions: Propriedades atuais no estado:', properties.map(p => ({ id: p.id, title: p.title })));
       
-      await deletePropertyFromDatabase(id);
-      console.log('PropertyActions: Propriedade deletada do banco com sucesso');
-      
+      // Primeiro atualizar o estado local para feedback imediato ao usuário
       setProperties(prev => {
         const filtered = prev.filter(p => p.id !== id);
-        console.log('PropertyActions: Estado atualizado, propriedades restantes:', filtered.map(p => ({ id: p.id, title: p.title })));
+        console.log('PropertyActions: Estado atualizado localmente antes da API, propriedades restantes:', 
+          filtered.map(p => ({ id: p.id, title: p.title })));
         return filtered;
       });
+      
+      // Depois fazer a requisição à API
+      const result = await deletePropertyFromDatabase(id);
+      console.log('PropertyActions: Propriedade deletada do banco com sucesso', result);
       
       toast({
         title: "Propriedade removida",
@@ -148,6 +151,12 @@ export const usePropertyActions = (
       console.log('PropertyActions: Propriedade deletada com sucesso');
     } catch (error) {
       console.error('PropertyActions: Erro ao deletar propriedade:', error);
+      
+      // Se falhou a deleção no backend, reverter a alteração no estado
+      loadProperties().catch(e => {
+        console.error('PropertyActions: Erro ao recarregar propriedades após falha na deleção:', e);
+      });
+      
       toast({
         title: "Erro ao deletar",
         description: "Não foi possível deletar a propriedade. Tente novamente.",

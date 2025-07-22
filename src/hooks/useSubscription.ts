@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -16,8 +16,17 @@ export const useSubscription = () => {
     subscription_end: null,
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Refs para controle de requisições e estado
+  const isCheckingRef = useRef(false);
+  const lastCheckedRef = useRef<number | null>(null);
+  const mountedRef = useRef(true);
 
-  const checkSubscription = async () => {
+  // Apenas fazer requisição a cada 30 segundos no máximo
+  const CHECK_COOLDOWN = 30000; // 30 segundos
+  
+  const checkSubscription = useCallback(async (force = false) => {
     if (!user || !session) {
       setSubscriptionData({
         subscribed: false,
@@ -25,11 +34,27 @@ export const useSubscription = () => {
         subscription_end: null,
       });
       setLoading(false);
+      setError(null);
       return;
     }
-
+    
+    // Evitar requisições simultâneas
+    if (isCheckingRef.current) {
+      console.log('useSubscription: Já existe uma verificação em andamento');
+      return;
+    }
+    
+    // Verificar cooldown a menos que seja forçado
+    const now = Date.now();
+    if (!force && lastCheckedRef.current && now - lastCheckedRef.current < CHECK_COOLDOWN) {
+      console.log('useSubscription: Verificação muito recente, ignorando');
+      return;
+    }
+    
     try {
+      isCheckingRef.current = true;
       setLoading(true);
+      setError(null);
       console.log('useSubscription: Verificando assinatura para usuário:', user.id);
       
       const { data, error } = await supabase.functions.invoke('check-subscription', {
@@ -38,9 +63,13 @@ export const useSubscription = () => {
         },
       });
 
+      // Verificar se o componente ainda está montado
+      if (!mountedRef.current) return;
+
       if (error) {
         console.error('useSubscription: Erro ao verificar assinatura:', error);
-        // Em caso de erro, manter estado anterior em vez de resetar
+        setError('Erro ao verificar assinatura');
+        // Em caso de erro, manter estado anterior
         return;
       }
 
@@ -52,17 +81,54 @@ export const useSubscription = () => {
         };
         
         console.log('useSubscription: Dados da assinatura recebidos:', newSubscriptionData);
-        setSubscriptionData(newSubscriptionData);
+        
+        // Atualizar apenas se os dados realmente mudaram para evitar re-renders desnecessários
+        if (JSON.stringify(subscriptionData) !== JSON.stringify(newSubscriptionData)) {
+          setSubscriptionData(newSubscriptionData);
+        }
       }
+      
+      // Marcar última verificação
+      lastCheckedRef.current = Date.now();
     } catch (error) {
       console.error('useSubscription: Erro geral ao verificar assinatura:', error);
+      if (mountedRef.current) {
+        setError('Erro ao verificar assinatura');
+      }
       // Em caso de erro, não resetar o estado
     } finally {
-      setLoading(false);
+      if (mountedRef.current) {
+        setLoading(false);
+      }
+      isCheckingRef.current = false;
     }
-  };
+  }, [user?.id, session?.access_token, subscriptionData]);
 
-  const createCheckout = async (planType: 'monthly' | 'annual') => {
+  useEffect(() => {
+    console.log('useSubscription: useEffect disparado - user:', !!user, 'session:', !!session);
+    
+    mountedRef.current = true;
+    checkSubscription();
+    
+    // Listener para quando a página volta a ter foco
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('useSubscription: Página voltou a ficar visível, revalidando assinatura');
+        if (user && session && mountedRef.current) {
+          checkSubscription(true); // Forçar verificação quando a página fica visível
+        }
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      mountedRef.current = false;
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user?.id, session?.access_token, checkSubscription]);
+
+  const createCheckout = useCallback(async (planType: 'monthly' | 'annual') => {
     if (!user || !session) {
       throw new Error('User not authenticated');
     }
@@ -87,9 +153,9 @@ export const useSubscription = () => {
       console.error('Error creating checkout:', error);
       throw error;
     }
-  };
+  }, [user?.id, session?.access_token]);
 
-  const openCustomerPortal = async () => {
+  const openCustomerPortal = useCallback(async () => {
     if (!user || !session) {
       throw new Error('User not authenticated');
     }
@@ -113,26 +179,7 @@ export const useSubscription = () => {
       console.error('Error opening customer portal:', error);
       throw error;
     }
-  };
-
-  useEffect(() => {
-    console.log('useSubscription: useEffect disparado - user:', !!user, 'session:', !!session);
-    checkSubscription();
-    
-    // Listener para quando a página volta a ter foco
-    const handleFocus = () => {
-      console.log('useSubscription: Página voltou ao foco, revalidando assinatura');
-      if (user && session) {
-        checkSubscription();
-      }
-    };
-    
-    window.addEventListener('focus', handleFocus);
-    
-    return () => {
-      window.removeEventListener('focus', handleFocus);
-    };
-  }, [user?.id, session?.access_token]); // Dependências mais específicas
+  }, [user?.id, session?.access_token]);
 
   const isPro = subscriptionData.subscribed;
 
@@ -140,7 +187,8 @@ export const useSubscription = () => {
     ...subscriptionData,
     isPro,
     loading,
-    checkSubscription,
+    error,
+    checkSubscription: () => checkSubscription(true), // Função pública sempre força verificação
     createCheckout,
     openCustomerPortal,
   };

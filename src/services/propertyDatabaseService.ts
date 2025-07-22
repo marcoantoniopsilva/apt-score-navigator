@@ -135,12 +135,34 @@ export const deletePropertyFromDatabase = async (propertyId: string) => {
     console.log('deletePropertyFromDatabase: Usuário autenticado:', session.user.id);
     console.log('deletePropertyFromDatabase: Executando query de delete...');
 
-    const { data, error } = await supabase
+    // Primeiro verificamos se a propriedade existe
+    const { data: propertyCheck, error: checkError } = await supabase
+      .from('properties')
+      .select('id')
+      .eq('id', propertyId)
+      .eq('user_id', session.user.id)
+      .single();
+    
+    if (checkError) {
+      console.error('deletePropertyFromDatabase: Erro ao verificar propriedade:', checkError);
+      if (checkError.code === 'PGRST116') {
+        console.log('deletePropertyFromDatabase: Propriedade não encontrada, considerando como já removida');
+        return { success: true, message: 'Propriedade já removida' };
+      }
+      throw new Error(`Falha ao verificar propriedade: ${checkError.message}`);
+    }
+    
+    if (!propertyCheck) {
+      console.log('deletePropertyFromDatabase: Propriedade não encontrada, considerando como já removida');
+      return { success: true, message: 'Propriedade já removida' };
+    }
+
+    // Se a propriedade existe, então deletamos
+    const { error } = await supabase
       .from('properties')
       .delete()
       .eq('id', propertyId)
-      .eq('user_id', session.user.id)
-      .select();
+      .eq('user_id', session.user.id);
 
     if (error) {
       console.error('deletePropertyFromDatabase: Erro detalhado:', error);
@@ -149,8 +171,8 @@ export const deletePropertyFromDatabase = async (propertyId: string) => {
       throw new Error(`Falha ao deletar propriedade: ${error.message}`);
     }
 
-    console.log('deletePropertyFromDatabase: Resposta do delete:', data);
     console.log('deletePropertyFromDatabase: Propriedade deletada com sucesso');
+    return { success: true, message: 'Propriedade removida com sucesso' };
 
   } catch (error) {
     console.error('deletePropertyFromDatabase: Erro geral:', error);

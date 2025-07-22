@@ -28,6 +28,7 @@ import { toast } from 'sonner';
 const Index = () => {
   const [comparisonMode, setComparisonMode] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [appKey, setAppKey] = useState(Date.now()); // Key para forçar remontagem quando necessário
   
   const { properties, setProperties, isLoading, loadProperties } = usePropertyLoader();
   const { sortBy, sortOrder, setSortBy, setSortOrder } = usePropertySorting();
@@ -153,6 +154,25 @@ const Index = () => {
       window.removeEventListener('criteria-updated', handleCriteriaUpdate);
     };
   }, []);
+  
+  // Atualizar quando a página voltar a ficar visível
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        console.log('Index: Página voltou a ficar visível, revalidando dados');
+        // Força remontagem de componentes chave
+        setAppKey(Date.now());
+        // Recarrega propriedades
+        loadProperties();
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [loadProperties]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -178,7 +198,7 @@ const Index = () => {
         )}
         
         <div className="mb-6">
-          <SubscriptionStatus />
+          <SubscriptionStatus key={`subscription-status-${Date.now()}`} />
         </div>
         
         <PropertyControls
