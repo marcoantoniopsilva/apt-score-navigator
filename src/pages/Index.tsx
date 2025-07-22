@@ -155,15 +155,31 @@ const Index = () => {
     };
   }, []);
   
-  // Atualizar quando a página voltar a ficar visível
+  // Atualizar quando a página voltar a ficar visível, mas com controle de frequência
   useEffect(() => {
+    let lastVisibilityUpdate = 0;
+    const VISIBILITY_COOLDOWN = 10000; // 10 segundos entre atualizações
+    
     const handleVisibilityChange = () => {
+      const now = Date.now();
+      
       if (document.visibilityState === 'visible') {
-        console.log('Index: Página voltou a ficar visível, revalidando dados');
-        // Força remontagem de componentes chave
-        setAppKey(Date.now());
-        // Recarrega propriedades
-        loadProperties();
+        // Evitar atualizações frequentes demais
+        if (now - lastVisibilityUpdate < VISIBILITY_COOLDOWN) {
+          console.log('Index: Ignorando atualização por visibilidade (cooldown)');
+          return;
+        }
+        
+        console.log('Index: Página voltou a ficar visível, revalidando dados suavemente');
+        lastVisibilityUpdate = now;
+        
+        // Revalidação suave: apenas verificar status da assinatura sem recarregar tudo
+        if (isPro !== undefined) {
+          // Não fazer nada para evitar flicker da UI
+        } else {
+          // Se não temos certeza do status, verificar mas sem forçar remontagem
+          loadProperties();
+        }
       }
     };
     
@@ -172,7 +188,7 @@ const Index = () => {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [loadProperties]);
+  }, [loadProperties, isPro]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">

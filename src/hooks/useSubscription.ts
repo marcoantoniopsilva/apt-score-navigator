@@ -108,23 +108,16 @@ export const useSubscription = () => {
     console.log('useSubscription: useEffect disparado - user:', !!user, 'session:', !!session);
     
     mountedRef.current = true;
-    checkSubscription();
-    
-    // Listener para quando a página volta a ter foco
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        console.log('useSubscription: Página voltou a ficar visível, revalidando assinatura');
-        if (user && session && mountedRef.current) {
-          checkSubscription(true); // Forçar verificação quando a página fica visível
-        }
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    // Verificar assinatura apenas uma vez na montagem, 
+    // não a cada vez que a visibilidade muda
+    if (user && session) {
+      checkSubscription();
+    } else {
+      setLoading(false);
+    }
     
     return () => {
       mountedRef.current = false;
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [user?.id, session?.access_token, checkSubscription]);
 
