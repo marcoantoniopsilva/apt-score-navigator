@@ -60,8 +60,9 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
   }, [activeCriteria]);
 
   const handleDataExtracted = (data: any) => {
+    console.log('AddPropertyForm: Dados recebidos em handleDataExtracted:', data);
     setExtractedData(data);
-    setFormData({
+    const newFormData = {
       title: data.title || '',
       address: data.address || '',
       bedrooms: data.bedrooms || 0,
@@ -72,9 +73,11 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
       rent: data.rent || 0,
       condo: data.condo || 0,
       iptu: data.iptu || 0,
-      fireInsurance: data.fireInsurance || 0,
+      fireInsurance: data.fireInsurance || 50,
       otherFees: data.otherFees || 0
-    });
+    };
+    console.log('AddPropertyForm: Atualizando formData para:', newFormData);
+    setFormData(newFormData);
     
     // Atualizar scores baseado nos dados extraídos ou usar scores sugeridos
     if (data.scores && typeof data.scores === 'object') {

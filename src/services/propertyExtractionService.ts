@@ -61,12 +61,25 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
       throw new Error(data.error || 'Falha na extração dos dados');
     }
 
-    console.log('Dados extraídos e salvos com sucesso:', data.data);
+    console.log('Dados extraídos com sucesso:', data.data);
     
     // Retornar os dados para preenchimento do formulário
+    const extractedData = data.data;
     return {
-      ...data.data,
-      parkingSpaces: data.data.parking_spaces || 0 // Converter snake_case para camelCase
+      title: extractedData.title || '',
+      address: extractedData.address || '',
+      bedrooms: extractedData.bedrooms || 0,
+      bathrooms: extractedData.bathrooms || 0,
+      parkingSpaces: extractedData.parking_spaces || extractedData.parkingSpaces || 0,
+      area: extractedData.area || 0,
+      floor: extractedData.floor || '',
+      rent: extractedData.rent || 0,
+      condo: extractedData.condo || 0,
+      iptu: extractedData.iptu || 0,
+      fireInsurance: extractedData.fire_insurance || extractedData.fireInsurance || 50,
+      otherFees: extractedData.other_fees || extractedData.otherFees || 0,
+      images: extractedData.images || [],
+      scores: extractedData.scores || {}
     };
 
   } catch (error) {

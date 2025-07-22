@@ -29,8 +29,10 @@ export const UrlExtractionForm: React.FC<UrlExtractionFormProps> = ({
     try {
       console.log('UrlExtractionForm: Chamando extractPropertyFromUrl...');
       const data = await extractPropertyFromUrl(url);
+      console.log('UrlExtractionForm: Dados recebidos:', data);
       if (data) {
         setExtractedData(data);
+        console.log('UrlExtractionForm: Passando dados para onDataExtracted:', data);
         onDataExtracted(data);
         toast({
           title: "Dados extraídos",
