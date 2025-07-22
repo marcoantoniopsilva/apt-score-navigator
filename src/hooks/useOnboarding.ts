@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
-import { UserProfile, UserCriteriaPreference, UserProfileType } from '@/types/onboarding';
+import { 
+  UserProfile, 
+  UserCriteriaPreference, 
+  UserProfileType,
+  OnboardingAnswers
+} from '@/types/onboarding';
 import { UserProfileService } from '@/services/userProfileService';
 import { CriteriaWeights } from '@/types/property';
 import { supabase } from '@/integrations/supabase/client';
@@ -71,6 +76,50 @@ export const useOnboarding = () => {
       return { success: true };
     } catch (error) {
       console.error('Error saving onboarding data:', error);
+      toast.error('Erro ao salvar configurações do perfil');
+      return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' };
+    }
+  };
+  
+  // Salva dados do onboarding aprimorado
+  const saveEnhancedOnboardingData = async (
+    userId: string,
+    profileType: UserProfileType,
+    answers: OnboardingAnswers,
+    selectedCriteria: string[],
+    criteriaWeights: Record<string, number>
+  ) => {
+    try {
+      // Salva o perfil
+      const profileResult = await UserProfileService.saveUserProfile(
+        userId,
+        profileType,
+        answers.objetivo_principal,
+        answers.situacao_moradia,
+        answers.valor_principal
+      );
+
+      if (!profileResult.success) {
+        throw new Error(profileResult.error || 'Erro ao salvar perfil');
+      }
+
+      // Salva as preferências de critério
+      const preferencesResult = await UserProfileService.saveUserCriteriaPreferences(
+        userId,
+        criteriaWeights
+      );
+
+      if (!preferencesResult.success) {
+        throw new Error(preferencesResult.error || 'Erro ao salvar preferências');
+      }
+
+      // Recarrega os dados
+      await loadOnboardingData(userId);
+      
+      toast.success('Perfil configurado com sucesso!');
+      return { success: true };
+    } catch (error) {
+      console.error('Error saving enhanced onboarding data:', error);
       toast.error('Erro ao salvar configurações do perfil');
       return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' };
     }
@@ -181,6 +230,7 @@ export const useOnboarding = () => {
     setShowOnboarding,
     loadOnboardingData,
     saveOnboardingData,
+    saveEnhancedOnboardingData,
     getUserCriteriaWeights
   };
 };

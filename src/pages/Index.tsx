@@ -8,7 +8,7 @@ import AppHeader from '@/components/AppHeader';
 import { AppExplanation } from '@/components/AppExplanation';
 import { MobileWeightsEditor } from '@/components/MobileWeightsEditor';
 import { PropertyComparison } from '@/components/PropertyComparison';
-import { OnboardingFlow } from '@/components/OnboardingFlow';
+
 import { calculateFinalScore } from '@/utils/scoreCalculator';
 import { usePropertyLoader } from '@/hooks/usePropertyLoader';
 import { usePropertyActions } from '@/hooks/usePropertyActions';
@@ -16,6 +16,7 @@ import { usePropertySorting } from '@/hooks/usePropertySorting';
 import { usePropertyComparison } from '@/hooks/usePropertyComparison';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { EnhancedOnboardingModal } from '@/components/EnhancedOnboardingModal';
 import { useCriteria } from '@/hooks/useCriteria';
 import { SubscriptionStatus } from '@/components/SubscriptionStatus';
 import { UpgradeModal } from '@/components/UpgradeModal';
@@ -247,12 +248,10 @@ const Index = () => {
         onOpenChange={setShowUpgradeModal} 
       />
 
-      {showOnboarding && (
-        <OnboardingFlow
-          onComplete={handleOnboardingComplete}
-          onClose={() => setShowOnboarding(false)}
-        />
-      )}
+      <EnhancedOnboardingModal
+        open={showOnboarding}
+        onOpenChange={setShowOnboarding}
+      />
     </div>
   );
 };
