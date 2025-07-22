@@ -33,7 +33,7 @@ const Index = () => {
   const { sortBy, sortOrder, setSortBy, setSortOrder } = usePropertySorting();
   const { isPro, loading: subscriptionLoading } = useSubscription();
   
-  // Hook de critérios dinâmicos (substitui o sistema de pesos estático)
+  // Hook de critérios dinâmicos - DEVE vir antes de qualquer useEffect/useState condicional
   const { criteriaWeights, updateCriteriaWeight, activeCriteria, getWeightsObject } = useCriteria();
   
   // Hook do onboarding
