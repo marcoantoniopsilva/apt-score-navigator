@@ -128,6 +128,30 @@ const Index = () => {
     canCompare
   } = usePropertyComparison();
 
+  // Escuta mudanças nos critérios para recalcular pontuações
+  useEffect(() => {
+    const handleCriteriaUpdate = () => {
+      console.log('Index: Critérios atualizados, recalculando pontuações...');
+      // Força recálculo das pontuações quando os critérios mudarem
+      if (properties.length > 0) {
+        const propertiesWithNewScores = properties.map(property => {
+          const newFinalScore = calculateFinalScore(property.scores, criteriaWeights);
+          return {
+            ...property,
+            finalScore: newFinalScore
+          };
+        });
+        setProperties(propertiesWithNewScores);
+      }
+    };
+
+    window.addEventListener('criteria-updated', handleCriteriaUpdate);
+    
+    return () => {
+      window.removeEventListener('criteria-updated', handleCriteriaUpdate);
+    };
+  }, [properties, criteriaWeights, setProperties]);
+
   // Usar useMemo para recalcular pontuações apenas quando pesos mudarem
   const propertiesWithUpdatedScores = useMemo(() => {
     if (properties.length === 0) return [];

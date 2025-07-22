@@ -78,6 +78,9 @@ export const useOnboarding = () => {
       // Recarrega os dados
       await loadOnboardingData(userId);
       
+      // Notifica outros componentes sobre a mudança
+      window.dispatchEvent(new CustomEvent('criteria-updated'));
+      
       toast.success('Perfil configurado com sucesso!');
       return { success: true };
     } catch (error) {
@@ -124,6 +127,9 @@ export const useOnboarding = () => {
 
       // Recarrega os dados
       await loadOnboardingData(userId);
+      
+      // Notifica outros componentes sobre a mudança
+      window.dispatchEvent(new CustomEvent('criteria-updated'));
       
       toast.success('Perfil configurado com sucesso!');
       return { success: true };
