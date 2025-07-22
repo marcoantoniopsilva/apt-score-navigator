@@ -128,30 +128,6 @@ const Index = () => {
     canCompare
   } = usePropertyComparison();
 
-  // Escuta mudanças nos critérios para recalcular pontuações
-  useEffect(() => {
-    const handleCriteriaUpdate = () => {
-      console.log('Index: Critérios atualizados, recalculando pontuações...');
-      // Força recálculo das pontuações quando os critérios mudarem
-      if (properties.length > 0) {
-        const propertiesWithNewScores = properties.map(property => {
-          const newFinalScore = calculateFinalScore(property.scores, criteriaWeights);
-          return {
-            ...property,
-            finalScore: newFinalScore
-          };
-        });
-        setProperties(propertiesWithNewScores);
-      }
-    };
-
-    window.addEventListener('criteria-updated', handleCriteriaUpdate);
-    
-    return () => {
-      window.removeEventListener('criteria-updated', handleCriteriaUpdate);
-    };
-  }, [properties, criteriaWeights, setProperties]);
-
   // Usar useMemo para recalcular pontuações apenas quando pesos mudarem
   const propertiesWithUpdatedScores = useMemo(() => {
     if (properties.length === 0) return [];
@@ -167,20 +143,19 @@ const Index = () => {
     });
   }, [properties, criteriaWeights]);
 
-  // Atualizar o estado apenas quando necessário
+  // Escuta mudanças nos critérios para forçar atualização
   useEffect(() => {
-    if (propertiesWithUpdatedScores.length > 0) {
-      // Verificar se realmente houve mudança nas pontuações finais
-      const scoresChanged = propertiesWithUpdatedScores.some((prop, index) => 
-        properties[index] && prop.finalScore !== properties[index].finalScore
-      );
-      
-      if (scoresChanged) {
-        console.log('Index: Atualizando propriedades com novas pontuações...');
-        setProperties(propertiesWithUpdatedScores);
-      }
-    }
-  }, [propertiesWithUpdatedScores, setProperties]);
+    const handleCriteriaUpdate = () => {
+      console.log('Index: Critérios atualizados via evento, forçando re-render...');
+      // Apenas força um re-render, o useMemo acima cuidará do recálculo
+    };
+
+    window.addEventListener('criteria-updated', handleCriteriaUpdate);
+    
+    return () => {
+      window.removeEventListener('criteria-updated', handleCriteriaUpdate);
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -225,7 +200,7 @@ const Index = () => {
         />
 
         <PropertyList
-          properties={properties}
+          properties={propertiesWithUpdatedScores}
           weights={criteriaWeights}
           isLoading={isLoading}
           onUpdate={handleUpdateProperty}
