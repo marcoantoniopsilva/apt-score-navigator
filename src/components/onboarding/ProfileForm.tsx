@@ -34,6 +34,11 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ onComplete, onBack }) 
       }
     ];
 
+    // Se ainda não temos a intenção selecionada, retorna apenas a primeira pergunta
+    if (!answers.intencao) {
+      return baseQuestions;
+    }
+
     // Pergunta sobre objetivo varia baseado na intenção
     const intencao = answers.intencao as 'alugar' | 'comprar';
     
@@ -117,7 +122,9 @@ export const ProfileForm: React.FC<ProfileFormProps> = ({ onComplete, onBack }) 
   };
 
   const isComplete = () => {
-    return Object.keys(answers).length === questions.length;
+    const allQuestions = getQuestions();
+    const requiredFields = ['intencao', 'objetivo_principal', 'situacao_moradia', 'valor_principal'];
+    return requiredFields.every(field => answers[field as keyof OnboardingAnswers] !== undefined);
   };
 
   const isCurrentQuestionAnswered = () => {

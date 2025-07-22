@@ -40,19 +40,25 @@ export const useOnboarding = () => {
   const saveOnboardingData = async (
     userId: string,
     profileType: UserProfileType,
+    intencao: string,
     objetivoPrincipal: string,
     situacaoMoradia: string,
     valorPrincipal: string,
-    criteriaWeights: Record<string, number>
+    criteriaWeights: Record<string, number>,
+    faixaPreco?: string,
+    regiaoReferencia?: string
   ) => {
     try {
       // Salva o perfil
       const profileResult = await UserProfileService.saveUserProfile(
         userId,
         profileType,
+        intencao,
         objetivoPrincipal,
         situacaoMoradia,
-        valorPrincipal
+        valorPrincipal,
+        faixaPreco,
+        regiaoReferencia
       );
 
       if (!profileResult.success) {
@@ -94,9 +100,12 @@ export const useOnboarding = () => {
       const profileResult = await UserProfileService.saveUserProfile(
         userId,
         profileType,
+        answers.intencao,
         answers.objetivo_principal,
         answers.situacao_moradia,
-        answers.valor_principal
+        answers.valor_principal,
+        answers.faixa_preco,
+        answers.regiao_referencia
       );
 
       if (!profileResult.success) {

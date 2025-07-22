@@ -5,9 +5,12 @@ export class UserProfileService {
   static async saveUserProfile(
     userId: string,
     profileType: UserProfileType,
+    intencao: string,
     objetivoPrincipal: string,
     situacaoMoradia: string,
-    valorPrincipal: string
+    valorPrincipal: string,
+    faixaPreco?: string,
+    regiaoReferencia?: string
   ): Promise<{ success: boolean; error?: string }> {
     try {
       // Primeiro verifica se já existe um perfil para este usuário
@@ -23,9 +26,12 @@ export class UserProfileService {
           .from('user_profiles')
           .update({
             profile_type: profileType,
+            intencao,
             objetivo_principal: objetivoPrincipal,
             situacao_moradia: situacaoMoradia,
-            valor_principal: valorPrincipal
+            valor_principal: valorPrincipal,
+            faixa_preco: faixaPreco,
+            regiao_referencia: regiaoReferencia
           })
           .eq('user_id', userId);
 
@@ -37,9 +43,12 @@ export class UserProfileService {
           .insert({
             user_id: userId,
             profile_type: profileType,
+            intencao,
             objetivo_principal: objetivoPrincipal,
             situacao_moradia: situacaoMoradia,
-            valor_principal: valorPrincipal
+            valor_principal: valorPrincipal,
+            faixa_preco: faixaPreco,
+            regiao_referencia: regiaoReferencia
           });
 
         if (error) throw error;

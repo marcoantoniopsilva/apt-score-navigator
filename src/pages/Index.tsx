@@ -6,6 +6,7 @@ import PropertyControls from '@/components/PropertyControls';
 import PropertyList from '@/components/PropertyList';
 import AppHeader from '@/components/AppHeader';
 import { AppExplanation } from '@/components/AppExplanation';
+import { UserPreferencesDisplay } from '@/components/UserPreferencesDisplay';
 import { MobileWeightsEditor } from '@/components/MobileWeightsEditor';
 import { PropertyComparison } from '@/components/PropertyComparison';
 
@@ -41,6 +42,7 @@ const Index = () => {
     showOnboarding,
     setShowOnboarding,
     saveOnboardingData,
+    userProfile,
     isLoading: onboardingLoading
   } = useOnboarding();
 
@@ -72,6 +74,7 @@ const Index = () => {
       const result = await saveOnboardingData(
         session.user.id,
         profile,
+        'alugar', // valor padrão - isso deveria vir do onboarding
         'objetivo_principal', // Você pode ajustar isso baseado no profile
         'situacao_moradia',   // Você pode ajustar isso baseado no profile  
         'valor_principal',    // Você pode ajustar isso baseado no profile
@@ -159,7 +162,10 @@ const Index = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <AppHeader 
         title="Comparador de Imóveis"
-        subtitle="Encontre o melhor apartamento para alugar"
+        subtitle={userProfile?.intencao ? 
+          `Encontre o melhor apartamento para ${userProfile.intencao}` : 
+          "Encontre o melhor apartamento para você"
+        }
         onAddProperty={handleAddPropertyWithLimits}
         onRefresh={loadProperties}
         isLoading={isLoading}
@@ -167,6 +173,13 @@ const Index = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <AppExplanation />
+        
+        {userProfile && (
+          <UserPreferencesDisplay
+            userProfile={userProfile}
+            onEdit={() => setShowOnboarding(true)}
+          />
+        )}
         
         <div className="mb-6">
           <SubscriptionStatus />

@@ -245,9 +245,12 @@ export type Database = {
       user_profiles: {
         Row: {
           created_at: string
+          faixa_preco: string | null
           id: string
+          intencao: string | null
           objetivo_principal: string
           profile_type: string
+          regiao_referencia: string | null
           situacao_moradia: string
           updated_at: string
           user_id: string
@@ -255,9 +258,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          faixa_preco?: string | null
           id?: string
+          intencao?: string | null
           objetivo_principal: string
           profile_type: string
+          regiao_referencia?: string | null
           situacao_moradia: string
           updated_at?: string
           user_id: string
@@ -265,9 +271,12 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          faixa_preco?: string | null
           id?: string
+          intencao?: string | null
           objetivo_principal?: string
           profile_type?: string
+          regiao_referencia?: string | null
           situacao_moradia?: string
           updated_at?: string
           user_id?: string
