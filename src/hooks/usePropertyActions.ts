@@ -27,11 +27,16 @@ export const usePropertyActions = (
       };
       
       console.log('PropertyActions: Salvando no banco de dados...');
-      await savePropertyToDatabase(propertyWithScore);
+      const savedProperty = await savePropertyToDatabase(propertyWithScore);
+      console.log('PropertyActions: Propriedade salva, resposta do banco:', savedProperty);
       
-      // Em vez de adicionar ao estado local, recarregar as propriedades do banco
-      console.log('PropertyActions: Recarregando propriedades do banco...');
-      await loadProperties();
+      // Adicionar apenas a nova propriedade ao estado local, sem recarregar tudo
+      console.log('PropertyActions: Adicionando ao estado local...');
+      setProperties(prev => {
+        const newProperties = [...prev, propertyWithScore];
+        console.log('PropertyActions: Estado atualizado com nova propriedade');
+        return newProperties;
+      });
       
       setShowAddForm(false);
       

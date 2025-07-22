@@ -128,14 +128,11 @@ const Index = () => {
     canCompare
   } = usePropertyComparison();
 
-  // Usar useMemo para recalcular pontuações apenas quando pesos mudarem
-  const propertiesWithUpdatedScores = useMemo(() => {
-    if (properties.length === 0) return [];
-    
-    console.log('Index: Recalculando pontuações com novos pesos...');
+  // Apenas recalcula pontuações sem duplicar propriedades
+  const displayedProperties = useMemo(() => {
+    console.log('Index: Recalculando apenas pontuações para exibição...');
     return properties.map(property => {
       const newFinalScore = calculateFinalScore(property.scores, criteriaWeights);
-      console.log(`Index: Propriedade ${property.id} - nova pontuação: ${newFinalScore}`);
       return {
         ...property,
         finalScore: newFinalScore
@@ -143,11 +140,11 @@ const Index = () => {
     });
   }, [properties, criteriaWeights]);
 
-  // Escuta mudanças nos critérios para forçar atualização
+  // Escuta mudanças nos critérios para forçar atualização das pontuações
   useEffect(() => {
     const handleCriteriaUpdate = () => {
-      console.log('Index: Critérios atualizados via evento, forçando re-render...');
-      // Apenas força um re-render, o useMemo acima cuidará do recálculo
+      console.log('Index: Critérios atualizados via evento');
+      // O useMemo acima irá recalcular automaticamente
     };
 
     window.addEventListener('criteria-updated', handleCriteriaUpdate);
@@ -200,7 +197,7 @@ const Index = () => {
         />
 
         <PropertyList
-          properties={propertiesWithUpdatedScores}
+          properties={displayedProperties}
           weights={criteriaWeights}
           isLoading={isLoading}
           onUpdate={handleUpdateProperty}
