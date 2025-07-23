@@ -37,16 +37,39 @@ export const UrlExtractionForm: React.FC<UrlExtractionFormProps> = ({
       setExtractionStatus('Extraindo dados do anúncio...');
       const data = await extractPropertyFromUrl(url);
       
-      console.log('UrlExtractionForm: Dados recebidos:', data);
+      console.log('UrlExtractionForm: Dados recebidos do serviço de extração:', data);
+      console.log('UrlExtractionForm: Tipo dos dados recebidos:', typeof data);
+      console.log('UrlExtractionForm: Keys dos dados recebidos:', Object.keys(data || {}));
       
       if (data && Object.keys(data).length > 0) {
         setExtractedData(data);
         setExtractionStatus('');
         console.log('UrlExtractionForm: Passando dados para onDataExtracted:', data);
-        onDataExtracted(data);
+        
+        // Garantir que os dados sejam passados no formato correto
+        const formattedData = {
+          title: data.title || '',
+          address: data.address || '',
+          bedrooms: Number(data.bedrooms) || 0,
+          bathrooms: Number(data.bathrooms) || 0,
+          parkingSpaces: Number(data.parkingSpaces) || 0,
+          area: Number(data.area) || 0,
+          floor: data.floor || '',
+          rent: Number(data.rent) || 0,
+          condo: Number(data.condo) || 0,
+          iptu: Number(data.iptu) || 0,
+          fireInsurance: Number(data.fireInsurance) || 50,
+          otherFees: Number(data.otherFees) || 0,
+          images: data.images || [],
+          scores: data.scores || {}
+        };
+        
+        console.log('UrlExtractionForm: Dados formatados para o formulário:', formattedData);
+        onDataExtracted(formattedData);
+        
         toast({
           title: "Dados extraídos com sucesso!",
-          description: `Título: ${data.title || 'N/A'}, Endereço: ${data.address || 'N/A'}, Aluguel: R$ ${data.rent || 0}`,
+          description: `Título: ${formattedData.title || 'N/A'}, Endereço: ${formattedData.address || 'N/A'}, Aluguel: R$ ${formattedData.rent || 0}`,
         });
       } else {
         setExtractionStatus('');
@@ -97,9 +120,20 @@ export const UrlExtractionForm: React.FC<UrlExtractionFormProps> = ({
         </p>
       )}
       {extractedData && (
-        <p className="text-sm text-green-600 mt-2">
-          ✅ Dados extraídos com sucesso! Revise e ajuste conforme necessário.
-        </p>
+        <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
+          <p className="text-sm text-green-600 font-medium">
+            ✅ Dados extraídos com sucesso!
+          </p>
+          <div className="text-xs text-green-600 mt-1">
+            <p>Título: {extractedData.title || 'N/A'}</p>
+            <p>Endereço: {extractedData.address || 'N/A'}</p>
+            <p>Quartos: {extractedData.bedrooms || 0} | Banheiros: {extractedData.bathrooms || 0}</p>
+            <p>Aluguel: R$ {extractedData.rent || 0}</p>
+          </div>
+          <p className="text-xs text-green-600 mt-1">
+            Revise e ajuste os dados conforme necessário.
+          </p>
+        </div>
       )}
     </div>
   );

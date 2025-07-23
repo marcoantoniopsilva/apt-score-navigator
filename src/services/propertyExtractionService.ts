@@ -75,25 +75,32 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
 
     console.log('Dados extraídos com sucesso:', data.data);
     
-    // Retornar os dados exatamente como vêm da edge function, apenas com mapeamento correto
+    // Corrigir o mapeamento dos dados para garantir que os nomes dos campos estejam corretos
     const extractedData = data.data;
     
-    return {
+    const mappedData = {
       title: extractedData.title || '',
       address: extractedData.address || '',
       bedrooms: Number(extractedData.bedrooms) || 0,
       bathrooms: Number(extractedData.bathrooms) || 0,
-      parkingSpaces: Number(extractedData.parking_spaces) || 0,
+      // Corrigir o mapeamento do parkingSpaces - a edge function retorna parking_spaces
+      parkingSpaces: Number(extractedData.parking_spaces || extractedData.parkingSpaces) || 0,
       area: Number(extractedData.area) || 0,
       floor: extractedData.floor || '',
       rent: Number(extractedData.rent) || 0,
       condo: Number(extractedData.condo) || 0,
       iptu: Number(extractedData.iptu) || 0,
-      fireInsurance: Number(extractedData.fire_insurance) || 50,
-      otherFees: Number(extractedData.other_fees) || 0,
+      // Corrigir o mapeamento do fireInsurance - a edge function retorna fire_insurance
+      fireInsurance: Number(extractedData.fire_insurance || extractedData.fireInsurance) || 50,
+      // Corrigir o mapeamento do otherFees - a edge function retorna other_fees
+      otherFees: Number(extractedData.other_fees || extractedData.otherFees) || 0,
       images: extractedData.images || [],
       scores: extractedData.scores || {}
     };
+
+    console.log('propertyExtractionService: Dados mapeados:', mappedData);
+    
+    return mappedData;
 
   } catch (error) {
     console.error('Erro ao extrair dados:', error);
