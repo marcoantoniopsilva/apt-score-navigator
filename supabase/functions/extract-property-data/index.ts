@@ -1,10 +1,10 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { corsHeaders } from './corsHeaders.ts'
-import { authenticateUser } from './authService.ts'
-import { extractDataWithFirecrawl } from './firecrawlService.ts'
+import { validateUser } from './authService.ts'
+import { scrapeWebsite } from './firecrawlService.ts'
 import { processExtractedData } from './dataProcessor.ts'
-import { extractImagesFromContent } from './imageExtractor.ts'
+import { extractImagesFromHTML, extractImagesFromMarkdown } from './imageExtractor.ts'
 
 serve(async (req) => {
   console.log('=== INÍCIO DA EDGE FUNCTION ===');
@@ -16,8 +16,12 @@ serve(async (req) => {
   try {
     // Autenticação do usuário
     console.log('Autenticando usuário...');
-    const { userId } = await authenticateUser(req);
-    console.log('Usuário autenticado:', userId);
+    const authHeader = req.headers.get('Authorization');
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    const user = await validateUser(authHeader, supabaseUrl, supabaseServiceRoleKey);
+    console.log('Usuário autenticado:', user.id);
 
     // Extrair URL do body
     const { url } = await req.json();
@@ -29,17 +33,24 @@ serve(async (req) => {
 
     // Extrair dados com Firecrawl
     console.log('Iniciando extração com Firecrawl...');
-    const extractedContent = await extractDataWithFirecrawl(url);
+    const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY')!;
+    const firecrawlResult = await scrapeWebsite(url, firecrawlApiKey);
     console.log('Conteúdo extraído com Firecrawl');
 
     // Processar dados extraídos
     console.log('Processando dados extraídos...');
-    const cleanedData = await processExtractedData(extractedContent, url);
+    const extractedContent = firecrawlResult.data?.markdown || firecrawlResult.data?.content || '';
+    const cleanedData = await processExtractedData(extractedContent);
     console.log('Dados processados:', cleanedData);
 
     // Extrair imagens do conteúdo
     console.log('Extraindo imagens...');
-    const extractedImages = await extractImagesFromContent(extractedContent);
+    const htmlContent = firecrawlResult.data?.html || '';
+    const markdownContent = firecrawlResult.data?.markdown || '';
+    const extractedImages = [
+      ...extractImagesFromHTML(htmlContent),
+      ...extractImagesFromMarkdown(markdownContent)
+    ].slice(0, 10); // Limitar a 10 imagens
     console.log('Imagens extraídas:', extractedImages?.length || 0);
 
     // REMOVIDO: Não salvar mais no banco de dados automaticamente
