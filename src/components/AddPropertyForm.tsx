@@ -16,6 +16,21 @@ interface AddPropertyFormProps {
   onCancel: () => void;
 }
 
+interface FormData {
+  title: string;
+  address: string;
+  bedrooms: number;
+  bathrooms: number;
+  parkingSpaces: number;
+  area: number;
+  floor: string;
+  rent: number;
+  condo: number;
+  iptu: number;
+  fireInsurance: number;
+  otherFees: number;
+}
+
 export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCancel }) => {
   const { activeCriteria, getCriteriaLabel } = useCriteria();
   
@@ -25,7 +40,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
   const [suggestedScores, setSuggestedScores] = useState<Record<string, number>>({});
   
   // Estados do formulário inicializados vazios
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     title: '',
     address: '',
     bedrooms: 0,
@@ -63,8 +78,6 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
   const handleDataExtracted = (data: any) => {
     console.log('=== INÍCIO HANDLE DATA EXTRACTED ===');
     console.log('AddPropertyForm: Dados recebidos em handleDataExtracted:', data);
-    console.log('AddPropertyForm: Tipo dos dados:', typeof data);
-    console.log('AddPropertyForm: Keys dos dados:', Object.keys(data || {}));
     
     if (!data || typeof data !== 'object') {
       console.error('AddPropertyForm: Dados inválidos recebidos:', data);
@@ -73,8 +86,8 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
     
     setExtractedData(data);
     
-    // Atualizar formData com valores explícitos
-    const newFormData = {
+    // Criar novo objeto com valores válidos
+    const newFormData: FormData = {
       title: String(data.title || ''),
       address: String(data.address || ''),
       bedrooms: Number(data.bedrooms) || 0,
@@ -89,11 +102,14 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
       otherFees: Number(data.otherFees) || 0
     };
     
-    console.log('AddPropertyForm: FormData atual:', formData);
-    console.log('AddPropertyForm: Novo FormData:', newFormData);
+    console.log('AddPropertyForm: Novo FormData criado:', newFormData);
     
-    // Forçar atualização do estado
-    setFormData(newFormData);
+    // Forçar atualização do estado usando callback funcional
+    setFormData(prevData => {
+      console.log('AddPropertyForm: Estado anterior:', prevData);
+      console.log('AddPropertyForm: Novo estado:', newFormData);
+      return newFormData;
+    });
     
     // Atualizar scores baseado nos dados extraídos
     if (data.scores && typeof data.scores === 'object') {
@@ -114,16 +130,15 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
     console.log('=== FIM HANDLE DATA EXTRACTED ===');
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    console.log(`AddPropertyForm: Input change - ${name}: "${value}"`);
+  const updateFormField = (field: keyof FormData, value: string | number) => {
+    console.log(`AddPropertyForm: Atualizando campo ${field} com valor:`, value);
     
     setFormData(prev => {
       const updated = {
         ...prev,
-        [name]: value
+        [field]: value
       };
-      console.log(`AddPropertyForm: FormData atualizado:`, updated);
+      console.log(`AddPropertyForm: FormData atualizado para ${field}:`, updated);
       return updated;
     });
   };
@@ -218,17 +233,17 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
           <form onSubmit={handleSubmit} className="space-y-6">
             <PropertyBasicForm
               formData={formData}
-              onInputChange={handleInputChange}
+              onUpdateField={updateFormField}
             />
 
             <PropertyDetailsForm
               formData={formData}
-              onInputChange={handleInputChange}
+              onUpdateField={updateFormField}
             />
 
             <PropertyFinancialForm
               formData={formData}
-              onInputChange={handleInputChange}
+              onInputChange={(e) => updateFormField(e.target.name as keyof FormData, e.target.value)}
             />
 
             <PropertyScoresForm

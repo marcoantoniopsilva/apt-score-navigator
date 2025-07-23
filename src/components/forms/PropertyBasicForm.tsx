@@ -9,14 +9,20 @@ interface PropertyBasicFormProps {
     address: string;
     floor: string;
   };
-  onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onUpdateField: (field: string, value: string) => void;
 }
 
 export const PropertyBasicForm: React.FC<PropertyBasicFormProps> = ({
   formData,
-  onInputChange
+  onUpdateField
 }) => {
   console.log('PropertyBasicForm: Renderizando com formData:', formData);
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    console.log(`PropertyBasicForm: Campo ${name} alterado para:`, value);
+    onUpdateField(name, value);
+  };
   
   return (
     <>
@@ -28,7 +34,7 @@ export const PropertyBasicForm: React.FC<PropertyBasicFormProps> = ({
             id="title"
             name="title"
             value={formData.title}
-            onChange={onInputChange}
+            onChange={handleChange}
             required
             placeholder="Digite o título da propriedade"
           />
@@ -39,7 +45,7 @@ export const PropertyBasicForm: React.FC<PropertyBasicFormProps> = ({
             id="address"
             name="address"
             value={formData.address}
-            onChange={onInputChange}
+            onChange={handleChange}
             required
             placeholder="Digite o endereço da propriedade"
           />
@@ -52,7 +58,7 @@ export const PropertyBasicForm: React.FC<PropertyBasicFormProps> = ({
           id="floor"
           name="floor"
           value={formData.floor}
-          onChange={onInputChange}
+          onChange={handleChange}
           placeholder="Ex: 3º andar, Térreo, etc."
         />
       </div>

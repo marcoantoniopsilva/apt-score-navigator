@@ -10,14 +10,21 @@ interface PropertyDetailsFormProps {
     parkingSpaces: number;
     area: number;
   };
-  onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onUpdateField: (field: string, value: number) => void;
 }
 
 export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
   formData,
-  onInputChange
+  onUpdateField
 }) => {
   console.log('PropertyDetailsForm: Renderizando com formData:', formData);
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    const numericValue = Number(value) || 0;
+    console.log(`PropertyDetailsForm: Campo ${name} alterado para:`, numericValue);
+    onUpdateField(name, numericValue);
+  };
   
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -29,7 +36,7 @@ export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
           type="number"
           min="0"
           value={formData.bedrooms}
-          onChange={onInputChange}
+          onChange={handleChange}
           required
         />
       </div>
@@ -41,7 +48,7 @@ export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
           type="number"
           min="0"
           value={formData.bathrooms}
-          onChange={onInputChange}
+          onChange={handleChange}
           required
         />
       </div>
@@ -53,7 +60,7 @@ export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
           type="number"
           min="0"
           value={formData.parkingSpaces}
-          onChange={onInputChange}
+          onChange={handleChange}
           required
         />
       </div>
@@ -65,7 +72,7 @@ export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
           type="number"
           min="0"
           value={formData.area}
-          onChange={onInputChange}
+          onChange={handleChange}
           required
         />
       </div>
