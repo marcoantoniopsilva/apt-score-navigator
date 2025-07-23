@@ -58,15 +58,9 @@ const Index = () => {
     checkSubscription
   });
 
-  // DESABILITAR ONBOARDING AUTOMÁTICO - usuário já tem perfil configurado
-  // O onboarding só deve aparecer quando o usuário clicar manualmente para editar
-  useEffect(() => {
-    // Força o onboarding a ficar fechado sempre
-    if (showOnboarding) {
-      console.log('Index: Forçando fechamento do onboarding para evitar loop');
-      setShowOnboarding(false);
-    }
-  }, [showOnboarding, setShowOnboarding]);
+  // DESABILITAR COMPLETAMENTE O ONBOARDING AUTOMÁTICO 
+  // Se o usuário já tem perfil (hasCompletedOnboarding = true), NUNCA mostrar onboarding
+  const shouldShowOnboarding = false; // FORÇAR SEMPRE FALSO
 
   // Função para completar onboarding
   const handleOnboardingComplete = async (
@@ -267,10 +261,13 @@ const Index = () => {
         onOpenChange={setShowUpgradeModal} 
       />
 
-      <EnhancedOnboardingModal
-        open={showOnboarding}
-        onOpenChange={setShowOnboarding}
-      />
+      {/* ONBOARDING DESABILITADO - só mostrar se usuário não tem dados salvos E solicitar manualmente */}
+      {!hasCompletedOnboarding && !userProfile && shouldShowOnboarding && (
+        <EnhancedOnboardingModal
+          open={showOnboarding}
+          onOpenChange={setShowOnboarding}
+        />
+      )}
     </div>
   );
 };

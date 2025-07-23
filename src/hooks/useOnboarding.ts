@@ -13,9 +13,9 @@ import { toast } from 'sonner';
 export const useOnboarding = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userPreferences, setUserPreferences] = useState<UserCriteriaPreference[]>([]);
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(false);
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(true); // COMEÇAR SEMPRE COMO TRUE
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(false); // SEMPRE COMEÇAR FECHADO
 
   // Carrega dados do onboarding
   const loadOnboardingData = useCallback(async (userId: string) => {
