@@ -17,6 +17,8 @@ export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
   formData,
   onInputChange
 }) => {
+  console.log('PropertyDetailsForm: Renderizando com formData:', formData);
+  
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div>

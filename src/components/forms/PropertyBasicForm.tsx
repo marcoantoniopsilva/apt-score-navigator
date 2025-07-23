@@ -16,6 +16,8 @@ export const PropertyBasicForm: React.FC<PropertyBasicFormProps> = ({
   formData,
   onInputChange
 }) => {
+  console.log('PropertyBasicForm: Renderizando com formData:', formData);
+  
   return (
     <>
       {/* Basic Information */}
@@ -28,6 +30,7 @@ export const PropertyBasicForm: React.FC<PropertyBasicFormProps> = ({
             value={formData.title}
             onChange={onInputChange}
             required
+            placeholder="Digite o título da propriedade"
           />
         </div>
         <div>
@@ -38,6 +41,7 @@ export const PropertyBasicForm: React.FC<PropertyBasicFormProps> = ({
             value={formData.address}
             onChange={onInputChange}
             required
+            placeholder="Digite o endereço da propriedade"
           />
         </div>
       </div>
@@ -49,6 +53,7 @@ export const PropertyBasicForm: React.FC<PropertyBasicFormProps> = ({
           name="floor"
           value={formData.floor}
           onChange={onInputChange}
+          placeholder="Ex: 3º andar, Térreo, etc."
         />
       </div>
     </>

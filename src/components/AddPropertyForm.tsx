@@ -19,12 +19,13 @@ interface AddPropertyFormProps {
 export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCancel }) => {
   const { activeCriteria, getCriteriaLabel } = useCriteria();
   
-  // Estados inicializados a cada render para evitar dados antigos
+  // Estado para URL
   const [url, setUrl] = useState('');
   const [extractedData, setExtractedData] = useState<any>(null);
   const [suggestedScores, setSuggestedScores] = useState<Record<string, number>>({});
   
-  const [formData, setFormData] = useState(() => ({
+  // Estados do formulário inicializados vazios
+  const [formData, setFormData] = useState({
     title: '',
     address: '',
     bedrooms: 0,
@@ -37,7 +38,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
     iptu: 0,
     fireInsurance: 0,
     otherFees: 0
-  }));
+  });
 
   // Inicializar scores baseado nos critérios dinâmicos
   const [scores, setScores] = useState<Record<string, number>>(() => {
@@ -60,6 +61,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
   }, [activeCriteria]);
 
   const handleDataExtracted = (data: any) => {
+    console.log('=== INÍCIO HANDLE DATA EXTRACTED ===');
     console.log('AddPropertyForm: Dados recebidos em handleDataExtracted:', data);
     console.log('AddPropertyForm: Tipo dos dados:', typeof data);
     console.log('AddPropertyForm: Keys dos dados:', Object.keys(data || {}));
@@ -70,49 +72,60 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
     }
     
     setExtractedData(data);
+    
+    // Atualizar formData com valores explícitos
     const newFormData = {
-      title: data.title || '',
-      address: data.address || '',
+      title: String(data.title || ''),
+      address: String(data.address || ''),
       bedrooms: Number(data.bedrooms) || 0,
       bathrooms: Number(data.bathrooms) || 0,
       parkingSpaces: Number(data.parkingSpaces) || 0,
       area: Number(data.area) || 0,
-      floor: data.floor || '',
+      floor: String(data.floor || ''),
       rent: Number(data.rent) || 0,
       condo: Number(data.condo) || 0,
       iptu: Number(data.iptu) || 0,
       fireInsurance: Number(data.fireInsurance) || 50,
       otherFees: Number(data.otherFees) || 0
     };
-    console.log('AddPropertyForm: Atualizando formData de:', formData);
-    console.log('AddPropertyForm: Atualizando formData para:', newFormData);
+    
+    console.log('AddPropertyForm: FormData atual:', formData);
+    console.log('AddPropertyForm: Novo FormData:', newFormData);
+    
+    // Forçar atualização do estado
     setFormData(newFormData);
     
     // Atualizar scores baseado nos dados extraídos
     if (data.scores && typeof data.scores === 'object') {
       console.log('AddPropertyForm: Scores recebidos:', data.scores);
-      console.log('AddPropertyForm: Critérios ativos:', activeCriteria);
       
       const newScores: Record<string, number> = {};
       
       // Mapear scores extraídos para critérios ativos
       activeCriteria.forEach(criterio => {
-        // Usar o score extraído se existir, senão usar 5 como padrão
         newScores[criterio.key] = data.scores[criterio.key] || 5;
       });
       
       console.log('AddPropertyForm: Scores mapeados:', newScores);
       setScores(newScores);
-      setSuggestedScores(data.scores); // Guardar as sugestões originais
+      setSuggestedScores(data.scores);
     }
+    
+    console.log('=== FIM HANDLE DATA EXTRACTED ===');
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    console.log(`AddPropertyForm: Input change - ${name}: "${value}"`);
+    
+    setFormData(prev => {
+      const updated = {
+        ...prev,
+        [name]: value
+      };
+      console.log(`AddPropertyForm: FormData atualizado:`, updated);
+      return updated;
+    });
   };
 
   const handleScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -133,7 +146,6 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
     
     // Verificar se é um número válido
     if (!isNaN(numericValue)) {
-      // Aplicar limites apenas se necessário, mas não forçar para 10
       const finalValue = Math.max(0, Math.min(10, numericValue));
       console.log(`AddPropertyForm: Setting score ${name} to ${finalValue}`);
       setScores(prev => ({
@@ -146,6 +158,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('AddPropertyForm: Submitting with formData:', formData);
     console.log('AddPropertyForm: Submitting with scores:', scores);
     
     // Garantir que todos os scores sejam números válidos
@@ -176,9 +189,14 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
       finalScore: 0
     };
 
-    console.log('AddPropertyForm: Created property with scores:', newProperty.scores);
+    console.log('AddPropertyForm: Created property:', newProperty);
     onSubmit(newProperty);
   };
+
+  // Debug: Log dos valores atuais do formData
+  useEffect(() => {
+    console.log('AddPropertyForm: FormData mudou:', formData);
+  }, [formData]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
