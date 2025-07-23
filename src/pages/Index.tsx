@@ -25,11 +25,14 @@ import { SessionExpiredMessage } from '@/components/SessionExpiredMessage';
 import { UserProfileType } from '@/types/onboarding';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useSessionMonitor } from '@/hooks/useSessionMonitor';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
   const [comparisonMode, setComparisonMode] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   
+  const { user } = useAuth();
   const { properties, setProperties, isLoading, loadProperties } = usePropertyLoader();
   const { sortBy, sortOrder, setSortBy, setSortOrder } = usePropertySorting();
   const { isPro, loading: subscriptionLoading, checkSubscription, sessionError } = useSubscription();
@@ -44,8 +47,16 @@ const Index = () => {
     setShowOnboarding,
     saveOnboardingData,
     userProfile,
-    isLoading: onboardingLoading
+    isLoading: onboardingLoading,
+    loadOnboardingData
   } = useOnboarding();
+
+  // Monitor de sessão para reconectar hooks após trocar de aba
+  useSessionMonitor({
+    loadProperties,
+    loadOnboardingData: user?.id ? (userId: string) => loadOnboardingData(userId) : undefined,
+    checkSubscription
+  });
 
   // Mostrar onboarding para usuários autenticados que não completaram
   useEffect(() => {

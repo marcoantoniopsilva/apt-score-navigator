@@ -3,12 +3,24 @@ import { supabase } from '@/integrations/supabase/client';
 // Função para salvar uma nova propriedade no banco
 export const savePropertyToDatabase = async (property: any) => {
   try {
-    console.log('Salvando propriedade no banco:', property);
+    console.log('propertyDatabaseService: Salvando propriedade no banco:', property.title);
     
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    console.log('propertyDatabaseService: Session check:', {
+      hasSession: !!session,
+      userId: session?.user?.id,
+      sessionError: sessionError?.message
+    });
+    
+    if (sessionError) {
+      console.error('propertyDatabaseService: Session error:', sessionError);
+      throw new Error(`Erro de sessão: ${sessionError.message}`);
+    }
     
     if (!session) {
-      throw new Error('Usuário não autenticado');
+      console.error('propertyDatabaseService: No session found');
+      throw new Error('Usuário não autenticado. Faça login para continuar.');
     }
 
     const propertyData = {
@@ -59,10 +71,22 @@ export const updatePropertyInDatabase = async (property: any) => {
     console.log('updatePropertyInDatabase: Propriedade recebida:', property);
     console.log('updatePropertyInDatabase: Scores que serão salvos:', property.scores);
     
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    console.log('updatePropertyInDatabase: Session check:', {
+      hasSession: !!session,
+      userId: session?.user?.id,
+      sessionError: sessionError?.message
+    });
+    
+    if (sessionError) {
+      console.error('updatePropertyInDatabase: Session error:', sessionError);
+      throw new Error(`Erro de sessão: ${sessionError.message}`);
+    }
     
     if (!session) {
-      throw new Error('Usuário não autenticado');
+      console.error('updatePropertyInDatabase: No session found');
+      throw new Error('Usuário não autenticado. Faça login para continuar.');
     }
 
     // Dados da propriedade com scores no formato JSON
@@ -125,11 +149,22 @@ export const deletePropertyFromDatabase = async (propertyId: string) => {
   try {
     console.log('deletePropertyFromDatabase: Iniciando exclusão da propriedade:', propertyId);
     
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    console.log('deletePropertyFromDatabase: Session check:', {
+      hasSession: !!session,
+      userId: session?.user?.id,
+      sessionError: sessionError?.message
+    });
+    
+    if (sessionError) {
+      console.error('deletePropertyFromDatabase: Session error:', sessionError);
+      throw new Error(`Erro de sessão: ${sessionError.message}`);
+    }
     
     if (!session) {
-      console.error('deletePropertyFromDatabase: Usuário não autenticado');
-      throw new Error('Usuário não autenticado');
+      console.error('deletePropertyFromDatabase: No session found');
+      throw new Error('Usuário não autenticado. Faça login para continuar.');
     }
 
     console.log('deletePropertyFromDatabase: Usuário autenticado:', session.user.id);
@@ -164,10 +199,22 @@ export const loadSavedProperties = async () => {
     console.log('=== INÍCIO DO CARREGAMENTO ===');
     console.log('loadSavedProperties: Verificando autenticação...');
     
-    const { data: { session } } = await supabase.auth.getSession();
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    
+    console.log('loadSavedProperties: Session check:', {
+      hasSession: !!session,
+      userId: session?.user?.id,
+      sessionError: sessionError?.message
+    });
+    
+    if (sessionError) {
+      console.error('loadSavedProperties: Session error:', sessionError);
+      console.log('loadSavedProperties: Returning empty array due to session error');
+      return [];
+    }
     
     if (!session) {
-      console.log('loadSavedProperties: Usuário não autenticado');
+      console.log('loadSavedProperties: No session found, returning empty array');
       return [];
     }
 

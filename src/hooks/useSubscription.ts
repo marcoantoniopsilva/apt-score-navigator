@@ -132,14 +132,19 @@ export const useSubscription = () => {
     }
   };
 
-  // Initialize subscription check only once when user is available
+  // Initialize subscription check when user is available or session changes
   useEffect(() => {
-    if (user && session && !hasInitialized.current) {
-      hasInitialized.current = true;
-      setSessionError(null); // Clear any previous session errors
-      checkSubscription();
+    if (user && session) {
+      // Se a sessão mudou ou é a primeira vez
+      if (!hasInitialized.current || sessionError) {
+        console.log('useSubscription: Initializing or recovering from session error');
+        hasInitialized.current = true;
+        setSessionError(null); // Clear any previous session errors
+        checkSubscription();
+      }
     } else if (!user && !session) {
       // Reset when user logs out
+      console.log('useSubscription: User logged out, resetting state');
       hasInitialized.current = false;
       setSessionError(null);
       setSubscriptionData({
@@ -149,7 +154,7 @@ export const useSubscription = () => {
       });
       setLoading(false);
     }
-  }, [user, session, checkSubscription]);
+  }, [user, session, sessionError, checkSubscription]);
 
   const isPro = subscriptionData.subscribed;
 

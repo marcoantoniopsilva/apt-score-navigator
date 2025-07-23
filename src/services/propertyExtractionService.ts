@@ -22,9 +22,10 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
     
     console.log('propertyExtractionService: Verificando sessão:', {
       hasSession: !!session,
-      sessionError: sessionError,
+      sessionError: sessionError?.message,
       userId: session?.user?.id,
-      token: session?.access_token ? 'Present' : 'Missing'
+      token: session?.access_token ? 'Present' : 'Missing',
+      expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'N/A'
     });
     
     if (sessionError) {
@@ -35,6 +36,12 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
     if (!session) {
       console.error('propertyExtractionService: Nenhuma sessão encontrada');
       throw new Error('Usuário não autenticado. Faça login para extrair propriedades.');
+    }
+
+    // Verificar se a sessão não está expirada
+    if (session.expires_at && session.expires_at < Date.now() / 1000) {
+      console.error('propertyExtractionService: Sessão expirada');
+      throw new Error('Sessão expirada. Faça login novamente.');
     }
 
     console.log('propertyExtractionService: Chamando edge function para extração apenas...');

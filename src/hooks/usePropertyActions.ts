@@ -76,9 +76,20 @@ export const usePropertyActions = (
       console.log('PropertyActions: Propriedade adicionada com sucesso');
     } catch (error) {
       console.error('PropertyActions: Erro ao adicionar propriedade:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      
+      // Verificar se é erro de sessão
+      if (errorMessage.includes('Erro de sessão') || errorMessage.includes('não autenticado')) {
+        console.log('PropertyActions: Session error detected, dispatching event');
+        window.dispatchEvent(new CustomEvent('session-error', { detail: errorMessage }));
+      }
+      
       toast({
         title: "Erro ao salvar",
-        description: "Não foi possível salvar a propriedade. Tente novamente.",
+        description: errorMessage.includes('Erro de sessão') || errorMessage.includes('não autenticado') 
+          ? "Sessão expirada. Faça login novamente." 
+          : "Não foi possível salvar a propriedade. Tente novamente.",
         variant: "destructive"
       });
     }
@@ -118,9 +129,20 @@ export const usePropertyActions = (
       console.log('=== FIM HANDLE UPDATE ===');
     } catch (error) {
       console.error('PropertyActions: Erro ao atualizar propriedade:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      
+      // Verificar se é erro de sessão
+      if (errorMessage.includes('Erro de sessão') || errorMessage.includes('não autenticado')) {
+        console.log('PropertyActions: Session error detected, dispatching event');
+        window.dispatchEvent(new CustomEvent('session-error', { detail: errorMessage }));
+      }
+      
       toast({
         title: "Erro ao atualizar",
-        description: "Não foi possível salvar as alterações. Tente novamente.",
+        description: errorMessage.includes('Erro de sessão') || errorMessage.includes('não autenticado') 
+          ? "Sessão expirada. Faça login novamente." 
+          : "Não foi possível salvar as alterações. Tente novamente.",
         variant: "destructive"
       });
       throw error;
