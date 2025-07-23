@@ -117,7 +117,16 @@ export const useOnboarding = () => {
     criteriaWeights: Record<string, number>
   ) => {
     try {
+      console.log('=== INÍCIO SALVAMENTO ONBOARDING ===');
+      console.log('useOnboarding: saveEnhancedOnboardingData iniciado');
+      console.log('useOnboarding: userId:', userId);
+      console.log('useOnboarding: profileType:', profileType);
+      console.log('useOnboarding: answers:', answers);
+      console.log('useOnboarding: selectedCriteria:', selectedCriteria);
+      console.log('useOnboarding: criteriaWeights:', criteriaWeights);
+      
       // Salva o perfil
+      console.log('useOnboarding: Salvando perfil do usuário...');
       const profileResult = await UserProfileService.saveUserProfile(
         userId,
         profileType,
@@ -129,30 +138,43 @@ export const useOnboarding = () => {
         answers.regiao_referencia
       );
 
+      console.log('useOnboarding: Resultado do salvamento do perfil:', profileResult);
+
       if (!profileResult.success) {
+        console.error('useOnboarding: Erro ao salvar perfil:', profileResult.error);
         throw new Error(profileResult.error || 'Erro ao salvar perfil');
       }
 
       // Salva as preferências de critério
+      console.log('useOnboarding: Salvando preferências de critério...');
       const preferencesResult = await UserProfileService.saveUserCriteriaPreferences(
         userId,
         criteriaWeights
       );
 
+      console.log('useOnboarding: Resultado do salvamento das preferências:', preferencesResult);
+
       if (!preferencesResult.success) {
+        console.error('useOnboarding: Erro ao salvar preferências:', preferencesResult.error);
         throw new Error(preferencesResult.error || 'Erro ao salvar preferências');
       }
 
+      console.log('useOnboarding: Recarregando dados do onboarding...');
       // Recarrega os dados
       await loadOnboardingData(userId);
       
+      console.log('useOnboarding: Notificando outros componentes...');
       // Notifica outros componentes sobre a mudança
       window.dispatchEvent(new CustomEvent('criteria-updated'));
       
+      console.log('useOnboarding: Exibindo toast de sucesso...');
       toast.success('Perfil configurado com sucesso!');
+      
+      console.log('=== FIM SALVAMENTO ONBOARDING - SUCESSO ===');
       return { success: true };
     } catch (error) {
-      console.error('Error saving enhanced onboarding data:', error);
+      console.error('useOnboarding: Erro no salvamento:', error);
+      console.log('=== FIM SALVAMENTO ONBOARDING - ERRO ===');
       toast.error('Erro ao salvar configurações do perfil');
       return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' };
     }

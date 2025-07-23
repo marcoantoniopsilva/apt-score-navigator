@@ -12,12 +12,21 @@ export const OnboardingSuccess: React.FC<OnboardingSuccessProps> = ({ onComplete
   const [isCompleting, setIsCompleting] = useState(false);
 
   const handleComplete = async () => {
-    if (isCompleting) return; // Evita múltiplos cliques
+    if (isCompleting) {
+      console.log('OnboardingSuccess: Já está processando, ignorando...');
+      return; // Evita múltiplos cliques
+    }
     
+    console.log('OnboardingSuccess: Iniciando finalização...');
     setIsCompleting(true);
     try {
+      console.log('OnboardingSuccess: Chamando onComplete...');
       await onComplete();
+      console.log('OnboardingSuccess: onComplete executado com sucesso');
+    } catch (error) {
+      console.error('OnboardingSuccess: Erro ao executar onComplete:', error);
     } finally {
+      console.log('OnboardingSuccess: Finalizando processo...');
       setIsCompleting(false);
     }
   };
