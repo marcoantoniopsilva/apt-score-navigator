@@ -7,7 +7,6 @@ import { scrapeWebsite } from './firecrawlService.ts';
 import { extractDataWithAI } from './openaiService.ts';
 import { extractImagesFromHTML, extractImagesFromMarkdown } from './imageExtractor.ts';
 import { processExtractedData } from './dataProcessor.ts';
-import { savePropertyToDatabase } from './databaseService.ts';
 import { generateScoreSuggestions } from './scoreAnalyzer.ts';
 
 console.log('=== FUNCTION STARTED ===');
@@ -45,7 +44,7 @@ serve(async (req) => {
         serviceRole: !!supabaseServiceRoleKey
       });
       return new Response(
-        JSON.stringify({ error: 'API keys não configuradas' }),
+        JSON.stringify({ error: 'Configuração de API incompleta. Tente novamente em alguns minutos.' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
@@ -75,15 +74,15 @@ serve(async (req) => {
     
     console.log('Usuário validado:', user.id);
 
-    // Fazer scraping do site com timeout
+    // Fazer scraping do site com timeout aumentado e retry
     console.log('Iniciando scraping...');
     let scrapedData;
     
     try {
-      // Adicionar timeout de 30 segundos para scraping
+      // Timeout de 60 segundos para scraping
       const scrapingPromise = scrapeWebsite(url, firecrawlApiKey);
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout no scraping')), 30000);
+        setTimeout(() => reject(new Error('Timeout no scraping após 60 segundos')), 60000);
       });
       
       scrapedData = await Promise.race([scrapingPromise, timeoutPromise]);
@@ -99,11 +98,22 @@ serve(async (req) => {
     } catch (scrapingError) {
       console.error('Erro no scraping:', scrapingError);
       
+      // Retornar erro mais amigável para problemas de scraping
+      let errorMessage = 'Não foi possível extrair dados do site. ';
+      
+      if (scrapingError.message.includes('timeout') || scrapingError.message.includes('Timeout')) {
+        errorMessage += 'O site demorou muito para responder. Tente novamente em alguns minutos.';
+      } else if (scrapingError.message.includes('502') || scrapingError.message.includes('503')) {
+        errorMessage += 'O site está temporariamente indisponível. Tente novamente.';
+      } else if (scrapingError.message.includes('404')) {
+        errorMessage += 'A URL não foi encontrada. Verifique se o link está correto.';
+      } else {
+        errorMessage += 'Verifique se a URL está correta e tente novamente.';
+      }
+      
       return new Response(
-        JSON.stringify({ 
-          error: `Erro ao extrair dados do site: ${scrapingError.message}. Verifique se a URL está acessível e tente novamente em alguns minutos.` 
-        }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ error: errorMessage }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -122,18 +132,14 @@ serve(async (req) => {
       console.log('Nenhum conteúdo disponível para extração de imagens');
     }
 
-    extractedImages.forEach((img, index) => {
-      console.log(`Imagem ${index + 1}:`, img);
-    });
-
-    // Extrair dados estruturados com IA com timeout
+    // Extrair dados estruturados com IA
     console.log('Extraindo dados com IA...');
-    const contentForAI = scrapedData.data?.markdown || scrapedData.data?.content || 'Conteúdo não disponível';
+    const contentForAI = scrapedData.data?.markdown || scrapedData.data?.content || scrapedData.data?.html || '';
     
-    if (contentForAI === 'Conteúdo não disponível') {
+    if (!contentForAI || contentForAI.length < 50) {
       return new Response(
         JSON.stringify({ 
-          error: 'Não foi possível extrair conteúdo suficiente do site para análise. Verifique se o site está acessível.' 
+          error: 'Não foi possível extrair conteúdo suficiente do site. O site pode estar bloqueando o acesso automatizado ou ter pouco conteúdo textual.' 
         }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -141,10 +147,10 @@ serve(async (req) => {
     
     let extractedText;
     try {
-      // Timeout de 20 segundos para OpenAI
+      // Timeout de 30 segundos para OpenAI
       const aiPromise = extractDataWithAI(contentForAI, openaiApiKey);
       const aiTimeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Timeout na extração com IA')), 20000);
+        setTimeout(() => reject(new Error('Timeout na análise com IA')), 30000);
       });
       
       extractedText = await Promise.race([aiPromise, aiTimeoutPromise]);
@@ -153,7 +159,7 @@ serve(async (req) => {
       console.error('Erro na extração com IA:', aiError);
       return new Response(
         JSON.stringify({ 
-          error: `Erro na análise com IA: ${aiError.message}` 
+          error: 'Erro na análise automática do conteúdo. Tente novamente.' 
         }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
@@ -161,8 +167,19 @@ serve(async (req) => {
 
     // Processar e limpar os dados extraídos
     console.log('Processando dados extraídos...');
-    const cleanedData = processExtractedData(extractedText);
-    console.log('Dados processados:', cleanedData);
+    let cleanedData;
+    try {
+      cleanedData = processExtractedData(extractedText);
+      console.log('Dados processados:', cleanedData);
+    } catch (processingError) {
+      console.error('Erro no processamento:', processingError);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Erro no processamento dos dados extraídos. Tente novamente.' 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     // Buscar perfil do usuário para gerar sugestões de scores
     console.log('Buscando perfil do usuário para análise...');
@@ -182,14 +199,19 @@ serve(async (req) => {
         
         // Gerar sugestões de scores baseado no perfil
         console.log('Gerando sugestões de scores...');
-        suggestedScores = await generateScoreSuggestions(
-          contentForAI,
-          cleanedData,
-          profile,
-          openaiApiKey
-        );
-        
-        console.log('Sugestões geradas:', suggestedScores);
+        try {
+          suggestedScores = await generateScoreSuggestions(
+            contentForAI,
+            cleanedData,
+            profile,
+            openaiApiKey
+          );
+          
+          console.log('Sugestões geradas:', suggestedScores);
+        } catch (scoreError) {
+          console.error('Erro ao gerar scores:', scoreError);
+          // Continuar sem sugestões se houver erro
+        }
       } else {
         console.log('Perfil do usuário não encontrado, usando scores padrão');
       }
@@ -198,7 +220,7 @@ serve(async (req) => {
       // Continuar sem sugestões se não conseguir buscar o perfil
     }
 
-    // Não salvar no banco - apenas retornar os dados para o formulário
+    // Retornar dados para o formulário
     console.log('Dados extraídos, retornando para o formulário...');
 
     const responseData = {
@@ -207,7 +229,7 @@ serve(async (req) => {
         ...cleanedData,
         parkingSpaces: cleanedData.parking_spaces,
         images: extractedImages,
-        scores: suggestedScores // Incluir as sugestões de scores na resposta
+        scores: suggestedScores
       },
       message: `Dados extraídos com sucesso! ${extractedImages.length > 0 ? `${extractedImages.length} imagem(ns) encontrada(s).` : 'Nenhuma imagem encontrada.'}${Object.keys(suggestedScores).length > 0 ? ' Sugestões de avaliação foram geradas baseadas no seu perfil.' : ''} Revise os dados e clique em "Adicionar Propriedade" para salvar.`
     };
@@ -224,22 +246,26 @@ serve(async (req) => {
   } catch (error) {
     console.error('Erro geral:', error);
     
-    if (error.message.includes('Token de autorização') || error.message.includes('Usuário não autenticado')) {
+    // Tratar erros específicos
+    if (error.message && error.message.includes('Token de autorização')) {
       return new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({ error: 'Sessão expirada. Faça login novamente.' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
     
-    if (error.message.includes('URL é obrigatória')) {
+    if (error.message && error.message.includes('URL é obrigatória')) {
       return new Response(
-        JSON.stringify({ error: error.message }),
+        JSON.stringify({ error: 'URL é obrigatória para extrair dados.' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Erro genérico mais amigável
     return new Response(
-      JSON.stringify({ error: error.message || 'Erro interno do servidor' }),
+      JSON.stringify({ 
+        error: 'Erro interno no processamento. Tente novamente em alguns minutos.' 
+      }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
