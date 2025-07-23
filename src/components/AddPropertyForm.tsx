@@ -17,14 +17,12 @@ interface AddPropertyFormProps {
 }
 
 export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCancel }) => {
-  const { activeCriteria, getCriteriaLabel } = useCriteria();
-  
-  // Estados inicializados a cada render para evitar dados antigos
   const [url, setUrl] = useState('');
   const [extractedData, setExtractedData] = useState<any>(null);
+  const { activeCriteria, getCriteriaLabel } = useCriteria();
   const [suggestedScores, setSuggestedScores] = useState<Record<string, number>>({});
   
-  const [formData, setFormData] = useState(() => ({
+  const [formData, setFormData] = useState({
     title: '',
     address: '',
     bedrooms: 0,
@@ -37,16 +35,10 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
     iptu: 0,
     fireInsurance: 0,
     otherFees: 0
-  }));
+  });
 
   // Inicializar scores baseado nos critérios dinâmicos
-  const [scores, setScores] = useState<Record<string, number>>(() => {
-    const initialScores: Record<string, number> = {};
-    activeCriteria.forEach(criterio => {
-      initialScores[criterio.key] = 5; // Score padrão
-    });
-    return initialScores;
-  });
+  const [scores, setScores] = useState<Record<string, number>>({});
 
   // Atualizar scores quando os critérios mudarem
   useEffect(() => {

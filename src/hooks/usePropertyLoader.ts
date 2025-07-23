@@ -122,9 +122,6 @@ export const usePropertyLoader = () => {
       lastUserRef.current = null;
       setProperties([]);
       setIsLoading(false);
-    } else {
-      // Se não é um novo login nem logout, garantir que isLoading seja falso
-      setIsLoading(false);
     }
   }, [user?.id, loadProperties]);
 

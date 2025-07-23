@@ -198,8 +198,33 @@ serve(async (req) => {
       // Continuar sem sugestões se não conseguir buscar o perfil
     }
 
-    // Não salvar no banco - apenas retornar os dados para o formulário
-    console.log('Dados extraídos, retornando para o formulário...');
+    // Salvar no banco de dados com timeout
+    console.log('Salvando no banco de dados...');
+    let savedProperty;
+    try {
+      const dbPromise = savePropertyToDatabase(
+        cleanedData,
+        extractedImages,
+        url,
+        user.id,
+        supabaseUrl,
+        supabaseServiceRoleKey
+      );
+      const dbTimeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout no salvamento')), 10000);
+      });
+      
+      savedProperty = await Promise.race([dbPromise, dbTimeoutPromise]);
+      console.log('Propriedade salva com ID:', savedProperty.id);
+    } catch (dbError) {
+      console.error('Erro no salvamento:', dbError);
+      return new Response(
+        JSON.stringify({ 
+          error: `Erro ao salvar no banco: ${dbError.message}` 
+        }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
 
     const responseData = {
       success: true, 
@@ -209,7 +234,8 @@ serve(async (req) => {
         images: extractedImages,
         scores: suggestedScores // Incluir as sugestões de scores na resposta
       },
-      message: `Dados extraídos com sucesso! ${extractedImages.length > 0 ? `${extractedImages.length} imagem(ns) encontrada(s).` : 'Nenhuma imagem encontrada.'}${Object.keys(suggestedScores).length > 0 ? ' Sugestões de avaliação foram geradas baseadas no seu perfil.' : ''} Revise os dados e clique em "Adicionar Propriedade" para salvar.`
+      property_id: savedProperty.id,
+      message: `Propriedade extraída e salva com sucesso! ${extractedImages.length > 0 ? `${extractedImages.length} imagem(ns) encontrada(s).` : 'Nenhuma imagem encontrada.'}${Object.keys(suggestedScores).length > 0 ? ' Sugestões de avaliação foram geradas baseadas no seu perfil.' : ''}`
     };
 
     console.log('=== RESPOSTA FINAL ===');

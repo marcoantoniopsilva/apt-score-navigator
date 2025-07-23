@@ -28,7 +28,6 @@ import { toast } from 'sonner';
 const Index = () => {
   const [comparisonMode, setComparisonMode] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [appKey, setAppKey] = useState(Date.now()); // Key para forçar remontagem quando necessário
   
   const { properties, setProperties, isLoading, loadProperties } = usePropertyLoader();
   const { sortBy, sortOrder, setSortBy, setSortOrder } = usePropertySorting();
@@ -154,41 +153,6 @@ const Index = () => {
       window.removeEventListener('criteria-updated', handleCriteriaUpdate);
     };
   }, []);
-  
-  // Atualizar quando a página voltar a ficar visível, mas com controle de frequência
-  useEffect(() => {
-    let lastVisibilityUpdate = 0;
-    const VISIBILITY_COOLDOWN = 10000; // 10 segundos entre atualizações
-    
-    const handleVisibilityChange = () => {
-      const now = Date.now();
-      
-      if (document.visibilityState === 'visible') {
-        // Evitar atualizações frequentes demais
-        if (now - lastVisibilityUpdate < VISIBILITY_COOLDOWN) {
-          console.log('Index: Ignorando atualização por visibilidade (cooldown)');
-          return;
-        }
-        
-        console.log('Index: Página voltou a ficar visível, revalidando dados suavemente');
-        lastVisibilityUpdate = now;
-        
-        // Revalidação suave: apenas verificar status da assinatura sem recarregar tudo
-        if (isPro !== undefined) {
-          // Não fazer nada para evitar flicker da UI
-        } else {
-          // Se não temos certeza do status, verificar mas sem forçar remontagem
-          loadProperties();
-        }
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [loadProperties, isPro]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -214,7 +178,7 @@ const Index = () => {
         )}
         
         <div className="mb-6">
-          <SubscriptionStatus key={`subscription-status-${Date.now()}`} />
+          <SubscriptionStatus />
         </div>
         
         <PropertyControls
@@ -275,7 +239,6 @@ const Index = () => {
 
       {showAddForm && (
         <AddPropertyForm 
-          key={`add-form-${Date.now()}`} // Força remontagem para limpar estado
           onSubmit={handleAddProperty}
           onCancel={() => setShowAddForm(false)}
         />

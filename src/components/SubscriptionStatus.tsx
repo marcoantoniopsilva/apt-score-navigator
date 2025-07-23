@@ -5,7 +5,7 @@ import { Crown, Settings, RefreshCw } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 import { ProBadge } from "./ProBadge";
 import { UpgradeModal } from "./UpgradeModal";
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 
 export const SubscriptionStatus = () => {
@@ -14,33 +14,18 @@ export const SubscriptionStatus = () => {
     subscription_tier, 
     subscription_end, 
     loading, 
-    error,
     checkSubscription, 
     openCustomerPortal 
   } = useSubscription();
   
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0); // Força remontagem quando necessário
-
-  // Prevenir múltiplas atualizações em um curto espaço de tempo
-  const lastRefreshRef = useRef<number | null>(null);
-  const REFRESH_COOLDOWN = 5000; // 5 segundos
 
   const handleRefresh = async () => {
-    const now = Date.now();
-    if (lastRefreshRef.current && now - lastRefreshRef.current < REFRESH_COOLDOWN) {
-      toast.info('Por favor, aguarde antes de atualizar novamente');
-      return;
-    }
-    
     try {
-      lastRefreshRef.current = now;
       setRefreshing(true);
       await checkSubscription();
       toast.success('Status da assinatura atualizado!');
-      // Força remontagem do componente
-      setRefreshKey(prev => prev + 1);
     } catch (error) {
       toast.error('Erro ao atualizar status da assinatura');
     } finally {
@@ -56,7 +41,7 @@ export const SubscriptionStatus = () => {
     }
   };
 
-  if (loading && !isPro) {
+  if (loading) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center p-6">
@@ -68,7 +53,7 @@ export const SubscriptionStatus = () => {
 
   return (
     <>
-      <Card key={refreshKey}>
+      <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
             <span className="flex items-center gap-2">
