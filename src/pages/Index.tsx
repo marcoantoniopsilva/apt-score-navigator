@@ -58,45 +58,15 @@ const Index = () => {
     checkSubscription
   });
 
-  // Mostrar onboarding para usuários autenticados que não completaram
+  // DESABILITAR ONBOARDING AUTOMÁTICO - usuário já tem perfil configurado
+  // O onboarding só deve aparecer quando o usuário clicar manualmente para editar
   useEffect(() => {
-    // Evitar mostrar onboarding em loop
-    if (onboardingLoading) {
-      console.log('Index: Onboarding still loading, waiting...');
-      return;
-    }
-
-    // Só executar se não estamos já mostrando onboarding
+    // Força o onboarding a ficar fechado sempre
     if (showOnboarding) {
-      console.log('Index: Onboarding already showing, skipping...');
-      return;
+      console.log('Index: Forçando fechamento do onboarding para evitar loop');
+      setShowOnboarding(false);
     }
-
-    const checkShouldShowOnboarding = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      console.log('Index: Checking onboarding status:', {
-        hasSession: !!session?.user,
-        hasCompletedOnboarding,
-        onboardingLoading,
-        showOnboarding,
-        userProfileType: userProfile?.profile_type
-      });
-      
-      // Só mostrar se usuário está logado, não completou onboarding, não está carregando
-      // E não tem perfil (para evitar mostrar para quem já tem perfil mas sem preferências)
-      if (session?.user && !hasCompletedOnboarding && !userProfile) {
-        console.log('Index: Should show onboarding, setting timeout...');
-        // Aguarda um pouco para não mostrar imediatamente ao fazer login
-        setTimeout(() => {
-          console.log('Index: Showing onboarding modal');
-          setShowOnboarding(true);
-        }, 1500);
-      }
-    };
-
-    checkShouldShowOnboarding();
-  }, [hasCompletedOnboarding, onboardingLoading, showOnboarding, userProfile]);
+  }, [showOnboarding, setShowOnboarding]);
 
   // Função para completar onboarding
   const handleOnboardingComplete = async (

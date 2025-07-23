@@ -41,12 +41,14 @@ export const useOnboarding = () => {
       setUserProfile(profile);
       setUserPreferences(preferences);
       
-      // Considera completo se tem perfil, mesmo sem preferências customizadas
-      // Isso evita loops para usuários que já passaram pelo onboarding
+      // SEMPRE considera completo se tem perfil - evita loops
+      // O usuário já passou pelo processo de onboarding se tem um perfil salvo
       const isCompleted = !!profile;
       setHasCompletedOnboarding(isCompleted);
       
       console.log('useOnboarding: Onboarding completion status:', isCompleted);
+      console.log('useOnboarding: Profile exists:', !!profile);
+      console.log('useOnboarding: Preferences count:', preferences.length);
     } catch (error) {
       console.error('useOnboarding: Error loading data:', error);
     } finally {
@@ -268,26 +270,27 @@ export const useOnboarding = () => {
 
     checkAuthAndLoadData();
 
-    // Escuta mudanças de autenticação - SEM usar loadOnboardingData diretamente
+    // SIMPLIFICAR auth state change para evitar loops
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
         
         console.log('useOnboarding: Auth state changed:', event, !!session);
-        if (session?.user) {
-          console.log('useOnboarding: User authenticated, loading onboarding data');
-          // Usar timeout para evitar chamadas muito frequentes
+        
+        if (event === 'SIGNED_OUT' || !session) {
+          console.log('useOnboarding: User signed out, clearing state');
+          setUserProfile(null);  
+          setUserPreferences([]);
+          setHasCompletedOnboarding(false);
+          setIsLoading(false);
+        } else if (event === 'SIGNED_IN' && session?.user) {
+          console.log('useOnboarding: User signed in, loading data');
+          // Pequeno delay para evitar chamadas muito rápidas
           setTimeout(() => {
             if (mounted) {
               loadOnboardingData(session.user.id);
             }
-          }, 100);
-        } else {
-          console.log('useOnboarding: User not authenticated, clearing state');
-          setUserProfile(null);
-          setUserPreferences([]);
-          setHasCompletedOnboarding(false);
-          setIsLoading(false);
+          }, 500);
         }
       }
     );
@@ -296,7 +299,7 @@ export const useOnboarding = () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []); // Remover loadOnboardingData das dependências para evitar loop
+  }, []); // SEM dependências para evitar re-execução
 
   return {
     userProfile,
