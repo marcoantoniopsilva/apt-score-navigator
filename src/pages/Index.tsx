@@ -52,9 +52,9 @@ const Index = () => {
   } = useOnboarding();
 
   // Monitor de sessão para reconectar hooks após trocar de aba
+  // REMOVER loadOnboardingData para evitar chamadas duplicadas
   useSessionMonitor({
     loadProperties,
-    loadOnboardingData: user?.id ? (userId: string) => loadOnboardingData(userId) : undefined,
     checkSubscription
   });
 

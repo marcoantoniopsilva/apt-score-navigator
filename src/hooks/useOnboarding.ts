@@ -19,6 +19,9 @@ export const useOnboarding = () => {
 
   // Carrega dados do onboarding
   const loadOnboardingData = useCallback(async (userId: string) => {
+    console.log('useOnboarding: Loading data for user:', userId, 'isLoading:', isLoading);
+    
+    // Previne chamadas múltiplas mais rigorosamente
     if (isLoading) {
       console.log('useOnboarding: Already loading, skipping...');
       return;
@@ -26,10 +29,16 @@ export const useOnboarding = () => {
     
     setIsLoading(true);
     try {
-      console.log('useOnboarding: Loading data for user:', userId);
+      console.log('useOnboarding: Starting data fetch...');
       const [profile, preferences] = await Promise.all([
-        UserProfileService.getUserProfile(userId),
-        UserProfileService.getUserCriteriaPreferences(userId)
+        UserProfileService.getUserProfile(userId).catch(err => {
+          console.error('Failed to fetch profile:', err);
+          return null; // Continue mesmo com erro
+        }),
+        UserProfileService.getUserCriteriaPreferences(userId).catch(err => {
+          console.error('Failed to fetch preferences:', err);
+          return []; // Continue mesmo com erro
+        })
       ]);
 
       console.log('useOnboarding: Data loaded:', { 
@@ -41,20 +50,18 @@ export const useOnboarding = () => {
       setUserProfile(profile);
       setUserPreferences(preferences);
       
-      // SEMPRE considera completo se tem perfil - evita loops
-      // O usuário já passou pelo processo de onboarding se tem um perfil salvo
+      // Considera completo se tem perfil
       const isCompleted = !!profile;
       setHasCompletedOnboarding(isCompleted);
       
       console.log('useOnboarding: Onboarding completion status:', isCompleted);
-      console.log('useOnboarding: Profile exists:', !!profile);
-      console.log('useOnboarding: Preferences count:', preferences.length);
     } catch (error) {
       console.error('useOnboarding: Error loading data:', error);
+      // Não resetar estados em caso de erro - manter o que já temos
     } finally {
       setIsLoading(false);
     }
-  }, [isLoading]);
+  }, []); // Remover isLoading da dependência para evitar recriação
 
   // Salva dados do onboarding
   const saveOnboardingData = async (
@@ -250,9 +257,10 @@ export const useOnboarding = () => {
   // Inicializa o onboarding baseado no estado de autenticação
   useEffect(() => {
     let mounted = true;
+    let loadingRef = { current: false }; // Usar ref para controle de loading
     
     const checkAuthAndLoadData = async () => {
-      if (!mounted) return;
+      if (!mounted || loadingRef.current) return;
       
       console.log('useOnboarding: Initial auth check...');
       const { data: { session } } = await supabase.auth.getSession();
@@ -261,7 +269,9 @@ export const useOnboarding = () => {
       
       if (session?.user) {
         console.log('useOnboarding: Valid session found, loading data for user:', session.user.id);
+        loadingRef.current = true;
         await loadOnboardingData(session.user.id);
+        loadingRef.current = false;
       } else {
         console.log('useOnboarding: No session found, setting loading to false');
         setIsLoading(false);
@@ -270,7 +280,8 @@ export const useOnboarding = () => {
 
     checkAuthAndLoadData();
 
-    // SIMPLIFICAR auth state change para evitar loops
+    // Simplificar auth state change - SEM chamar loadOnboardingData aqui
+    // O useSessionMonitor ou recarregamento manual deve lidar com isso
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
@@ -283,15 +294,10 @@ export const useOnboarding = () => {
           setUserPreferences([]);
           setHasCompletedOnboarding(false);
           setIsLoading(false);
-        } else if (event === 'SIGNED_IN' && session?.user) {
-          console.log('useOnboarding: User signed in, loading data');
-          // Pequeno delay para evitar chamadas muito rápidas
-          setTimeout(() => {
-            if (mounted) {
-              loadOnboardingData(session.user.id);
-            }
-          }, 500);
+          loadingRef.current = false;
         }
+        // REMOVER a chamada automática de loadOnboardingData no SIGNED_IN
+        // para evitar conflito com useSessionMonitor
       }
     );
 
