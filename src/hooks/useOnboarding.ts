@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   UserProfile, 
   UserCriteriaPreference, 
@@ -18,23 +18,41 @@ export const useOnboarding = () => {
   const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
 
   // Carrega dados do onboarding
-  const loadOnboardingData = async (userId: string) => {
+  const loadOnboardingData = useCallback(async (userId: string) => {
+    if (isLoading) {
+      console.log('useOnboarding: Already loading, skipping...');
+      return;
+    }
+    
     setIsLoading(true);
     try {
+      console.log('useOnboarding: Loading data for user:', userId);
       const [profile, preferences] = await Promise.all([
         UserProfileService.getUserProfile(userId),
         UserProfileService.getUserCriteriaPreferences(userId)
       ]);
 
+      console.log('useOnboarding: Data loaded:', { 
+        hasProfile: !!profile, 
+        preferencesCount: preferences.length,
+        profileType: profile?.profile_type 
+      });
+
       setUserProfile(profile);
       setUserPreferences(preferences);
-      setHasCompletedOnboarding(!!(profile && preferences.length > 0));
+      
+      // Considera completo se tem perfil, mesmo sem preferências customizadas
+      // Isso evita loops para usuários que já passaram pelo onboarding
+      const isCompleted = !!profile;
+      setHasCompletedOnboarding(isCompleted);
+      
+      console.log('useOnboarding: Onboarding completion status:', isCompleted);
     } catch (error) {
-      console.error('Error loading onboarding data:', error);
+      console.error('useOnboarding: Error loading data:', error);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [isLoading]);
 
   // Salva dados do onboarding
   const saveOnboardingData = async (
@@ -207,9 +225,15 @@ export const useOnboarding = () => {
 
   // Inicializa o onboarding baseado no estado de autenticação
   useEffect(() => {
+    let mounted = true;
+    
     const checkAuthAndLoadData = async () => {
-      console.log('useOnboarding: Checking auth and loading data...');
+      if (!mounted) return;
+      
+      console.log('useOnboarding: Initial auth check...');
       const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!mounted) return;
       
       if (session?.user) {
         console.log('useOnboarding: Valid session found, loading data for user:', session.user.id);
@@ -222,13 +246,20 @@ export const useOnboarding = () => {
 
     checkAuthAndLoadData();
 
-    // Escuta mudanças de autenticação
+    // Escuta mudanças de autenticação - SEM usar loadOnboardingData diretamente
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!mounted) return;
+        
         console.log('useOnboarding: Auth state changed:', event, !!session);
         if (session?.user) {
           console.log('useOnboarding: User authenticated, loading onboarding data');
-          await loadOnboardingData(session.user.id);
+          // Usar timeout para evitar chamadas muito frequentes
+          setTimeout(() => {
+            if (mounted) {
+              loadOnboardingData(session.user.id);
+            }
+          }, 100);
         } else {
           console.log('useOnboarding: User not authenticated, clearing state');
           setUserProfile(null);
@@ -239,8 +270,11 @@ export const useOnboarding = () => {
       }
     );
 
-    return () => subscription.unsubscribe();
-  }, [loadOnboardingData]);
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, []); // Remover loadOnboardingData das dependências para evitar loop
 
   return {
     userProfile,

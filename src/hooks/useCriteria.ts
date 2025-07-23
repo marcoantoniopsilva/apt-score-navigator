@@ -43,7 +43,8 @@ export const useCriteria = () => {
       userProfile: userProfile?.profile_type,
     });
 
-    if (hasCompletedOnboarding && userProfile) {
+    // Se tem perfil (independente de onboarding "completo"), usar dados do usuário
+    if (userProfile) {
       if (userPreferences.length > 0) {
         console.log('useCriteria: Usando critérios personalizados do usuário');
         
@@ -57,15 +58,31 @@ export const useCriteria = () => {
         console.log('useCriteria: Critérios personalizados:', userCriteria);
         setActiveCriteria(userCriteria);
 
-        // Criar objeto de pesos
-        const weights: CriteriaWeights = {};
+        // Criar objeto de pesos para os critérios do sistema
+        const systemWeights: CriteriaWeights = { ...DEFAULT_WEIGHTS };
         
+        // Mapear critérios do onboarding para critérios do sistema
+        const criteriaMapping: Record<string, keyof CriteriaWeights> = {
+          'preco_total': 'price',
+          'tamanho': 'internalSpace',
+          'acabamento': 'finishing',
+          'localizacao': 'location',
+          'proximidade_servicos': 'location',
+          'seguranca': 'location',
+          'facilidade_entorno': 'location',
+          'silencio': 'location'
+        };
+
         userPreferences.forEach(pref => {
-          weights[pref.criterio_nome] = pref.peso;
+          const mappedKey = criteriaMapping[pref.criterio_nome];
+          if (mappedKey) {
+            // Normalizar peso para escala 1-5
+            systemWeights[mappedKey] = Math.max(1, Math.min(5, Math.round(pref.peso / 4)));
+          }
         });
         
-        console.log('useCriteria: Pesos calculados:', weights);
-        setCriteriaWeights(weights);
+        console.log('useCriteria: Pesos do sistema calculados:', systemWeights);
+        setCriteriaWeights(systemWeights);
       } else {
         console.log('useCriteria: Usando critérios sugeridos do perfil');
         
@@ -81,17 +98,23 @@ export const useCriteria = () => {
           console.log('useCriteria: Critérios do perfil:', profileCriteria);
           setActiveCriteria(profileCriteria);
 
-          // Criar objeto de pesos
-          const weights: CriteriaWeights = {};
+          // Usar critérios padrão mas ajustados pelo perfil
+          const adjustedWeights: CriteriaWeights = { ...DEFAULT_WEIGHTS };
           const maxWeight = Math.max(...Object.values(profileWeights));
           
-          Object.entries(profileWeights).forEach(([key, weight]) => {
-            // Distribui pesos de 1 a 5 baseado na proporção relativa
-            weights[key] = Math.max(1, Math.round((weight / maxWeight) * 5));
-          });
+          // Mapear alguns critérios principais do perfil
+          if (profileWeights.seguranca && maxWeight > 0) {
+            adjustedWeights.location = Math.max(1, Math.round((profileWeights.seguranca / maxWeight) * 5));
+          }
+          if (profileWeights.tamanho && maxWeight > 0) {
+            adjustedWeights.internalSpace = Math.max(1, Math.round((profileWeights.tamanho / maxWeight) * 5));
+          }
+          if (profileWeights.preco_total && maxWeight > 0) {
+            adjustedWeights.price = Math.max(1, Math.round((profileWeights.preco_total / maxWeight) * 5));
+          }
           
-          console.log('useCriteria: Pesos do perfil calculados:', weights);
-          setCriteriaWeights(weights);
+          console.log('useCriteria: Pesos do perfil calculados:', adjustedWeights);
+          setCriteriaWeights(adjustedWeights);
         } else {
           // Fallback para critérios padrão
           console.log('useCriteria: Perfil não encontrado, usando critérios padrão');
@@ -105,9 +128,9 @@ export const useCriteria = () => {
         }
       }
     } else {
-      console.log('useCriteria: Usando critérios padrão');
+      console.log('useCriteria: Sem perfil de usuário, usando critérios padrão');
       
-      // Usuário não completou onboarding - usar critérios padrão
+      // Usuário não tem perfil - usar critérios padrão
       const defaultCriteria = DEFAULT_CRITERIA_KEYS.map(key => ({
         key,
         label: getCriteriaLabel(key),
@@ -118,7 +141,7 @@ export const useCriteria = () => {
       setActiveCriteria(defaultCriteria);
       setCriteriaWeights(DEFAULT_WEIGHTS);
     }
-  }, [hasCompletedOnboarding, userPreferences, userProfile]);
+  }, [userPreferences, userProfile]); // Remover hasCompletedOnboarding das dependências
 
   // Escuta eventos de atualização de critérios
   useEffect(() => {
