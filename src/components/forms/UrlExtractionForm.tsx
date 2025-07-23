@@ -46,25 +46,40 @@ export const UrlExtractionForm: React.FC<UrlExtractionFormProps> = ({
         setExtractionStatus('');
         console.log('UrlExtractionForm: Passando dados para onDataExtracted:', data);
         
-        // Garantir que os dados sejam passados no formato correto
+        // Garantir que os dados sejam passados no formato correto - com validação adicional
         const formattedData = {
-          title: data.title || '',
-          address: data.address || '',
+          title: String(data.title || ''),
+          address: String(data.address || ''),
           bedrooms: Number(data.bedrooms) || 0,
           bathrooms: Number(data.bathrooms) || 0,
-          parkingSpaces: Number(data.parkingSpaces) || 0,
+          parkingSpaces: Number(data.parkingSpaces) || 0, // Deve usar camelCase
           area: Number(data.area) || 0,
-          floor: data.floor || '',
+          floor: String(data.floor || ''),
           rent: Number(data.rent) || 0,
           condo: Number(data.condo) || 0,
           iptu: Number(data.iptu) || 0,
-          fireInsurance: Number(data.fireInsurance) || 50,
-          otherFees: Number(data.otherFees) || 0,
+          fireInsurance: Number(data.fireInsurance) || 50, // Deve usar camelCase
+          otherFees: Number(data.otherFees) || 0, // Deve usar camelCase
           images: data.images || [],
           scores: data.scores || {}
         };
         
         console.log('UrlExtractionForm: Dados formatados para o formulário:', formattedData);
+        console.log('UrlExtractionForm: Verificação final dos dados formatados:', {
+          title: `"${formattedData.title}"`,
+          address: `"${formattedData.address}"`,
+          bedrooms: formattedData.bedrooms,
+          bathrooms: formattedData.bathrooms,
+          parkingSpaces: formattedData.parkingSpaces,
+          area: formattedData.area,
+          floor: `"${formattedData.floor}"`,
+          rent: formattedData.rent,
+          condo: formattedData.condo,
+          iptu: formattedData.iptu,
+          fireInsurance: formattedData.fireInsurance,
+          otherFees: formattedData.otherFees
+        });
+        
         onDataExtracted(formattedData);
         
         toast({

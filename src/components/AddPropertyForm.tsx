@@ -86,7 +86,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
     
     setExtractedData(data);
     
-    // Criar novo objeto com valores válidos
+    // Criar novo objeto com valores válidos e validação robusta
     const newFormData: FormData = {
       title: String(data.title || ''),
       address: String(data.address || ''),
@@ -104,6 +104,19 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
     
     console.log('AddPropertyForm: Novo FormData criado:', newFormData);
     console.log('AddPropertyForm: FormData ANTES da atualização:', formData);
+    console.log('AddPropertyForm: Comparação detalhada de cada campo:');
+    console.log('  - title:', { old: formData.title, new: newFormData.title });
+    console.log('  - address:', { old: formData.address, new: newFormData.address });
+    console.log('  - bedrooms:', { old: formData.bedrooms, new: newFormData.bedrooms });
+    console.log('  - bathrooms:', { old: formData.bathrooms, new: newFormData.bathrooms });
+    console.log('  - parkingSpaces:', { old: formData.parkingSpaces, new: newFormData.parkingSpaces });
+    console.log('  - area:', { old: formData.area, new: newFormData.area });
+    console.log('  - floor:', { old: formData.floor, new: newFormData.floor });
+    console.log('  - rent:', { old: formData.rent, new: newFormData.rent });
+    console.log('  - condo:', { old: formData.condo, new: newFormData.condo });
+    console.log('  - iptu:', { old: formData.iptu, new: newFormData.iptu });
+    console.log('  - fireInsurance:', { old: formData.fireInsurance, new: newFormData.fireInsurance });
+    console.log('  - otherFees:', { old: formData.otherFees, new: newFormData.otherFees });
     
     // Atualizar o estado usando callback funcional para garantir a atualização
     setFormData(newFormData);
@@ -139,6 +152,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
         [field]: value
       };
       console.log(`AddPropertyForm: FormData atualizado - campo ${field}:`, updated);
+      console.log(`AddPropertyForm: Valor específico do campo ${field}:`, updated[field]);
       return updated;
     });
   };
@@ -211,7 +225,20 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
   // Debug: Log dos valores atuais do formData
   useEffect(() => {
     console.log('AddPropertyForm: FormData mudou:', formData);
-    console.log('AddPropertyForm: FormData após mudança - título:', formData.title, 'endereço:', formData.address);
+    console.log('AddPropertyForm: FormData após mudança - detalhado:', {
+      title: `"${formData.title}"`,
+      address: `"${formData.address}"`,
+      bedrooms: formData.bedrooms,
+      bathrooms: formData.bathrooms,
+      parkingSpaces: formData.parkingSpaces,
+      area: formData.area,
+      floor: `"${formData.floor}"`,
+      rent: formData.rent,
+      condo: formData.condo,
+      iptu: formData.iptu,
+      fireInsurance: formData.fireInsurance,
+      otherFees: formData.otherFees
+    });
   }, [formData]);
 
   // Log adicional quando extractedData mudar
