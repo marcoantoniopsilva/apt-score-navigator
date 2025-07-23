@@ -1,108 +1,116 @@
-import { CRITERIOS_DISPONÍVEIS, PERFIL_PESOS_SUGERIDOS } from './types.ts';
+import { UserPreferences } from './userPreferencesService.ts';
+import { OpenAIResponse } from './types.ts';
 
-export async function generateScoreSuggestions(
-  extractedContent: string,
-  propertyData: any,
-  userProfile: any,
+export async function generatePropertyScores(
+  content: string, 
+  propertyData: any, 
+  userPreferences: UserPreferences, 
   openaiApiKey: string
 ): Promise<Record<string, number>> {
-  
-  // Obter critérios do perfil do usuário
-  const profileWeights = PERFIL_PESOS_SUGERIDOS[userProfile.profile_type as keyof typeof PERFIL_PESOS_SUGERIDOS];
-  if (!profileWeights) {
-    console.log('Perfil não encontrado, retornando scores padrão');
+  console.log('Gerando scores personalizados com IA...');
+  console.log('Critérios ativos:', userPreferences.criteriosAtivos.length);
+  console.log('Região de referência:', userPreferences.regiaoReferencia);
+  console.log('Faixa de preço:', userPreferences.faixaPreco);
+
+  if (!userPreferences.criteriosAtivos.length) {
+    console.log('Nenhum critério ativo encontrado, retornando scores padrão');
     return {};
   }
 
-  const criteriosAtivos = Object.keys(profileWeights);
-  
-  // Criar prompt para análise do conteúdo
-  const analysisPrompt = `
-Você é um especialista em avaliação imobiliária. Analise este anúncio de imóvel e sugira pontuações de 0 a 10 para os critérios listados.
+  // Criar prompt personalizado baseado nos critérios do usuário
+  const criteriosList = userPreferences.criteriosAtivos
+    .map(c => `${c.criterio_nome} (peso: ${c.peso})`)
+    .join('\n- ');
 
-PERFIL DO USUÁRIO: ${userProfile.profile_type}
-- Objetivo: ${userProfile.objetivo_principal}
-- Situação: ${userProfile.situacao_moradia}
-- Valor principal: ${userProfile.valor_principal}
+  const custoTotal = (propertyData.rent || 0) + (propertyData.condo || 0) + (propertyData.iptu || 0);
 
-DADOS BÁSICOS DO IMÓVEL:
+  const prompt = `Analise este imóvel e atribua notas de 0 a 10 para cada critério solicitado.
+
+DADOS DO IMÓVEL:
 - Título: ${propertyData.title}
 - Endereço: ${propertyData.address}
-- Quartos: ${propertyData.bedrooms}
-- Banheiros: ${propertyData.bathrooms}
-- Área: ${propertyData.area}m²
 - Aluguel: R$ ${propertyData.rent}
 - Condomínio: R$ ${propertyData.condo}
 - IPTU: R$ ${propertyData.iptu}
+- Custo Total Mensal: R$ ${custoTotal}
+- Quartos: ${propertyData.bedrooms}
+- Banheiros: ${propertyData.bathrooms}
+- Área: ${propertyData.area}m²
+- Andar: ${propertyData.floor}
 
-CRITÉRIOS PARA AVALIAÇÃO (baseado no perfil):
-${criteriosAtivos.map(criterio => {
-  const criterioInfo = CRITERIOS_DISPONÍVEIS.find(c => c.id === criterio);
-  return `- ${criterio}: ${criterioInfo?.label || criterio} (peso: ${profileWeights[criterio]})`;
-}).join('\n')}
+PREFERÊNCIAS DO USUÁRIO:
+- Região de preferência: ${userPreferences.regiaoReferencia || 'Não informada'}
+- Faixa de preço desejada: ${userPreferences.faixaPreco || 'Não informada'}
+- Valor principal para o usuário: ${userPreferences.valorPrincipal || 'Não informado'}
 
-CONTEÚDO DO ANÚNCIO:
-${extractedContent.substring(0, 2000)}
+CRITÉRIOS PARA AVALIAR (notas de 0 a 10):
+- ${criteriosList}
 
-Instruções:
-1. Analise o conteúdo considerando o perfil específico do usuário
-2. Para cada critério, dê uma nota de 0 a 10 baseada nas informações disponíveis
-3. Considere que este usuário tem perfil "${userProfile.profile_type}"
-4. Se não houver informações suficientes para um critério, use 5.0 como valor neutro
-5. Responda APENAS com um JSON válido no formato: {"criterio1": 8.5, "criterio2": 6.2}
+INSTRUÇÕES ESPECÍFICAS:
+1. Para "localizacao" ou "proximidade_metro": Compare o endereço do imóvel com a região de preferência do usuário
+2. Para "preco_total" ou "preco_por_m2": Compare o custo total mensal (R$ ${custoTotal}) com a faixa de preço desejada
+   - Se custo estiver muito acima da faixa desejada: nota baixa (2-4)
+   - Se custo estiver na faixa desejada: nota alta (7-9)
+   - Se custo estiver abaixo da faixa: nota média-alta (6-8)
+3. Para outros critérios: Analise com base no conteúdo do anúncio
 
-JSON de resposta:`;
+CONTEÚDO COMPLETO DO ANÚNCIO:
+${content.substring(0, 3000)}
+
+Retorne APENAS um objeto JSON com os critérios e suas notas (use o nome exato dos critérios):
+{"criterio1": nota, "criterio2": nota, ...}`;
+
+  console.log('Enviando prompt para OpenAI para análise de scores...');
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${openaiApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'gpt-4o-mini',
+      messages: [
+        {
+          role: 'system',
+          content: 'Você é um especialista em avaliação imobiliária. Analise imóveis e atribua notas precisas baseadas nos critérios solicitados. Seja criterioso e realista nas avaliações. Responda sempre com JSON válido.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: 0.3,
+      max_tokens: 1000
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Erro no OpenAI para scores:', errorText);
+    throw new Error('Falha ao gerar scores com IA');
+  }
+
+  const aiResponse: OpenAIResponse = await response.json();
+  const scoresText = aiResponse.choices[0].message.content;
+  
+  console.log('Resposta da IA para scores:', scoresText);
 
   try {
-    console.log('Gerando sugestões de scores com OpenAI...');
-    console.log('Prompt:', analysisPrompt.substring(0, 500) + '...');
+    // Extrair JSON da resposta
+    let cleanContent = scoresText.trim();
     
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${openaiApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: 'Você é um especialista em avaliação imobiliária. Responda sempre com JSON válido contendo as pontuações.'
-          },
-          {
-            role: 'user',
-            content: analysisPrompt
-          }
-        ],
-        temperature: 0.3,
-        max_tokens: 500
-      }),
-    });
-
-    if (!response.ok) {
-      console.error('Erro na API OpenAI:', response.status);
-      return {};
+    // Remover formatação markdown se presente
+    if (cleanContent.startsWith('```json')) {
+      cleanContent = cleanContent.replace(/```json\n?/, '').replace(/\n?```$/, '');
+    } else if (cleanContent.startsWith('```')) {
+      cleanContent = cleanContent.replace(/```\n?/, '').replace(/\n?```$/, '');
     }
-
-    const result = await response.json();
-    const content = result.choices[0]?.message?.content;
     
-    console.log('Resposta da OpenAI:', content);
-
-    // Tentar parsear o JSON da resposta
-    try {
-      // Remover formatação markdown se presente
-      let cleanContent = content.trim();
-      if (cleanContent.startsWith('```json')) {
-        cleanContent = cleanContent.replace(/```json\n?/, '').replace(/\n?```$/, '');
-      } else if (cleanContent.startsWith('```')) {
-        cleanContent = cleanContent.replace(/```\n?/, '').replace(/\n?```$/, '');
-      }
-      
-      console.log('Conteúdo limpo para parsing:', cleanContent);
-      const scores = JSON.parse(cleanContent);
-      console.log('Scores sugeridos:', scores);
+    // Procurar por JSON válido
+    const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      const scores = JSON.parse(jsonMatch[0]);
       
       // Validar e limitar scores entre 0 e 10
       const validatedScores: Record<string, number> = {};
@@ -112,14 +120,14 @@ JSON de resposta:`;
         }
       }
       
+      console.log('Scores extraídos e validados:', validatedScores);
       return validatedScores;
-    } catch (parseError) {
-      console.error('Erro ao parsear JSON da OpenAI:', parseError);
+    } else {
+      console.error('Não foi possível extrair JSON dos scores');
       return {};
     }
-
   } catch (error) {
-    console.error('Erro ao gerar sugestões:', error);
+    console.error('Erro ao fazer parse dos scores:', error);
     return {};
   }
 }

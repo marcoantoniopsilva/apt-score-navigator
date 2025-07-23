@@ -5,6 +5,8 @@ import { validateUser } from './authService.ts'
 import { scrapeWebsite } from './firecrawlService.ts'
 import { processExtractedData } from './dataProcessor.ts'
 import { extractImagesFromHTML, extractImagesFromMarkdown } from './imageExtractor.ts'
+import { getUserPreferences } from './userPreferencesService.ts'
+import { generatePropertyScores } from './scoreAnalyzer.ts'
 
 serve(async (req) => {
   console.log('=== INÍCIO DA EDGE FUNCTION ===');
@@ -53,6 +55,22 @@ serve(async (req) => {
     ].slice(0, 10); // Limitar a 10 imagens
     console.log('Imagens extraídas:', extractedImages?.length || 0);
 
+    // Buscar preferências do usuário para gerar scores personalizados
+    console.log('Buscando preferências do usuário...');
+    const userPreferences = await getUserPreferences(user.id, supabaseUrl, supabaseServiceRoleKey);
+    console.log('Preferências do usuário carregadas');
+
+    // Gerar scores personalizados com IA
+    console.log('Gerando scores personalizados com IA...');
+    const openaiApiKey = Deno.env.get('OPENAI_API_KEY')!;
+    const propertyScores = await generatePropertyScores(
+      extractedContent, 
+      cleanedData, 
+      userPreferences, 
+      openaiApiKey
+    );
+    console.log('Scores gerados:', propertyScores);
+
     // REMOVIDO: Não salvar mais no banco de dados automaticamente
     // Apenas retornar os dados para preenchimento do formulário
     
@@ -61,6 +79,7 @@ serve(async (req) => {
     const responseData = {
       ...cleanedData,
       images: extractedImages || [],
+      scores: propertyScores, // Adicionar scores gerados pela IA
       // Converter snake_case para camelCase para compatibilidade com o frontend
       parkingSpaces: cleanedData.parking_spaces || 0,
       fireInsurance: cleanedData.fire_insurance || 50,
