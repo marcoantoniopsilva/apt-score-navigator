@@ -103,13 +103,13 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
     };
     
     console.log('AddPropertyForm: Novo FormData criado:', newFormData);
+    console.log('AddPropertyForm: FormData ANTES da atualização:', formData);
     
-    // Forçar atualização do estado usando callback funcional
-    setFormData(prevData => {
-      console.log('AddPropertyForm: Estado anterior:', prevData);
-      console.log('AddPropertyForm: Novo estado:', newFormData);
-      return newFormData;
-    });
+    // Atualizar o estado usando callback funcional para garantir a atualização
+    setFormData(newFormData);
+    
+    // Log adicional após definir o estado (será executado no próximo render)
+    console.log('AddPropertyForm: setFormData chamado com:', newFormData);
     
     // Atualizar scores baseado nos dados extraídos
     if (data.scores && typeof data.scores === 'object') {
@@ -131,14 +131,14 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
   };
 
   const updateFormField = (field: keyof FormData, value: string | number) => {
-    console.log(`AddPropertyForm: Atualizando campo ${field} com valor:`, value);
+    console.log(`AddPropertyForm: updateFormField chamado - campo: ${field}, valor:`, value, 'tipo:', typeof value);
     
     setFormData(prev => {
       const updated = {
         ...prev,
         [field]: value
       };
-      console.log(`AddPropertyForm: FormData atualizado para ${field}:`, updated);
+      console.log(`AddPropertyForm: FormData atualizado - campo ${field}:`, updated);
       return updated;
     });
   };
@@ -211,7 +211,17 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
   // Debug: Log dos valores atuais do formData
   useEffect(() => {
     console.log('AddPropertyForm: FormData mudou:', formData);
+    console.log('AddPropertyForm: FormData após mudança - título:', formData.title, 'endereço:', formData.address);
   }, [formData]);
+
+  // Log adicional quando extractedData mudar
+  useEffect(() => {
+    if (extractedData) {
+      console.log('AddPropertyForm: extractedData atualizado:', extractedData);
+      console.log('AddPropertyForm: Verificando se formData foi atualizado após extractedData...');
+      console.log('AddPropertyForm: FormData atual após extractedData:', formData);
+    }
+  }, [extractedData]);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -230,20 +240,44 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
             onDataExtracted={handleDataExtracted}
           />
 
+          {/* Debug: Mostrar formData atual */}
+          <div className="mb-4 p-2 bg-gray-100 rounded text-xs">
+            <strong>Debug - FormData atual:</strong>
+            <pre>{JSON.stringify(formData, null, 2)}</pre>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <PropertyBasicForm
-              formData={formData}
+              formData={{
+                title: formData.title,
+                address: formData.address,
+                floor: formData.floor
+              }}
               onUpdateField={updateFormField}
             />
 
             <PropertyDetailsForm
-              formData={formData}
+              formData={{
+                bedrooms: formData.bedrooms,
+                bathrooms: formData.bathrooms,
+                parkingSpaces: formData.parkingSpaces,
+                area: formData.area
+              }}
               onUpdateField={updateFormField}
             />
 
             <PropertyFinancialForm
-              formData={formData}
-              onInputChange={(e) => updateFormField(e.target.name as keyof FormData, e.target.value)}
+              formData={{
+                rent: formData.rent,
+                condo: formData.condo,
+                iptu: formData.iptu,
+                fireInsurance: formData.fireInsurance,
+                otherFees: formData.otherFees
+              }}
+              onInputChange={(e) => {
+                console.log('AddPropertyForm: PropertyFinancialForm onChange:', e.target.name, e.target.value);
+                updateFormField(e.target.name as keyof FormData, Number(e.target.value) || 0);
+              }}
             />
 
             <PropertyScoresForm

@@ -21,6 +21,7 @@ export const PropertyBasicForm: React.FC<PropertyBasicFormProps> = ({
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     console.log(`PropertyBasicForm: Campo ${name} alterado para:`, value);
+    console.log('PropertyBasicForm: Chamando onUpdateField...');
     onUpdateField(name, value);
   };
   
@@ -38,6 +39,9 @@ export const PropertyBasicForm: React.FC<PropertyBasicFormProps> = ({
             required
             placeholder="Digite o título da propriedade"
           />
+          <div className="text-xs text-gray-500 mt-1">
+            Debug: "{formData.title}"
+          </div>
         </div>
         <div>
           <Label htmlFor="address">Endereço</Label>
@@ -49,6 +53,9 @@ export const PropertyBasicForm: React.FC<PropertyBasicFormProps> = ({
             required
             placeholder="Digite o endereço da propriedade"
           />
+          <div className="text-xs text-gray-500 mt-1">
+            Debug: "{formData.address}"
+          </div>
         </div>
       </div>
 
@@ -61,6 +68,9 @@ export const PropertyBasicForm: React.FC<PropertyBasicFormProps> = ({
           onChange={handleChange}
           placeholder="Ex: 3º andar, Térreo, etc."
         />
+        <div className="text-xs text-gray-500 mt-1">
+          Debug: "{formData.floor}"
+        </div>
       </div>
     </>
   );

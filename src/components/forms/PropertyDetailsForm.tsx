@@ -23,6 +23,7 @@ export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
     const { name, value } = e.target;
     const numericValue = Number(value) || 0;
     console.log(`PropertyDetailsForm: Campo ${name} alterado para:`, numericValue);
+    console.log('PropertyDetailsForm: Chamando onUpdateField...');
     onUpdateField(name, numericValue);
   };
   
@@ -39,6 +40,9 @@ export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
           onChange={handleChange}
           required
         />
+        <div className="text-xs text-gray-500 mt-1">
+          Debug: {formData.bedrooms}
+        </div>
       </div>
       <div>
         <Label htmlFor="bathrooms">Banheiros</Label>
@@ -51,6 +55,9 @@ export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
           onChange={handleChange}
           required
         />
+        <div className="text-xs text-gray-500 mt-1">
+          Debug: {formData.bathrooms}
+        </div>
       </div>
       <div>
         <Label htmlFor="parkingSpaces">Vagas</Label>
@@ -63,6 +70,9 @@ export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
           onChange={handleChange}
           required
         />
+        <div className="text-xs text-gray-500 mt-1">
+          Debug: {formData.parkingSpaces}
+        </div>
       </div>
       <div>
         <Label htmlFor="area">Área (m²)</Label>
@@ -75,6 +85,9 @@ export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
           onChange={handleChange}
           required
         />
+        <div className="text-xs text-gray-500 mt-1">
+          Debug: {formData.area}
+        </div>
       </div>
     </div>
   );
