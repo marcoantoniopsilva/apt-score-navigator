@@ -36,15 +36,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!mounted) return;
         
         console.log('Auth state changed:', event, session?.user?.email);
-        setSession(session);
-        setUser(session?.user ?? null);
         
-        // Only set loading to false after we've processed the auth change
-        setTimeout(() => {
-          if (mounted) {
-            setLoading(false);
-          }
-        }, 100);
+        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+          setSession(session);
+          setUser(session?.user ?? null);
+        } else if (event === 'SIGNED_IN') {
+          setSession(session);
+          setUser(session?.user ?? null);
+        } else {
+          // For other events, just update the state
+          setSession(session);
+          setUser(session?.user ?? null);
+        }
+        
+        setLoading(false);
       }
     );
 
@@ -57,25 +62,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     });
 
-    // Handle page visibility changes - refresh session when returning to tab
-    const handleVisibilityChange = () => {
-      if (!document.hidden && mounted) {
-        // Refresh session when user returns to tab
-        supabase.auth.getSession().then(({ data: { session } }) => {
-          if (mounted) {
-            setSession(session);
-            setUser(session?.user ?? null);
-          }
-        });
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
     return () => {
       mounted = false;
       subscription.unsubscribe();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 

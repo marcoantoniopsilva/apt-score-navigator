@@ -19,9 +19,9 @@ import { useSubscription } from '@/hooks/useSubscription';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { EnhancedOnboardingModal } from '@/components/EnhancedOnboardingModal';
 import { useCriteria } from '@/hooks/useCriteria';
-import { useTabVisibility } from '@/hooks/useTabVisibility';
 import { SubscriptionStatus } from '@/components/SubscriptionStatus';
 import { UpgradeModal } from '@/components/UpgradeModal';
+import { SessionExpiredMessage } from '@/components/SessionExpiredMessage';
 import { UserProfileType } from '@/types/onboarding';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -32,8 +32,7 @@ const Index = () => {
   
   const { properties, setProperties, isLoading, loadProperties } = usePropertyLoader();
   const { sortBy, sortOrder, setSortBy, setSortOrder } = usePropertySorting();
-  const { isPro, loading: subscriptionLoading, checkSubscription } = useSubscription();
-  const { isReturning } = useTabVisibility();
+  const { isPro, loading: subscriptionLoading, checkSubscription, sessionError } = useSubscription();
   
   // Hook de critérios dinâmicos - DEVE vir antes de qualquer useEffect/useState condicional
   const { criteriaWeights, updateCriteriaWeight, activeCriteria, getWeightsObject } = useCriteria();
@@ -156,16 +155,6 @@ const Index = () => {
     };
   }, []);
 
-  // Handle tab visibility changes - revalidate data when user returns
-  useEffect(() => {
-    if (isReturning) {
-      console.log('User returned to tab - refreshing data');
-      // Refresh data when user returns to tab
-      loadProperties();
-      checkSubscription();
-    }
-  }, [isReturning, loadProperties, checkSubscription]);
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <AppHeader 
@@ -188,6 +177,10 @@ const Index = () => {
             onEdit={() => setShowOnboarding(true)}
           />
         )}
+        
+        <div className="mb-6">
+          <SessionExpiredMessage error={sessionError} />
+        </div>
         
         <div className="mb-6">
           <SubscriptionStatus />
