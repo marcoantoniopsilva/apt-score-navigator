@@ -35,44 +35,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       (event, session) => {
         if (!mounted) return;
         
-        console.log('AuthContext: Auth state changed:', event, {
-          hasSession: !!session,
-          userEmail: session?.user?.email,
-          userId: session?.user?.id,
-          expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'N/A'
-        });
+        console.log('Auth state changed:', event, session?.user?.email);
         
-        // Always update both session and user for all events
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        // Clear loading after any auth event
-        setLoading(false);
-        
-        // Log the final state
-        if (session) {
-          console.log('AuthContext: User authenticated successfully');
+        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
+          setSession(session);
+          setUser(session?.user ?? null);
+        } else if (event === 'SIGNED_IN') {
+          setSession(session);
+          setUser(session?.user ?? null);
         } else {
-          console.log('AuthContext: User signed out or session invalid');
+          // For other events, just update the state
+          setSession(session);
+          setUser(session?.user ?? null);
         }
+        
+        setLoading(false);
       }
     );
 
     // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (!mounted) return;
-      
-      console.log('AuthContext: Initial session check:', {
-        hasSession: !!session,
-        userEmail: session?.user?.email,
-        userId: session?.user?.id,
-        error: error?.message,
-        expiresAt: session?.expires_at ? new Date(session.expires_at * 1000).toISOString() : 'N/A'
-      });
-      
-      if (error) {
-        console.error('AuthContext: Error getting initial session:', error);
-      }
       
       setSession(session);
       setUser(session?.user ?? null);

@@ -208,14 +208,11 @@ export const useOnboarding = () => {
   // Inicializa o onboarding baseado no estado de autenticação
   useEffect(() => {
     const checkAuthAndLoadData = async () => {
-      console.log('useOnboarding: Checking auth and loading data...');
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session?.user) {
-        console.log('useOnboarding: Valid session found, loading data for user:', session.user.id);
         await loadOnboardingData(session.user.id);
       } else {
-        console.log('useOnboarding: No session found, setting loading to false');
         setIsLoading(false);
       }
     };
@@ -225,12 +222,9 @@ export const useOnboarding = () => {
     // Escuta mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('useOnboarding: Auth state changed:', event, !!session);
         if (session?.user) {
-          console.log('useOnboarding: User authenticated, loading onboarding data');
           await loadOnboardingData(session.user.id);
         } else {
-          console.log('useOnboarding: User not authenticated, clearing state');
           setUserProfile(null);
           setUserPreferences([]);
           setHasCompletedOnboarding(false);
@@ -240,7 +234,7 @@ export const useOnboarding = () => {
     );
 
     return () => subscription.unsubscribe();
-  }, [loadOnboardingData]);
+  }, []);
 
   return {
     userProfile,

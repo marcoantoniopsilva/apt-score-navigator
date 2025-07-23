@@ -125,22 +125,6 @@ export const usePropertyLoader = () => {
     }
   }, [user?.id, loadProperties]);
 
-  // Escutar eventos de reconexão de sessão
-  useEffect(() => {
-    const handleSessionReconnect = () => {
-      if (user?.id) {
-        console.log('PropertyLoader: Session reconnected, reloading properties...');
-        loadProperties();
-      }
-    };
-
-    window.addEventListener('session-reconnected', handleSessionReconnect);
-    
-    return () => {
-      window.removeEventListener('session-reconnected', handleSessionReconnect);
-    };
-  }, [user?.id, loadProperties]);
-
   return {
     properties,
     setProperties,
