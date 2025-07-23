@@ -22,6 +22,8 @@ export const SubscriptionStatus = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   const handleRefresh = async () => {
+    if (refreshing) return; // Prevent multiple concurrent refreshes
+    
     try {
       setRefreshing(true);
       await checkSubscription();
@@ -42,10 +44,18 @@ export const SubscriptionStatus = () => {
   };
 
   if (loading) {
+    // Add a timeout fallback to prevent infinite loading
+    setTimeout(() => {
+      if (loading) {
+        console.warn('SubscriptionStatus loading timeout - forcing display');
+      }
+    }, 15000);
+
     return (
       <Card>
         <CardContent className="flex items-center justify-center p-6">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+          <span className="ml-2 text-sm text-muted-foreground">Carregando...</span>
         </CardContent>
       </Card>
     );
