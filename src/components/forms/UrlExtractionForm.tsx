@@ -20,49 +20,34 @@ export const UrlExtractionForm: React.FC<UrlExtractionFormProps> = ({
   const { toast } = useToast();
   const [isExtracting, setIsExtracting] = useState(false);
   const [extractedData, setExtractedData] = useState<any>(null);
-  const [extractionStatus, setExtractionStatus] = useState('');
 
   const handleExtractFromUrl = async () => {
-    console.log('UrlExtractionForm: Iniciando extração para URL:', url);
+    console.log('UrlExtractionForm: Botão clicado, iniciando extração');
+    console.log('UrlExtractionForm: URL:', url);
     
     setIsExtracting(true);
-    setExtractedData(null);
-    setExtractionStatus('Iniciando extração...');
-    
     try {
-      setExtractionStatus('Extraindo dados do anúncio...');
+      console.log('UrlExtractionForm: Chamando extractPropertyFromUrl...');
       const data = await extractPropertyFromUrl(url);
-      
-      console.log('UrlExtractionForm: Dados recebidos (já mapeados):', data);
-      
-      if (data && Object.keys(data).length > 0) {
+      if (data) {
         setExtractedData(data);
-        setExtractionStatus('');
-        
-        // Passar os dados diretamente (já estão no formato correto)
-        console.log('UrlExtractionForm: Passando dados para onDataExtracted:', data);
         onDataExtracted(data);
-        
         toast({
-          title: "Dados extraídos com sucesso!",
-          description: `Título: ${data.title || 'N/A'}, Endereço: ${data.address || 'N/A'}, Aluguel: R$ ${data.rent || 0}`,
+          title: "Dados extraídos",
+          description: "Os dados foram extraídos e preenchidos no formulário. Revise e clique em 'Adicionar Propriedade' para salvar.",
         });
       } else {
-        setExtractionStatus('');
-        console.error('UrlExtractionForm: Dados vazios ou inválidos recebidos:', data);
         toast({
           title: "Erro na extração",
-          description: "Não foi possível extrair os dados do anúncio. Verifique se a URL está correta.",
+          description: "Não foi possível extrair os dados do anúncio.",
           variant: "destructive"
         });
       }
     } catch (error) {
-      setExtractionStatus('');
       console.error("Erro ao extrair dados da URL:", error);
-      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
       toast({
         title: "Erro na extração",
-        description: `Erro: ${errorMessage}`,
+        description: "Ocorreu um erro ao tentar extrair os dados do anúncio.",
         variant: "destructive"
       });
     } finally {
@@ -90,26 +75,10 @@ export const UrlExtractionForm: React.FC<UrlExtractionFormProps> = ({
           {isExtracting ? 'Extraindo...' : 'Extrair'}
         </Button>
       </div>
-      {extractionStatus && (
-        <p className="text-sm text-blue-600 mt-2">
-          {extractionStatus}
-        </p>
-      )}
       {extractedData && (
-        <div className="mt-2 p-2 bg-green-50 rounded border border-green-200">
-          <p className="text-sm text-green-600 font-medium">
-            ✅ Dados extraídos com sucesso!
-          </p>
-          <div className="text-xs text-green-600 mt-1">
-            <p>Título: {extractedData.title || 'N/A'}</p>
-            <p>Endereço: {extractedData.address || 'N/A'}</p>
-            <p>Quartos: {extractedData.bedrooms || 0} | Banheiros: {extractedData.bathrooms || 0}</p>
-            <p>Aluguel: R$ {extractedData.rent || 0}</p>
-          </div>
-          <p className="text-xs text-green-600 mt-1">
-            Revise e ajuste os dados conforme necessário.
-          </p>
-        </div>
+        <p className="text-sm text-green-600 mt-2">
+          Dados extraídos com sucesso! Revise e ajuste conforme necessário.
+        </p>
       )}
     </div>
   );

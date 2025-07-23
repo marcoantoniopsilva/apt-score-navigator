@@ -4,38 +4,30 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 interface PropertyBasicFormProps {
-  title: string;
-  address: string;
-  floor: string;
-  onUpdateField: (field: string, value: string) => void;
+  formData: {
+    title: string;
+    address: string;
+    floor: string;
+  };
+  onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export const PropertyBasicForm: React.FC<PropertyBasicFormProps> = ({
-  title,
-  address,
-  floor,
-  onUpdateField
+  formData,
+  onInputChange
 }) => {
-  console.log('🏠 PropertyBasicForm renderizando:', { title, address, floor });
-  
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    console.log(`📝 Campo ${name} alterado para: "${value}"`);
-    onUpdateField(name, value);
-  };
-  
   return (
     <>
+      {/* Basic Information */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="title">Título</Label>
           <Input
             id="title"
             name="title"
-            value={title}
-            onChange={handleChange}
+            value={formData.title}
+            onChange={onInputChange}
             required
-            placeholder="Digite o título da propriedade"
           />
         </div>
         <div>
@@ -43,10 +35,9 @@ export const PropertyBasicForm: React.FC<PropertyBasicFormProps> = ({
           <Input
             id="address"
             name="address"
-            value={address}
-            onChange={handleChange}
+            value={formData.address}
+            onChange={onInputChange}
             required
-            placeholder="Digite o endereço da propriedade"
           />
         </div>
       </div>
@@ -56,9 +47,8 @@ export const PropertyBasicForm: React.FC<PropertyBasicFormProps> = ({
         <Input
           id="floor"
           name="floor"
-          value={floor}
-          onChange={handleChange}
-          placeholder="Ex: 3º andar, Térreo, etc."
+          value={formData.floor}
+          onChange={onInputChange}
         />
       </div>
     </>

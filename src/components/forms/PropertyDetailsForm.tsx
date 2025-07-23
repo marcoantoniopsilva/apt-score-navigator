@@ -4,29 +4,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 interface PropertyDetailsFormProps {
-  bedrooms: number;
-  bathrooms: number;
-  parkingSpaces: number;
-  area: number;
-  onUpdateField: (field: string, value: number) => void;
+  formData: {
+    bedrooms: number;
+    bathrooms: number;
+    parkingSpaces: number;
+    area: number;
+  };
+  onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }
 
 export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
-  bedrooms,
-  bathrooms,
-  parkingSpaces,
-  area,
-  onUpdateField
+  formData,
+  onInputChange
 }) => {
-  console.log('🏗️ PropertyDetailsForm renderizando:', { bedrooms, bathrooms, parkingSpaces, area });
-  
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const numericValue = Number(value) || 0;
-    console.log(`🔢 Campo ${name} alterado para:`, numericValue);
-    onUpdateField(name, numericValue);
-  };
-  
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div>
@@ -36,8 +26,8 @@ export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
           name="bedrooms"
           type="number"
           min="0"
-          value={bedrooms}
-          onChange={handleChange}
+          value={formData.bedrooms}
+          onChange={onInputChange}
           required
         />
       </div>
@@ -48,8 +38,8 @@ export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
           name="bathrooms"
           type="number"
           min="0"
-          value={bathrooms}
-          onChange={handleChange}
+          value={formData.bathrooms}
+          onChange={onInputChange}
           required
         />
       </div>
@@ -60,8 +50,8 @@ export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
           name="parkingSpaces"
           type="number"
           min="0"
-          value={parkingSpaces}
-          onChange={handleChange}
+          value={formData.parkingSpaces}
+          onChange={onInputChange}
           required
         />
       </div>
@@ -72,8 +62,8 @@ export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
           name="area"
           type="number"
           min="0"
-          value={area}
-          onChange={handleChange}
+          value={formData.area}
+          onChange={onInputChange}
           required
         />
       </div>

@@ -4,14 +4,12 @@ import { Property } from '@/types/property';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { X } from 'lucide-react';
-import { UrlExtractor } from './forms/UrlExtractor';
+import { UrlExtractionForm } from './forms/UrlExtractionForm';
 import { PropertyBasicForm } from './forms/PropertyBasicForm';
 import { PropertyDetailsForm } from './forms/PropertyDetailsForm';
 import { PropertyFinancialForm } from './forms/PropertyFinancialForm';
 import { PropertyScoresForm } from './forms/PropertyScoresForm';
 import { useCriteria } from '@/hooks/useCriteria';
-import { ExtractedData } from '@/services/urlExtractionService';
-import { useToast } from '@/hooks/use-toast';
 
 interface AddPropertyFormProps {
   onSubmit: (property: Property) => void;
@@ -19,122 +17,148 @@ interface AddPropertyFormProps {
 }
 
 export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCancel }) => {
-  const { toast } = useToast();
   const { activeCriteria, getCriteriaLabel } = useCriteria();
   
-  // Estado centralizado do formulário
-  const [formData, setFormData] = useState({
+  // Estados inicializados a cada render para evitar dados antigos
+  const [url, setUrl] = useState('');
+  const [extractedData, setExtractedData] = useState<any>(null);
+  const [suggestedScores, setSuggestedScores] = useState<Record<string, number>>({});
+  
+  const [formData, setFormData] = useState(() => ({
     title: '',
     address: '',
-    bedrooms: 1,
-    bathrooms: 1,
+    bedrooms: 0,
+    bathrooms: 0,
     parkingSpaces: 0,
-    area: 50,
+    area: 0,
     floor: '',
     rent: 0,
     condo: 0,
     iptu: 0,
-    fireInsurance: 50,
+    fireInsurance: 0,
     otherFees: 0
-  });
-
-  // Estado para imagens e scores
-  const [images, setImages] = useState<string[]>([]);
-  const [scores, setScores] = useState<Record<string, number>>({});
-  const [sourceUrl, setSourceUrl] = useState('');
+  }));
 
   // Inicializar scores baseado nos critérios dinâmicos
-  useEffect(() => {
+  const [scores, setScores] = useState<Record<string, number>>(() => {
     const initialScores: Record<string, number> = {};
     activeCriteria.forEach(criterio => {
       initialScores[criterio.key] = 5; // Score padrão
     });
-    setScores(initialScores);
+    return initialScores;
+  });
+
+  // Atualizar scores quando os critérios mudarem
+  useEffect(() => {
+    if (activeCriteria.length > 0) {
+      const initialScores: Record<string, number> = {};
+      activeCriteria.forEach(criterio => {
+        initialScores[criterio.key] = 5; // Score padrão
+      });
+      setScores(initialScores);
+    }
   }, [activeCriteria]);
 
-  // Função para atualizar campos do formulário
-  const updateField = (field: string, value: string | number) => {
-    console.log(`📝 Atualizando campo ${field}:`, value);
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  // Função chamada quando dados são extraídos da URL
-  const handleDataExtracted = (extractedData: ExtractedData) => {
-    console.log('🎯 Recebendo dados extraídos:', extractedData);
-    
-    // Atualizar formData com os dados extraídos
+  const handleDataExtracted = (data: any) => {
+    setExtractedData(data);
     setFormData({
-      title: extractedData.title,
-      address: extractedData.address,
-      bedrooms: extractedData.bedrooms,
-      bathrooms: extractedData.bathrooms,
-      parkingSpaces: extractedData.parkingSpaces,
-      area: extractedData.area,
-      floor: extractedData.floor,
-      rent: extractedData.rent,
-      condo: extractedData.condo,
-      iptu: extractedData.iptu,
-      fireInsurance: extractedData.fireInsurance,
-      otherFees: extractedData.otherFees
+      title: data.title || '',
+      address: data.address || '',
+      bedrooms: data.bedrooms || 0,
+      bathrooms: data.bathrooms || 0,
+      parkingSpaces: data.parkingSpaces || 0,
+      area: data.area || 0,
+      floor: data.floor || '',
+      rent: data.rent || 0,
+      condo: data.condo || 0,
+      iptu: data.iptu || 0,
+      fireInsurance: data.fireInsurance || 0,
+      otherFees: data.otherFees || 0
     });
-
-    // Atualizar imagens
-    setImages(extractedData.images);
-
-    // Atualizar scores se disponíveis
-    if (extractedData.scores && Object.keys(extractedData.scores).length > 0) {
+    
+    // Atualizar scores baseado nos dados extraídos ou usar scores sugeridos
+    if (data.scores && typeof data.scores === 'object') {
       const newScores: Record<string, number> = {};
       activeCriteria.forEach(criterio => {
-        newScores[criterio.key] = extractedData.scores[criterio.key] || 5;
+        newScores[criterio.key] = data.scores[criterio.key] || 5;
       });
       setScores(newScores);
+      setSuggestedScores(data.scores); // Guardar as sugestões
     }
+  };
 
-    console.log('✅ Formulário atualizado com dados extraídos');
-    
-    toast({
-      title: "Formulário preenchido!",
-      description: "Revise os dados e clique em 'Adicionar' para salvar.",
-    });
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
   const handleScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    const numericValue = value === '' ? 0 : Math.max(0, Math.min(10, parseFloat(value) || 0));
+    console.log(`AddPropertyForm: Score change - ${name}: "${value}"`);
     
-    setScores(prev => ({
-      ...prev,
-      [name]: numericValue
-    }));
+    // Permitir valores vazios durante a digitação, mas manter como 0
+    if (value === '') {
+      setScores(prev => ({
+        ...prev,
+        [name]: 0
+      }));
+      return;
+    }
+    
+    const numericValue = parseFloat(value);
+    console.log(`AddPropertyForm: Parsed value: ${numericValue}`);
+    
+    // Verificar se é um número válido
+    if (!isNaN(numericValue)) {
+      // Aplicar limites apenas se necessário, mas não forçar para 10
+      const finalValue = Math.max(0, Math.min(10, numericValue));
+      console.log(`AddPropertyForm: Setting score ${name} to ${finalValue}`);
+      setScores(prev => ({
+        ...prev,
+        [name]: finalValue
+      }));
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('💾 Salvando propriedade...');
-    console.log('FormData:', formData);
-    console.log('Scores:', scores);
+    console.log('AddPropertyForm: Submitting with scores:', scores);
     
-    const totalMonthlyCost = formData.rent + formData.condo + formData.iptu + formData.fireInsurance + formData.otherFees;
+    // Garantir que todos os scores sejam números válidos
+    const validatedScores = Object.entries(scores).reduce((acc, [key, value]) => {
+      const numValue = typeof value === 'string' ? parseFloat(value) : value;
+      acc[key] = isNaN(numValue) ? 5 : Math.max(0, Math.min(10, numValue));
+      return acc;
+    }, {} as any);
     
     const newProperty: Property = {
       id: crypto.randomUUID(),
-      ...formData,
-      totalMonthlyCost,
-      images,
-      sourceUrl: sourceUrl || undefined,
-      scores,
+      title: formData.title,
+      address: formData.address,
+      bedrooms: Number(formData.bedrooms),
+      bathrooms: Number(formData.bathrooms),
+      parkingSpaces: Number(formData.parkingSpaces),
+      area: Number(formData.area),
+      floor: formData.floor,
+      rent: Number(formData.rent),
+      condo: Number(formData.condo),
+      iptu: Number(formData.iptu),
+      fireInsurance: Number(formData.fireInsurance),
+      otherFees: Number(formData.otherFees),
+      totalMonthlyCost: Number(formData.rent) + Number(formData.condo) + Number(formData.iptu) + Number(formData.fireInsurance) + Number(formData.otherFees),
+      images: extractedData?.images || [],
+      sourceUrl: url || undefined,
+      scores: validatedScores,
       finalScore: 0
     };
 
-    console.log('🎉 Propriedade criada:', newProperty);
+    console.log('AddPropertyForm: Created property with scores:', newProperty.scores);
     onSubmit(newProperty);
   };
-
-  console.log('🔄 AddPropertyForm renderizando, formData atual:', formData);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -147,46 +171,37 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
             </Button>
           </div>
 
-          <UrlExtractor onDataExtracted={handleDataExtracted} />
+          <UrlExtractionForm
+            url={url}
+            setUrl={setUrl}
+            onDataExtracted={handleDataExtracted}
+          />
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <PropertyBasicForm
-              title={formData.title}
-              address={formData.address}
-              floor={formData.floor}
-              onUpdateField={updateField}
+              formData={formData}
+              onInputChange={handleInputChange}
             />
 
             <PropertyDetailsForm
-              bedrooms={formData.bedrooms}
-              bathrooms={formData.bathrooms}
-              parkingSpaces={formData.parkingSpaces}
-              area={formData.area}
-              onUpdateField={updateField}
+              formData={formData}
+              onInputChange={handleInputChange}
             />
 
             <PropertyFinancialForm
-              formData={{
-                rent: formData.rent,
-                condo: formData.condo,
-                iptu: formData.iptu,
-                fireInsurance: formData.fireInsurance,
-                otherFees: formData.otherFees
-              }}
-              onInputChange={(e) => {
-                const value = Number(e.target.value) || 0;
-                updateField(e.target.name, value);
-              }}
+              formData={formData}
+              onInputChange={handleInputChange}
             />
 
             <PropertyScoresForm
               scores={scores}
               onScoreChange={handleScoreChange}
               activeCriteria={activeCriteria}
-              suggestedScores={{}}
+              suggestedScores={suggestedScores}
               getCriteriaLabel={getCriteriaLabel}
             />
 
+            {/* Action Buttons */}
             <div className="flex justify-end space-x-4 pt-4 border-t">
               <Button type="button" variant="outline" onClick={onCancel}>
                 Cancelar
