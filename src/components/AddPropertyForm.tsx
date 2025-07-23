@@ -4,206 +4,137 @@ import { Property } from '@/types/property';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { X } from 'lucide-react';
-import { UrlExtractionForm } from './forms/UrlExtractionForm';
+import { UrlExtractor } from './forms/UrlExtractor';
 import { PropertyBasicForm } from './forms/PropertyBasicForm';
 import { PropertyDetailsForm } from './forms/PropertyDetailsForm';
 import { PropertyFinancialForm } from './forms/PropertyFinancialForm';
 import { PropertyScoresForm } from './forms/PropertyScoresForm';
 import { useCriteria } from '@/hooks/useCriteria';
+import { ExtractedData } from '@/services/urlExtractionService';
+import { useToast } from '@/hooks/use-toast';
 
 interface AddPropertyFormProps {
   onSubmit: (property: Property) => void;
   onCancel: () => void;
 }
 
-interface FormData {
-  title: string;
-  address: string;
-  bedrooms: number;
-  bathrooms: number;
-  parkingSpaces: number;
-  area: number;
-  floor: string;
-  rent: number;
-  condo: number;
-  iptu: number;
-  fireInsurance: number;
-  otherFees: number;
-}
-
 export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCancel }) => {
+  const { toast } = useToast();
   const { activeCriteria, getCriteriaLabel } = useCriteria();
   
-  // Estado para URL
-  const [url, setUrl] = useState('');
-  const [extractedData, setExtractedData] = useState<any>(null);
-  const [suggestedScores, setSuggestedScores] = useState<Record<string, number>>({});
-  
-  // Estados do formulário inicializados vazios
-  const [formData, setFormData] = useState<FormData>({
+  // Estado centralizado do formulário
+  const [formData, setFormData] = useState({
     title: '',
     address: '',
-    bedrooms: 0,
-    bathrooms: 0,
+    bedrooms: 1,
+    bathrooms: 1,
     parkingSpaces: 0,
-    area: 0,
+    area: 50,
     floor: '',
     rent: 0,
     condo: 0,
     iptu: 0,
-    fireInsurance: 0,
+    fireInsurance: 50,
     otherFees: 0
   });
 
+  // Estado para imagens e scores
+  const [images, setImages] = useState<string[]>([]);
+  const [scores, setScores] = useState<Record<string, number>>({});
+  const [sourceUrl, setSourceUrl] = useState('');
+
   // Inicializar scores baseado nos critérios dinâmicos
-  const [scores, setScores] = useState<Record<string, number>>(() => {
+  useEffect(() => {
     const initialScores: Record<string, number> = {};
     activeCriteria.forEach(criterio => {
       initialScores[criterio.key] = 5; // Score padrão
     });
-    return initialScores;
-  });
-
-  // Atualizar scores quando os critérios mudarem
-  useEffect(() => {
-    if (activeCriteria.length > 0) {
-      const initialScores: Record<string, number> = {};
-      activeCriteria.forEach(criterio => {
-        initialScores[criterio.key] = 5; // Score padrão
-      });
-      setScores(initialScores);
-    }
+    setScores(initialScores);
   }, [activeCriteria]);
 
-  const handleDataExtracted = (data: any) => {
-    console.log('=== INÍCIO HANDLE DATA EXTRACTED ===');
-    console.log('AddPropertyForm: Dados recebidos em handleDataExtracted:', data);
-    
-    if (!data || typeof data !== 'object') {
-      console.error('AddPropertyForm: Dados inválidos recebidos:', data);
-      return;
-    }
-    
-    setExtractedData(data);
-    
-    // Atualizar formData diretamente com os dados extraídos
-    console.log('AddPropertyForm: Atualizando FormData com dados extraídos...');
-    setFormData({
-      title: String(data.title || ''),
-      address: String(data.address || ''),
-      bedrooms: Number(data.bedrooms) || 0,
-      bathrooms: Number(data.bathrooms) || 0,
-      parkingSpaces: Number(data.parkingSpaces) || 0,
-      area: Number(data.area) || 0,
-      floor: String(data.floor || ''),
-      rent: Number(data.rent) || 0,
-      condo: Number(data.condo) || 0,
-      iptu: Number(data.iptu) || 0,
-      fireInsurance: Number(data.fireInsurance) || 50,
-      otherFees: Number(data.otherFees) || 0
-    });
-    
-    // Atualizar scores baseado nos dados extraídos
-    if (data.scores && typeof data.scores === 'object') {
-      console.log('AddPropertyForm: Scores recebidos:', data.scores);
-      
-      const newScores: Record<string, number> = {};
-      
-      // Mapear scores extraídos para critérios ativos
-      activeCriteria.forEach(criterio => {
-        newScores[criterio.key] = data.scores[criterio.key] || 5;
-      });
-      
-      console.log('AddPropertyForm: Scores mapeados:', newScores);
-      setScores(newScores);
-      setSuggestedScores(data.scores);
-    }
-    
-    console.log('=== FIM HANDLE DATA EXTRACTED ===');
+  // Função para atualizar campos do formulário
+  const updateField = (field: string, value: string | number) => {
+    console.log(`📝 Atualizando campo ${field}:`, value);
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
   };
 
-  const updateFormField = (field: keyof FormData, value: string | number) => {
-    console.log(`AddPropertyForm: updateFormField chamado - campo: ${field}, valor:`, value, 'tipo:', typeof value);
+  // Função chamada quando dados são extraídos da URL
+  const handleDataExtracted = (extractedData: ExtractedData) => {
+    console.log('🎯 Recebendo dados extraídos:', extractedData);
     
-    setFormData(prev => {
-      const updated = {
-        ...prev,
-        [field]: value
-      };
-      console.log(`AddPropertyForm: FormData atualizado - campo ${field}:`, updated);
-      return updated;
+    // Atualizar formData com os dados extraídos
+    setFormData({
+      title: extractedData.title,
+      address: extractedData.address,
+      bedrooms: extractedData.bedrooms,
+      bathrooms: extractedData.bathrooms,
+      parkingSpaces: extractedData.parkingSpaces,
+      area: extractedData.area,
+      floor: extractedData.floor,
+      rent: extractedData.rent,
+      condo: extractedData.condo,
+      iptu: extractedData.iptu,
+      fireInsurance: extractedData.fireInsurance,
+      otherFees: extractedData.otherFees
+    });
+
+    // Atualizar imagens
+    setImages(extractedData.images);
+
+    // Atualizar scores se disponíveis
+    if (extractedData.scores && Object.keys(extractedData.scores).length > 0) {
+      const newScores: Record<string, number> = {};
+      activeCriteria.forEach(criterio => {
+        newScores[criterio.key] = extractedData.scores[criterio.key] || 5;
+      });
+      setScores(newScores);
+    }
+
+    console.log('✅ Formulário atualizado com dados extraídos');
+    
+    toast({
+      title: "Formulário preenchido!",
+      description: "Revise os dados e clique em 'Adicionar' para salvar.",
     });
   };
 
   const handleScoreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    console.log(`AddPropertyForm: Score change - ${name}: "${value}"`);
+    const numericValue = value === '' ? 0 : Math.max(0, Math.min(10, parseFloat(value) || 0));
     
-    // Permitir valores vazios durante a digitação, mas manter como 0
-    if (value === '') {
-      setScores(prev => ({
-        ...prev,
-        [name]: 0
-      }));
-      return;
-    }
-    
-    const numericValue = parseFloat(value);
-    console.log(`AddPropertyForm: Parsed value: ${numericValue}`);
-    
-    // Verificar se é um número válido
-    if (!isNaN(numericValue)) {
-      const finalValue = Math.max(0, Math.min(10, numericValue));
-      console.log(`AddPropertyForm: Setting score ${name} to ${finalValue}`);
-      setScores(prev => ({
-        ...prev,
-        [name]: finalValue
-      }));
-    }
+    setScores(prev => ({
+      ...prev,
+      [name]: numericValue
+    }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('AddPropertyForm: Submitting with formData:', formData);
-    console.log('AddPropertyForm: Submitting with scores:', scores);
+    console.log('💾 Salvando propriedade...');
+    console.log('FormData:', formData);
+    console.log('Scores:', scores);
     
-    // Garantir que todos os scores sejam números válidos
-    const validatedScores = Object.entries(scores).reduce((acc, [key, value]) => {
-      const numValue = typeof value === 'string' ? parseFloat(value) : value;
-      acc[key] = isNaN(numValue) ? 5 : Math.max(0, Math.min(10, numValue));
-      return acc;
-    }, {} as any);
+    const totalMonthlyCost = formData.rent + formData.condo + formData.iptu + formData.fireInsurance + formData.otherFees;
     
     const newProperty: Property = {
       id: crypto.randomUUID(),
-      title: formData.title,
-      address: formData.address,
-      bedrooms: Number(formData.bedrooms),
-      bathrooms: Number(formData.bathrooms),
-      parkingSpaces: Number(formData.parkingSpaces),
-      area: Number(formData.area),
-      floor: formData.floor,
-      rent: Number(formData.rent),
-      condo: Number(formData.condo),
-      iptu: Number(formData.iptu),
-      fireInsurance: Number(formData.fireInsurance),
-      otherFees: Number(formData.otherFees),
-      totalMonthlyCost: Number(formData.rent) + Number(formData.condo) + Number(formData.iptu) + Number(formData.fireInsurance) + Number(formData.otherFees),
-      images: extractedData?.images || [],
-      sourceUrl: url || undefined,
-      scores: validatedScores,
+      ...formData,
+      totalMonthlyCost,
+      images,
+      sourceUrl: sourceUrl || undefined,
+      scores,
       finalScore: 0
     };
 
-    console.log('AddPropertyForm: Created property:', newProperty);
+    console.log('🎉 Propriedade criada:', newProperty);
     onSubmit(newProperty);
   };
 
-  // Debug: Log dos valores atuais do formData
-  useEffect(() => {
-    console.log('AddPropertyForm: FormData mudou para:', formData);
-  }, [formData]);
+  console.log('🔄 AddPropertyForm renderizando, formData atual:', formData);
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -216,18 +147,14 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
             </Button>
           </div>
 
-          <UrlExtractionForm
-            url={url}
-            setUrl={setUrl}
-            onDataExtracted={handleDataExtracted}
-          />
+          <UrlExtractor onDataExtracted={handleDataExtracted} />
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <PropertyBasicForm
               title={formData.title}
               address={formData.address}
               floor={formData.floor}
-              onUpdateField={updateFormField}
+              onUpdateField={updateField}
             />
 
             <PropertyDetailsForm
@@ -235,7 +162,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
               bathrooms={formData.bathrooms}
               parkingSpaces={formData.parkingSpaces}
               area={formData.area}
-              onUpdateField={updateFormField}
+              onUpdateField={updateField}
             />
 
             <PropertyFinancialForm
@@ -247,8 +174,8 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
                 otherFees: formData.otherFees
               }}
               onInputChange={(e) => {
-                console.log('AddPropertyForm: PropertyFinancialForm onChange:', e.target.name, e.target.value);
-                updateFormField(e.target.name as keyof FormData, Number(e.target.value) || 0);
+                const value = Number(e.target.value) || 0;
+                updateField(e.target.name, value);
               }}
             />
 
@@ -256,11 +183,10 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
               scores={scores}
               onScoreChange={handleScoreChange}
               activeCriteria={activeCriteria}
-              suggestedScores={suggestedScores}
+              suggestedScores={{}}
               getCriteriaLabel={getCriteriaLabel}
             />
 
-            {/* Action Buttons */}
             <div className="flex justify-end space-x-4 pt-4 border-t">
               <Button type="button" variant="outline" onClick={onCancel}>
                 Cancelar

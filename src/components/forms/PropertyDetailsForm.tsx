@@ -18,12 +18,12 @@ export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
   area,
   onUpdateField
 }) => {
-  console.log('PropertyDetailsForm: Renderizando com valores diretos:', { bedrooms, bathrooms, parkingSpaces, area });
+  console.log('🏗️ PropertyDetailsForm renderizando:', { bedrooms, bathrooms, parkingSpaces, area });
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const numericValue = Number(value) || 0;
-    console.log(`PropertyDetailsForm: Campo ${name} alterado para:`, numericValue);
+    console.log(`🔢 Campo ${name} alterado para:`, numericValue);
     onUpdateField(name, numericValue);
   };
   

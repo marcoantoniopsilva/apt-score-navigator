@@ -16,17 +16,16 @@ export const PropertyBasicForm: React.FC<PropertyBasicFormProps> = ({
   floor,
   onUpdateField
 }) => {
-  console.log('PropertyBasicForm: Renderizando com valores diretos:', { title, address, floor });
+  console.log('🏠 PropertyBasicForm renderizando:', { title, address, floor });
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    console.log(`PropertyBasicForm: Campo ${name} alterado para:`, value);
+    console.log(`📝 Campo ${name} alterado para: "${value}"`);
     onUpdateField(name, value);
   };
   
   return (
     <>
-      {/* Basic Information */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="title">Título</Label>
