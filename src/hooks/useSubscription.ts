@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,19 +16,20 @@ export const useSubscription = () => {
     subscription_tier: null,
     subscription_end: null,
   });
-  const [loading, setLoading] = useState(false); // Iniciar como false para evitar carregamento infinito
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  // Refs para controle de requisições e estado
   const isCheckingRef = useRef(false);
   const lastCheckedRef = useRef<number | null>(null);
   const mountedRef = useRef(true);
 
-  // Apenas fazer requisição a cada 30 segundos no máximo
   const CHECK_COOLDOWN = 30000; // 30 segundos
   
   const checkSubscription = useCallback(async (force = false) => {
+    console.log('useSubscription: checkSubscription called - user:', !!user, 'session:', !!session, 'force:', force);
+    
     if (!user || !session) {
+      console.log('useSubscription: No user or session, setting default state');
       setSubscriptionData({
         subscribed: false,
         subscription_tier: null,
@@ -40,14 +42,14 @@ export const useSubscription = () => {
     
     // Evitar requisições simultâneas
     if (isCheckingRef.current) {
-      console.log('useSubscription: Já existe uma verificação em andamento');
+      console.log('useSubscription: Already checking, skipping');
       return;
     }
     
     // Verificar cooldown a menos que seja forçado
     const now = Date.now();
     if (!force && lastCheckedRef.current && now - lastCheckedRef.current < CHECK_COOLDOWN) {
-      console.log('useSubscription: Verificação muito recente, ignorando');
+      console.log('useSubscription: Cooldown active, skipping');
       return;
     }
     
@@ -55,7 +57,7 @@ export const useSubscription = () => {
       isCheckingRef.current = true;
       setLoading(true);
       setError(null);
-      console.log('useSubscription: Verificando assinatura para usuário:', user.id);
+      console.log('useSubscription: Starting subscription check for user:', user.id);
       
       const { data, error } = await supabase.functions.invoke('check-subscription', {
         headers: {
@@ -63,13 +65,14 @@ export const useSubscription = () => {
         },
       });
 
-      // Verificar se o componente ainda está montado
-      if (!mountedRef.current) return;
+      if (!mountedRef.current) {
+        console.log('useSubscription: Component unmounted, aborting');
+        return;
+      }
 
       if (error) {
-        console.error('useSubscription: Erro ao verificar assinatura:', error);
+        console.error('useSubscription: Error checking subscription:', error);
         setError('Erro ao verificar assinatura');
-        // Em caso de erro, manter estado anterior
         return;
       }
 
@@ -80,39 +83,44 @@ export const useSubscription = () => {
           subscription_end: data.subscription_end || null,
         };
         
-        console.log('useSubscription: Dados da assinatura recebidos:', newSubscriptionData);
-        
-        // Atualizar apenas se os dados realmente mudaram para evitar re-renders desnecessários
-        if (JSON.stringify(subscriptionData) !== JSON.stringify(newSubscriptionData)) {
-          setSubscriptionData(newSubscriptionData);
-        }
+        console.log('useSubscription: Subscription data received:', newSubscriptionData);
+        setSubscriptionData(newSubscriptionData);
       }
       
-      // Marcar última verificação
       lastCheckedRef.current = Date.now();
     } catch (error) {
-      console.error('useSubscription: Erro geral ao verificar assinatura:', error);
+      console.error('useSubscription: Caught error:', error);
       if (mountedRef.current) {
         setError('Erro ao verificar assinatura');
       }
-      // Em caso de erro, não resetar o estado
     } finally {
       if (mountedRef.current) {
         setLoading(false);
       }
       isCheckingRef.current = false;
     }
-  }, [user?.id, session?.access_token, subscriptionData]);
+  }, [user?.id, session?.access_token]);
 
   useEffect(() => {
-    console.log('useSubscription: useEffect disparado - user:', !!user, 'session:', !!session);
+    console.log('useSubscription: useEffect triggered - user:', !!user, 'session:', !!session);
     
     mountedRef.current = true;
-    // Verificar assinatura apenas uma vez na montagem, 
-    // não a cada vez que a visibilidade muda
+    
     if (user && session) {
-      checkSubscription();
+      // Delay inicial para dar tempo do auth se estabilizar
+      const timer = setTimeout(() => {
+        if (mountedRef.current) {
+          console.log('useSubscription: Checking subscription after delay');
+          checkSubscription();
+        }
+      }, 1000);
+      
+      return () => {
+        clearTimeout(timer);
+        mountedRef.current = false;
+      };
     } else {
+      console.log('useSubscription: No user/session, setting loading to false');
       setLoading(false);
     }
     
@@ -139,7 +147,6 @@ export const useSubscription = () => {
       }
 
       if (data?.url) {
-        // Open Stripe checkout in a new tab
         window.open(data.url, '_blank');
       }
     } catch (error) {
@@ -165,7 +172,6 @@ export const useSubscription = () => {
       }
 
       if (data?.url) {
-        // Open customer portal in a new tab
         window.open(data.url, '_blank');
       }
     } catch (error) {
@@ -181,7 +187,7 @@ export const useSubscription = () => {
     isPro,
     loading,
     error,
-    checkSubscription: () => checkSubscription(true), // Função pública sempre força verificação
+    checkSubscription: () => checkSubscription(true),
     createCheckout,
     openCustomerPortal,
   };
