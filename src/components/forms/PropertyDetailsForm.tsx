@@ -4,26 +4,26 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 interface PropertyDetailsFormProps {
-  formData: {
-    bedrooms: number;
-    bathrooms: number;
-    parkingSpaces: number;
-    area: number;
-  };
+  bedrooms: number;
+  bathrooms: number;
+  parkingSpaces: number;
+  area: number;
   onUpdateField: (field: string, value: number) => void;
 }
 
 export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
-  formData,
+  bedrooms,
+  bathrooms,
+  parkingSpaces,
+  area,
   onUpdateField
 }) => {
-  console.log('PropertyDetailsForm: Renderizando com formData:', formData);
+  console.log('PropertyDetailsForm: Renderizando com valores diretos:', { bedrooms, bathrooms, parkingSpaces, area });
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const numericValue = Number(value) || 0;
     console.log(`PropertyDetailsForm: Campo ${name} alterado para:`, numericValue);
-    console.log('PropertyDetailsForm: Chamando onUpdateField...');
     onUpdateField(name, numericValue);
   };
   
@@ -36,13 +36,10 @@ export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
           name="bedrooms"
           type="number"
           min="0"
-          value={formData.bedrooms}
+          value={bedrooms}
           onChange={handleChange}
           required
         />
-        <div className="text-xs text-gray-500 mt-1">
-          Debug: {formData.bedrooms}
-        </div>
       </div>
       <div>
         <Label htmlFor="bathrooms">Banheiros</Label>
@@ -51,13 +48,10 @@ export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
           name="bathrooms"
           type="number"
           min="0"
-          value={formData.bathrooms}
+          value={bathrooms}
           onChange={handleChange}
           required
         />
-        <div className="text-xs text-gray-500 mt-1">
-          Debug: {formData.bathrooms}
-        </div>
       </div>
       <div>
         <Label htmlFor="parkingSpaces">Vagas</Label>
@@ -66,13 +60,10 @@ export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
           name="parkingSpaces"
           type="number"
           min="0"
-          value={formData.parkingSpaces}
+          value={parkingSpaces}
           onChange={handleChange}
           required
         />
-        <div className="text-xs text-gray-500 mt-1">
-          Debug: {formData.parkingSpaces}
-        </div>
       </div>
       <div>
         <Label htmlFor="area">Área (m²)</Label>
@@ -81,13 +72,10 @@ export const PropertyDetailsForm: React.FC<PropertyDetailsFormProps> = ({
           name="area"
           type="number"
           min="0"
-          value={formData.area}
+          value={area}
           onChange={handleChange}
           required
         />
-        <div className="text-xs text-gray-500 mt-1">
-          Debug: {formData.area}
-        </div>
       </div>
     </div>
   );
