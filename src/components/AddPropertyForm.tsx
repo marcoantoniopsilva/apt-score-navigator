@@ -61,21 +61,30 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
 
   const handleDataExtracted = (data: any) => {
     console.log('AddPropertyForm: Dados recebidos em handleDataExtracted:', data);
+    console.log('AddPropertyForm: Tipo dos dados:', typeof data);
+    console.log('AddPropertyForm: Keys dos dados:', Object.keys(data || {}));
+    
+    if (!data || typeof data !== 'object') {
+      console.error('AddPropertyForm: Dados inválidos recebidos:', data);
+      return;
+    }
+    
     setExtractedData(data);
     const newFormData = {
       title: data.title || '',
       address: data.address || '',
-      bedrooms: data.bedrooms || 0,
-      bathrooms: data.bathrooms || 0,
-      parkingSpaces: data.parkingSpaces || 0,
-      area: data.area || 0,
+      bedrooms: Number(data.bedrooms) || 0,
+      bathrooms: Number(data.bathrooms) || 0,
+      parkingSpaces: Number(data.parkingSpaces) || 0,
+      area: Number(data.area) || 0,
       floor: data.floor || '',
-      rent: data.rent || 0,
-      condo: data.condo || 0,
-      iptu: data.iptu || 0,
-      fireInsurance: data.fireInsurance || 50,
-      otherFees: data.otherFees || 0
+      rent: Number(data.rent) || 0,
+      condo: Number(data.condo) || 0,
+      iptu: Number(data.iptu) || 0,
+      fireInsurance: Number(data.fireInsurance) || 50,
+      otherFees: Number(data.otherFees) || 0
     };
+    console.log('AddPropertyForm: Atualizando formData de:', formData);
     console.log('AddPropertyForm: Atualizando formData para:', newFormData);
     setFormData(newFormData);
     

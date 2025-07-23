@@ -42,12 +42,24 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
       throw new Error('Usuário não autenticado. Faça login para extrair propriedades.');
     }
 
-    const { data, error } = await supabase.functions.invoke('extract-property-data', {
+    console.log('propertyExtractionService: Iniciando chamada para edge function...');
+    
+    // Criar uma Promise com timeout para evitar travamento
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Timeout: Operação demorou mais que 60 segundos')), 60000);
+    });
+    
+    const extractionPromise = supabase.functions.invoke('extract-property-data', {
       body: { url },
       headers: {
         Authorization: `Bearer ${session.access_token}`
       }
     });
+    
+    console.log('propertyExtractionService: Aguardando resposta da edge function...');
+    const { data, error } = await Promise.race([extractionPromise, timeoutPromise]) as any;
+    
+    console.log('propertyExtractionService: Resposta recebida da edge function:', { data, error });
 
     console.log('Resposta da edge function:', { data, error });
 
