@@ -3,27 +3,22 @@ import { supabase } from '@/integrations/supabase/client';
 import { ExtractedPropertyData } from '@/types/extractedProperty';
 
 export const extractPropertyFromUrl = async (url: string): Promise<ExtractedPropertyData> => {
-  console.log('Iniciando extração para URL:', url);
+  console.log('propertyExtractionService: Iniciando extração para URL:', url);
   
   // Validação básica da URL
   try {
     const urlObj = new URL(url);
-    console.log('URL válida detectada, domínio:', urlObj.hostname);
+    console.log('propertyExtractionService: URL válida detectada, domínio:', urlObj.hostname);
   } catch (error) {
-    console.error('URL inválida:', error);
+    console.error('propertyExtractionService: URL inválida:', error);
     throw new Error('URL inválida. Por favor, verifique o link e tente novamente.');
   }
 
   try {
     console.log('propertyExtractionService: Iniciando processo de extração');
-    console.log('propertyExtractionService: Chamando edge function para extração...');
     
     // Obter o token de sessão atual
-    console.log('propertyExtractionService: Buscando sessão do usuário...');
-    
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    console.log('propertyExtractionService: Sessão obtida');
     
     console.log('propertyExtractionService: Verificando sessão:', {
       hasSession: !!session,
@@ -42,6 +37,8 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
       throw new Error('Usuário não autenticado. Faça login para extrair propriedades.');
     }
 
+    console.log('propertyExtractionService: Chamando edge function para extração apenas...');
+    
     const { data, error } = await supabase.functions.invoke('extract-property-data', {
       body: { url },
       headers: {
@@ -49,30 +46,32 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
       }
     });
 
-    console.log('Resposta da edge function:', { data, error });
+    console.log('propertyExtractionService: Resposta da edge function:', { data, error });
 
     if (error) {
-      console.error('Erro na edge function:', error);
+      console.error('propertyExtractionService: Erro na edge function:', error);
       throw new Error(`Erro ao extrair dados: ${error.message}`);
     }
 
     if (!data.success) {
-      console.error('Extração falhou:', data.error);
+      console.error('propertyExtractionService: Extração falhou:', data.error);
       throw new Error(data.error || 'Falha na extração dos dados');
     }
 
-    console.log('Dados extraídos e salvos com sucesso:', data.data);
+    console.log('propertyExtractionService: Dados extraídos com sucesso (apenas para preenchimento):', data.data);
     
-    // Retornar os dados para preenchimento do formulário
+    // Retornar os dados APENAS para preenchimento do formulário
+    // NÃO há mais salvamento automático no banco
     return {
       ...data.data,
-      parkingSpaces: data.data.parking_spaces || 0 // Converter snake_case para camelCase
+      parkingSpaces: data.data.parkingSpaces || data.data.parking_spaces || 0,
+      fireInsurance: data.data.fireInsurance || data.data.fire_insurance || 50,
+      otherFees: data.data.otherFees || data.data.other_fees || 0
     };
 
   } catch (error) {
-    console.error('Erro ao extrair dados:', error);
+    console.error('propertyExtractionService: Erro ao extrair dados:', error);
     
-    // Se houve erro, lance uma exceção mais específica
     if (error instanceof Error) {
       throw error;
     }
@@ -83,7 +82,7 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
 
 // Função para extrair imagens (ainda usando placeholder até implementarmos com Firecrawl)
 export const extractImagesFromUrl = async (url: string): Promise<string[]> => {
-  console.log('Extraindo imagens (placeholder) para:', url);
+  console.log('propertyExtractionService: Extraindo imagens (placeholder) para:', url);
   
   // Em uma implementação futura, isso poderia usar Firecrawl para extrair imagens reais
   await new Promise(resolve => setTimeout(resolve, 1000));

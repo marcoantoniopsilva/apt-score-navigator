@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Property } from '@/types/property';
 import { Button } from '@/components/ui/button';
@@ -52,7 +51,10 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
   }, [activeCriteria]);
 
   const handleDataExtracted = (data: any) => {
+    console.log('AddPropertyForm: Dados extraídos recebidos para preenchimento:', data);
     setExtractedData(data);
+    
+    // Preencher APENAS os campos do formulário, SEM SALVAR no banco
     setFormData({
       title: data.title || '',
       address: data.address || '',
@@ -64,7 +66,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
       rent: data.rent || 0,
       condo: data.condo || 0,
       iptu: data.iptu || 0,
-      fireInsurance: data.fireInsurance || 0,
+      fireInsurance: data.fireInsurance || 50,
       otherFees: data.otherFees || 0
     });
     
@@ -77,6 +79,8 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
       setScores(newScores);
       setSuggestedScores(data.scores); // Guardar as sugestões
     }
+    
+    console.log('AddPropertyForm: Formulário preenchido, aguardando submissão do usuário');
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,7 +122,9 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    console.log('AddPropertyForm: Submitting with scores:', scores);
+    console.log('AddPropertyForm: SUBMISSÃO DO FORMULÁRIO - Salvando no banco apenas agora');
+    console.log('AddPropertyForm: Dados do formulário:', formData);
+    console.log('AddPropertyForm: Scores:', scores);
     
     // Garantir que todos os scores sejam números válidos
     const validatedScores = Object.entries(scores).reduce((acc, [key, value]) => {
@@ -127,6 +133,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
       return acc;
     }, {} as any);
     
+    // Criar a propriedade que será salva APENAS quando o usuário clicar em "Adicionar"
     const newProperty: Property = {
       id: crypto.randomUUID(),
       title: formData.title,
@@ -148,7 +155,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
       finalScore: 0
     };
 
-    console.log('AddPropertyForm: Created property with scores:', newProperty.scores);
+    console.log('AddPropertyForm: Propriedade criada, enviando para salvamento:', newProperty);
     onSubmit(newProperty);
   };
 

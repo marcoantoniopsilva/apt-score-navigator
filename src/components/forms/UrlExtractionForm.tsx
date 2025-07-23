@@ -22,19 +22,21 @@ export const UrlExtractionForm: React.FC<UrlExtractionFormProps> = ({
   const [extractedData, setExtractedData] = useState<any>(null);
 
   const handleExtractFromUrl = async () => {
-    console.log('UrlExtractionForm: Botão clicado, iniciando extração');
+    console.log('UrlExtractionForm: Iniciando extração apenas para preenchimento do formulário');
     console.log('UrlExtractionForm: URL:', url);
     
     setIsExtracting(true);
     try {
-      console.log('UrlExtractionForm: Chamando extractPropertyFromUrl...');
+      console.log('UrlExtractionForm: Chamando extractPropertyFromUrl para extração apenas...');
       const data = await extractPropertyFromUrl(url);
+      
       if (data) {
+        console.log('UrlExtractionForm: Dados extraídos para preenchimento:', data);
         setExtractedData(data);
         onDataExtracted(data);
         toast({
           title: "Dados extraídos",
-          description: "Os dados do anúncio foram extraídos com sucesso.",
+          description: "Os dados do anúncio foram extraídos e preenchidos no formulário. Clique em 'Adicionar Propriedade' para salvar.",
         });
       } else {
         toast({
@@ -44,7 +46,7 @@ export const UrlExtractionForm: React.FC<UrlExtractionFormProps> = ({
         });
       }
     } catch (error) {
-      console.error("Erro ao extrair dados da URL:", error);
+      console.error("UrlExtractionForm: Erro ao extrair dados da URL:", error);
       toast({
         title: "Erro na extração",
         description: "Ocorreu um erro ao tentar extrair os dados do anúncio.",
@@ -77,7 +79,7 @@ export const UrlExtractionForm: React.FC<UrlExtractionFormProps> = ({
       </div>
       {extractedData && (
         <p className="text-sm text-green-600 mt-2">
-          Dados extraídos com sucesso! Revise e ajuste conforme necessário.
+          ✅ Dados extraídos e preenchidos no formulário! Revise os dados e clique em "Adicionar Propriedade" para salvar.
         </p>
       )}
     </div>
