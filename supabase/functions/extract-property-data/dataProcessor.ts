@@ -7,7 +7,7 @@ export function processExtractedData(extractedText: string): any {
 
   const extractedData: ExtractedPropertyData = extractJSONFromResponse(extractedText);
   
-  // Validate and clean the data
+  // Validate and clean the data - usar snake_case para manter consistência com edge function
   const cleanedData = {
     title: extractedData.title || 'Imóvel extraído automaticamente',
     address: extractedData.address || 'Endereço não encontrado',
@@ -23,5 +23,6 @@ export function processExtractedData(extractedText: string): any {
     other_fees: Math.max(0, Number(extractedData.otherFees) || 0),
   };
 
+  console.log('Dados processados (snake_case):', cleanedData);
   return cleanedData;
 }

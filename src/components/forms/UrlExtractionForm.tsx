@@ -23,68 +23,29 @@ export const UrlExtractionForm: React.FC<UrlExtractionFormProps> = ({
   const [extractionStatus, setExtractionStatus] = useState('');
 
   const handleExtractFromUrl = async () => {
-    console.log('UrlExtractionForm: Botão clicado, iniciando extração');
-    console.log('UrlExtractionForm: URL:', url);
+    console.log('UrlExtractionForm: Iniciando extração para URL:', url);
     
     setIsExtracting(true);
-    setExtractedData(null); // Limpar dados anteriores
+    setExtractedData(null);
     setExtractionStatus('Iniciando extração...');
     
     try {
-      setExtractionStatus('Validando URL...');
-      console.log('UrlExtractionForm: Chamando extractPropertyFromUrl...');
-      
       setExtractionStatus('Extraindo dados do anúncio...');
       const data = await extractPropertyFromUrl(url);
       
-      console.log('UrlExtractionForm: Dados recebidos do serviço de extração:', data);
-      console.log('UrlExtractionForm: Tipo dos dados recebidos:', typeof data);
-      console.log('UrlExtractionForm: Keys dos dados recebidos:', Object.keys(data || {}));
+      console.log('UrlExtractionForm: Dados recebidos (já mapeados):', data);
       
       if (data && Object.keys(data).length > 0) {
         setExtractedData(data);
         setExtractionStatus('');
+        
+        // Passar os dados diretamente (já estão no formato correto)
         console.log('UrlExtractionForm: Passando dados para onDataExtracted:', data);
-        
-        // Garantir que os dados sejam passados no formato correto - com validação adicional
-        const formattedData = {
-          title: String(data.title || ''),
-          address: String(data.address || ''),
-          bedrooms: Number(data.bedrooms) || 0,
-          bathrooms: Number(data.bathrooms) || 0,
-          parkingSpaces: Number(data.parkingSpaces) || 0, // Deve usar camelCase
-          area: Number(data.area) || 0,
-          floor: String(data.floor || ''),
-          rent: Number(data.rent) || 0,
-          condo: Number(data.condo) || 0,
-          iptu: Number(data.iptu) || 0,
-          fireInsurance: Number(data.fireInsurance) || 50, // Deve usar camelCase
-          otherFees: Number(data.otherFees) || 0, // Deve usar camelCase
-          images: data.images || [],
-          scores: data.scores || {}
-        };
-        
-        console.log('UrlExtractionForm: Dados formatados para o formulário:', formattedData);
-        console.log('UrlExtractionForm: Verificação final dos dados formatados:', {
-          title: `"${formattedData.title}"`,
-          address: `"${formattedData.address}"`,
-          bedrooms: formattedData.bedrooms,
-          bathrooms: formattedData.bathrooms,
-          parkingSpaces: formattedData.parkingSpaces,
-          area: formattedData.area,
-          floor: `"${formattedData.floor}"`,
-          rent: formattedData.rent,
-          condo: formattedData.condo,
-          iptu: formattedData.iptu,
-          fireInsurance: formattedData.fireInsurance,
-          otherFees: formattedData.otherFees
-        });
-        
-        onDataExtracted(formattedData);
+        onDataExtracted(data);
         
         toast({
           title: "Dados extraídos com sucesso!",
-          description: `Título: ${formattedData.title || 'N/A'}, Endereço: ${formattedData.address || 'N/A'}, Aluguel: R$ ${formattedData.rent || 0}`,
+          description: `Título: ${data.title || 'N/A'}, Endereço: ${data.address || 'N/A'}, Aluguel: R$ ${data.rent || 0}`,
         });
       } else {
         setExtractionStatus('');
