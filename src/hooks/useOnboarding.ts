@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   UserProfile, 
   UserCriteriaPreference, 
@@ -13,55 +13,28 @@ import { toast } from 'sonner';
 export const useOnboarding = () => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [userPreferences, setUserPreferences] = useState<UserCriteriaPreference[]>([]);
-  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(true); // COMEÇAR SEMPRE COMO TRUE
+  const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [showOnboarding, setShowOnboarding] = useState<boolean>(false); // SEMPRE COMEÇAR FECHADO
+  const [showOnboarding, setShowOnboarding] = useState<boolean>(false);
 
   // Carrega dados do onboarding
-  const loadOnboardingData = useCallback(async (userId: string) => {
-    console.log('useOnboarding: Loading data for user:', userId, 'isLoading:', isLoading);
-    
-    // Previne chamadas múltiplas mais rigorosamente
-    if (isLoading) {
-      console.log('useOnboarding: Already loading, skipping...');
-      return;
-    }
-    
+  const loadOnboardingData = async (userId: string) => {
     setIsLoading(true);
     try {
-      console.log('useOnboarding: Starting data fetch...');
       const [profile, preferences] = await Promise.all([
-        UserProfileService.getUserProfile(userId).catch(err => {
-          console.error('Failed to fetch profile:', err);
-          return null; // Continue mesmo com erro
-        }),
-        UserProfileService.getUserCriteriaPreferences(userId).catch(err => {
-          console.error('Failed to fetch preferences:', err);
-          return []; // Continue mesmo com erro
-        })
+        UserProfileService.getUserProfile(userId),
+        UserProfileService.getUserCriteriaPreferences(userId)
       ]);
-
-      console.log('useOnboarding: Data loaded:', { 
-        hasProfile: !!profile, 
-        preferencesCount: preferences.length,
-        profileType: profile?.profile_type 
-      });
 
       setUserProfile(profile);
       setUserPreferences(preferences);
-      
-      // Considera completo se tem perfil
-      const isCompleted = !!profile;
-      setHasCompletedOnboarding(isCompleted);
-      
-      console.log('useOnboarding: Onboarding completion status:', isCompleted);
+      setHasCompletedOnboarding(!!(profile && preferences.length > 0));
     } catch (error) {
-      console.error('useOnboarding: Error loading data:', error);
-      // Não resetar estados em caso de erro - manter o que já temos
+      console.error('Error loading onboarding data:', error);
     } finally {
       setIsLoading(false);
     }
-  }, []); // Remover isLoading da dependência para evitar recriação
+  };
 
   // Salva dados do onboarding
   const saveOnboardingData = async (
@@ -126,16 +99,7 @@ export const useOnboarding = () => {
     criteriaWeights: Record<string, number>
   ) => {
     try {
-      console.log('=== INÍCIO SALVAMENTO ONBOARDING ===');
-      console.log('useOnboarding: saveEnhancedOnboardingData iniciado');
-      console.log('useOnboarding: userId:', userId);
-      console.log('useOnboarding: profileType:', profileType);
-      console.log('useOnboarding: answers:', answers);
-      console.log('useOnboarding: selectedCriteria:', selectedCriteria);
-      console.log('useOnboarding: criteriaWeights:', criteriaWeights);
-      
       // Salva o perfil
-      console.log('useOnboarding: Salvando perfil do usuário...');
       const profileResult = await UserProfileService.saveUserProfile(
         userId,
         profileType,
@@ -147,43 +111,30 @@ export const useOnboarding = () => {
         answers.regiao_referencia
       );
 
-      console.log('useOnboarding: Resultado do salvamento do perfil:', profileResult);
-
       if (!profileResult.success) {
-        console.error('useOnboarding: Erro ao salvar perfil:', profileResult.error);
         throw new Error(profileResult.error || 'Erro ao salvar perfil');
       }
 
       // Salva as preferências de critério
-      console.log('useOnboarding: Salvando preferências de critério...');
       const preferencesResult = await UserProfileService.saveUserCriteriaPreferences(
         userId,
         criteriaWeights
       );
 
-      console.log('useOnboarding: Resultado do salvamento das preferências:', preferencesResult);
-
       if (!preferencesResult.success) {
-        console.error('useOnboarding: Erro ao salvar preferências:', preferencesResult.error);
         throw new Error(preferencesResult.error || 'Erro ao salvar preferências');
       }
 
-      console.log('useOnboarding: Recarregando dados do onboarding...');
       // Recarrega os dados
       await loadOnboardingData(userId);
       
-      console.log('useOnboarding: Notificando outros componentes...');
       // Notifica outros componentes sobre a mudança
       window.dispatchEvent(new CustomEvent('criteria-updated'));
       
-      console.log('useOnboarding: Exibindo toast de sucesso...');
       toast.success('Perfil configurado com sucesso!');
-      
-      console.log('=== FIM SALVAMENTO ONBOARDING - SUCESSO ===');
       return { success: true };
     } catch (error) {
-      console.error('useOnboarding: Erro no salvamento:', error);
-      console.log('=== FIM SALVAMENTO ONBOARDING - ERRO ===');
+      console.error('Error saving enhanced onboarding data:', error);
       toast.error('Erro ao salvar configurações do perfil');
       return { success: false, error: error instanceof Error ? error.message : 'Erro desconhecido' };
     }
@@ -256,22 +207,13 @@ export const useOnboarding = () => {
 
   // Inicializa o onboarding baseado no estado de autenticação
   useEffect(() => {
-    let mounted = true;
-    let loadingRef = { current: false }; // Usar ref para controle de loading
-    
     const checkAuthAndLoadData = async () => {
-      if (!mounted || loadingRef.current) return;
-      
-      console.log('useOnboarding: Initial auth check...');
+      console.log('useOnboarding: Checking auth and loading data...');
       const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!mounted) return;
       
       if (session?.user) {
         console.log('useOnboarding: Valid session found, loading data for user:', session.user.id);
-        loadingRef.current = true;
         await loadOnboardingData(session.user.id);
-        loadingRef.current = false;
       } else {
         console.log('useOnboarding: No session found, setting loading to false');
         setIsLoading(false);
@@ -280,32 +222,25 @@ export const useOnboarding = () => {
 
     checkAuthAndLoadData();
 
-    // Simplificar auth state change - SEM chamar loadOnboardingData aqui
-    // O useSessionMonitor ou recarregamento manual deve lidar com isso
+    // Escuta mudanças de autenticação
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!mounted) return;
-        
         console.log('useOnboarding: Auth state changed:', event, !!session);
-        
-        if (event === 'SIGNED_OUT' || !session) {
-          console.log('useOnboarding: User signed out, clearing state');
-          setUserProfile(null);  
+        if (session?.user) {
+          console.log('useOnboarding: User authenticated, loading onboarding data');
+          await loadOnboardingData(session.user.id);
+        } else {
+          console.log('useOnboarding: User not authenticated, clearing state');
+          setUserProfile(null);
           setUserPreferences([]);
           setHasCompletedOnboarding(false);
           setIsLoading(false);
-          loadingRef.current = false;
         }
-        // REMOVER a chamada automática de loadOnboardingData no SIGNED_IN
-        // para evitar conflito com useSessionMonitor
       }
     );
 
-    return () => {
-      mounted = false;
-      subscription.unsubscribe();
-    };
-  }, []); // SEM dependências para evitar re-execução
+    return () => subscription.unsubscribe();
+  }, [loadOnboardingData]);
 
   return {
     userProfile,

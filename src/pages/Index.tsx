@@ -52,15 +52,27 @@ const Index = () => {
   } = useOnboarding();
 
   // Monitor de sessão para reconectar hooks após trocar de aba
-  // REMOVER loadOnboardingData para evitar chamadas duplicadas
   useSessionMonitor({
     loadProperties,
+    loadOnboardingData: user?.id ? (userId: string) => loadOnboardingData(userId) : undefined,
     checkSubscription
   });
 
-  // DESABILITAR COMPLETAMENTE O ONBOARDING AUTOMÁTICO 
-  // Se o usuário já tem perfil (hasCompletedOnboarding = true), NUNCA mostrar onboarding
-  const shouldShowOnboarding = false; // FORÇAR SEMPRE FALSO
+  // Mostrar onboarding para usuários autenticados que não completaram
+  useEffect(() => {
+    const checkShouldShowOnboarding = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session?.user && !hasCompletedOnboarding && !onboardingLoading) {
+        // Aguarda um pouco para não mostrar imediatamente ao fazer login
+        setTimeout(() => {
+          setShowOnboarding(true);
+        }, 1000);
+      }
+    };
+
+    checkShouldShowOnboarding();
+  }, [hasCompletedOnboarding, onboardingLoading, setShowOnboarding]);
 
   // Função para completar onboarding
   const handleOnboardingComplete = async (
@@ -261,13 +273,10 @@ const Index = () => {
         onOpenChange={setShowUpgradeModal} 
       />
 
-      {/* ONBOARDING DESABILITADO - só mostrar se usuário não tem dados salvos E solicitar manualmente */}
-      {!hasCompletedOnboarding && !userProfile && shouldShowOnboarding && (
-        <EnhancedOnboardingModal
-          open={showOnboarding}
-          onOpenChange={setShowOnboarding}
-        />
-      )}
+      <EnhancedOnboardingModal
+        open={showOnboarding}
+        onOpenChange={setShowOnboarding}
+      />
     </div>
   );
 };
