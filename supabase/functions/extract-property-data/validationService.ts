@@ -48,23 +48,30 @@ export function validatePropertyAgainstPreferences(
       cidadeReferencia = 'são paulo';
     }
     
-    // Verificar se o endereço está na cidade certa
-    if (cidadeReferencia && !addressLower.includes(cidadeReferencia)) {
-      // Lista de cidades proibidas para Belo Horizonte
-      const cidadesProibidas = ['juiz de fora', 'poços de caldas', 'contagem', 'betim', 'nova lima'];
-      const cidadeEncontrada = cidadesProibidas.find(cidade => addressLower.includes(cidade));
-      
-      if (cidadeEncontrada) {
-        violations.push(`Localização incorreta: imóvel em ${cidadeEncontrada}, mas preferência é ${userPreferences.regiaoReferencia}`);
-        score -= 50; // Penalidade severa por cidade errada
-      }
+    // Verificar cidades completamente incorretas (fora da região)
+    const cidadesProibidas = ['juiz de fora', 'poços de caldas', 'contagem', 'betim', 'nova lima'];
+    const cidadeEncontrada = cidadesProibidas.find(cidade => addressLower.includes(cidade));
+    
+    if (cidadeEncontrada) {
+      violations.push(`Localização incorreta: imóvel em ${cidadeEncontrada}, mas preferência é ${userPreferences.regiaoReferencia}`);
+      score -= 60; // Penalidade severa por cidade completamente errada
+    } else if (cidadeReferencia && !addressLower.includes(cidadeReferencia)) {
+      // Se não tem a cidade de referência mas também não está nas cidades proibidas, penalidade menor
+      violations.push(`Cidade não confirmada no endereço: esperado ${cidadeReferencia}`);
+      score -= 20; // Penalidade menor quando a cidade não é confirmada
     }
     
-    // Verificação específica de bairro (se aplicável)
+    // Verificação de bairro mais flexível
     if (referenciaLower.includes('santo agostinho')) {
       if (!addressLower.includes('santo agostinho')) {
-        violations.push(`Bairro incorreto: preferência é Santo Agostinho, mas imóvel está em outro bairro`);
-        score -= 30;
+        // Verificar se está em Belo Horizonte pelo menos
+        if (addressLower.includes('belo horizonte') || addressLower.includes('bh')) {
+          violations.push(`Bairro não confirmado: preferência é Santo Agostinho`);
+          score -= 15; // Penalidade menor se está em BH mas bairro não confirmado
+        } else {
+          violations.push(`Bairro incorreto: preferência é Santo Agostinho, mas imóvel parece estar em outro local`);
+          score -= 25; // Penalidade maior se nem a cidade está clara
+        }
       }
     }
   }
@@ -132,7 +139,13 @@ export function validatePropertyAgainstPreferences(
     score -= 15;
   }
 
-  const isValid = violations.length === 0 && score >= 60; // Mínimo 60% para ser considerado válido
+  // Aceitar propriedades com score >= 40% OU sem violações críticas
+  const hasCriticalViolations = violations.some(v => 
+    v.includes('Localização incorreta:') || 
+    v.includes('Valor do aluguel inválido') ||
+    v.includes('Preço fora da faixa:')
+  );
+  const isValid = score >= 40 && !hasCriticalViolations;
   
   console.log('=== RESULTADO DA VALIDAÇÃO ===');
   console.log(`Válido: ${isValid}`);
