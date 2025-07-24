@@ -106,35 +106,36 @@ function buildSearchQuery(userPreferences: UserPreferences): string {
   const { tipo, termo } = determineLocationPrecision(regiaoReferencia);
   
   let searchQuery = '';
+  let priceFilter = '';
+  
+  // Constrói filtro de preço mais específico
+  if (faixaPreco) {
+    const cleanPrice = faixaPreco.replace(/R\$|\./g, '').replace(/\s/g, '');
+    if (cleanPrice.includes('até')) {
+      const maxValue = cleanPrice.replace('até', '').trim();
+      priceFilter = `valor aluguel até R$ ${maxValue}`;
+    } else if (cleanPrice.includes('-') || cleanPrice.includes('a')) {
+      // Ex: "4000-6000" ou "4000 a 6000"
+      const parts = cleanPrice.split(/[-a]/).map(p => p.trim());
+      if (parts.length === 2) {
+        priceFilter = `valor aluguel entre R$ ${parts[0]} e R$ ${parts[1]}`;
+      }
+    }
+  }
   
   if (tipo === 'bairro') {
-    // Para bairros, busca específica no bairro + proximidades
-    searchQuery = `imóveis para alugar bairro ${termo}`;
-    
-    // Se tem vírgula, inclui também a cidade
-    if (termo.includes(',')) {
-      searchQuery += ` especificamente`;
+    // Para bairros, busca muito específica
+    const location = termo.includes(',') ? termo : `${termo}, Belo Horizonte`;
+    searchQuery = `apartamentos ${valorPrincipal === 'comprar' ? 'para comprar' : 'para alugar'} especificamente no bairro ${location}`;
+    if (priceFilter) {
+      searchQuery += ` ${priceFilter}`;
     }
   } else {
-    // Para municípios, busca mais ampla
-    searchQuery = `imóveis para alugar cidade ${termo}`;
-  }
-
-  // Adiciona informações de preço se disponível
-  if (faixaPreco) {
-    // Remove "R$" e formata para busca
-    const preco = faixaPreco.replace(/R\$|\./g, '').trim();
-    if (preco.includes('até')) {
-      const valor = preco.replace('até', '').trim();
-      searchQuery += ` preço até ${valor} reais`;
-    } else if (preco.includes('-')) {
-      searchQuery += ` preço ${preco.replace('-', ' a ')} reais`;
+    // Para municípios
+    searchQuery = `imóveis para ${valorPrincipal === 'comprar' ? 'comprar' : 'alugar'} em ${termo}`;
+    if (priceFilter) {
+      searchQuery += ` ${priceFilter}`;
     }
-  }
-
-  // Adiciona o valor principal (compra/aluguel)
-  if (valorPrincipal === 'comprar') {
-    searchQuery = searchQuery.replace('alugar', 'comprar');
   }
 
   console.log(`Search query gerada: ${searchQuery} (tipo: ${tipo})`);
@@ -170,11 +171,17 @@ async function searchWithPerplexity(searchQuery: string, locationType: 'bairro' 
         messages: [
           {
             role: 'system',
-            content: `Você é um assistente especializado em encontrar URLs de imóveis. 
-            Retorne APENAS uma lista de 3-5 URLs válidas de imóveis que correspondam exatamente à localização solicitada.
-            Se a busca for por um bairro específico, encontre imóveis APENAS nesse bairro ou num raio de 2km.
-            Se a busca for por um município, pode buscar em toda a cidade.
-            Formato de resposta: apenas as URLs, uma por linha, sem explicações.`
+            content: `Você é um especialista em busca de imóveis. REGRAS OBRIGATÓRIAS:
+
+1. LOCALIZAÇÃO: Busque APENAS na localização exata mencionada. Se for "Santo Agostinho, Belo Horizonte", NÃO aceite imóveis em outras cidades como Poços de Caldas.
+
+2. PREÇO: Respeite rigorosamente a faixa de preço. Se o usuário quer "entre R$ 4000 e R$ 6000", NÃO retorne imóveis de R$ 1.300.
+
+3. FORMATO: Retorne apenas URLs válidas dos sites OLX, ZapImóveis, VivaReal ou QuintoAndar.
+
+4. QUALIDADE: Prefira URLs de imóveis reais e atuais.
+
+Retorne 3-5 URLs, uma por linha, sem explicações.`
           },
           {
             role: 'user',
@@ -182,11 +189,13 @@ async function searchWithPerplexity(searchQuery: string, locationType: 'bairro' 
           }
         ],
         temperature: 0.1,
-        top_p: 0.9,
-        max_tokens: 500,
+        top_p: 0.7,
+        max_tokens: 300,
         return_images: false,
         return_related_questions: false,
-        search_recency_filter: 'week'
+        search_recency_filter: 'month',
+        frequency_penalty: 1,
+        presence_penalty: 0
       }),
     });
 
