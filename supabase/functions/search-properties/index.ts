@@ -109,16 +109,15 @@ function buildSearchQuery(userPreferences: UserPreferences): string {
   
   if (tipo === 'bairro') {
     // Para bairros, busca específica no bairro + proximidades
-    searchQuery = `imóveis para alugar em ${termo} ou próximo`;
+    searchQuery = `imóveis para alugar bairro ${termo}`;
     
     // Se tem vírgula, inclui também a cidade
     if (termo.includes(',')) {
-      const cidade = termo.split(',')[1].trim();
-      searchQuery += ` ${cidade}`;
+      searchQuery += ` especificamente`;
     }
   } else {
     // Para municípios, busca mais ampla
-    searchQuery = `imóveis para alugar em ${termo}`;
+    searchQuery = `imóveis para alugar cidade ${termo}`;
   }
 
   // Adiciona informações de preço se disponível
@@ -127,9 +126,9 @@ function buildSearchQuery(userPreferences: UserPreferences): string {
     const preco = faixaPreco.replace(/R\$|\./g, '').trim();
     if (preco.includes('até')) {
       const valor = preco.replace('até', '').trim();
-      searchQuery += ` até ${valor} reais`;
+      searchQuery += ` preço até ${valor} reais`;
     } else if (preco.includes('-')) {
-      searchQuery += ` ${preco.replace('-', ' a ')} reais`;
+      searchQuery += ` preço ${preco.replace('-', ' a ')} reais`;
     }
   }
 
@@ -140,6 +139,84 @@ function buildSearchQuery(userPreferences: UserPreferences): string {
 
   console.log(`Search query gerada: ${searchQuery} (tipo: ${tipo})`);
   return searchQuery;
+}
+
+async function searchWithPerplexity(searchQuery: string, locationType: 'bairro' | 'municipio'): Promise<{ urls: string[], searchContext: string }> {
+  const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
+  if (!perplexityApiKey) {
+    throw new Error('PERPLEXITY_API_KEY not found');
+  }
+
+  console.log('Fazendo busca com Perplexity:', searchQuery);
+
+  // Ajusta a consulta baseada no tipo de localização
+  let enhancedQuery = searchQuery;
+  if (locationType === 'bairro') {
+    enhancedQuery += ' site:olx.com.br OR site:zapimoveis.com.br OR site:vivareal.com.br';
+  } else {
+    enhancedQuery += ' imóveis site:olx.com.br OR site:zapimoveis.com.br OR site:vivareal.com.br';
+  }
+
+  const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${perplexityApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'llama-3.1-sonar-large-128k-online',
+      messages: [
+        {
+          role: 'system',
+          content: `Você é um assistente especializado em encontrar URLs de imóveis. 
+          Retorne APENAS uma lista de 3-5 URLs válidas de imóveis que correspondam exatamente à localização solicitada.
+          Se a busca for por um bairro específico, encontre imóveis APENAS nesse bairro ou num raio de 2km.
+          Se a busca for por um município, pode buscar em toda a cidade.
+          Formato de resposta: apenas as URLs, uma por linha, sem explicações.`
+        },
+        {
+          role: 'user',
+          content: enhancedQuery
+        }
+      ],
+      temperature: 0.1,
+      top_p: 0.9,
+      max_tokens: 500,
+      return_images: false,
+      return_related_questions: false,
+      search_recency_filter: 'week'
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Perplexity API error:', response.status, errorText);
+    throw new Error(`Perplexity API error: ${response.status}`);
+  }
+
+  const data = await response.json();
+  console.log('Perplexity response:', data);
+
+  const searchResult = data.choices[0]?.message?.content || '';
+  
+  // Extrair URLs do resultado
+  const urlRegex = /https?:\/\/[^\s]+/g;
+  const foundUrls = searchResult.match(urlRegex) || [];
+  
+  // Filtrar apenas URLs de sites de imóveis conhecidos
+  const validUrls = foundUrls.filter(url => 
+    url.includes('olx.com.br') || 
+    url.includes('zapimoveis.com.br') || 
+    url.includes('vivareal.com.br') ||
+    url.includes('quintoandar.com.br')
+  ).slice(0, 5); // Limita a 5 URLs
+
+  console.log('URLs encontradas:', validUrls);
+
+  return {
+    urls: validUrls,
+    searchContext: searchResult
+  };
 }
 
 serve(async (req) => {
@@ -179,34 +256,22 @@ serve(async (req) => {
     const searchQuery = customQuery || buildSearchQuery(userPreferences);
     console.log('Final search query:', searchQuery);
 
-    // Por ora, retornar URLs simuladas baseadas na precisão da busca
+    // Determinar tipo de localização
     const { tipo } = determineLocationPrecision(userPreferences.regiaoReferencia || '');
     
-    let urls = [];
-    if (tipo === 'bairro') {
-      // URLs mais específicas para bairros
-      urls = [
-        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-santo-agostinho-1",
-        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-santo-agostinho-2"
-      ];
-    } else {
-      // URLs mais amplas para municípios
-      urls = [
-        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-centro-1",
-        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-savassi-2",
-        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-funcionarios-3"
-      ];
-    }
+    // Fazer busca real com Perplexity
+    const { urls, searchContext } = await searchWithPerplexity(searchQuery, tipo);
 
     const response = {
       success: true,
       urls,
       searchQuery,
       userPreferences,
-      locationType: tipo
+      locationType: tipo,
+      searchContext: searchContext.substring(0, 200) + '...' // Limita o contexto
     };
 
-    console.log('Returning response:', response);
+    console.log('Returning response with real URLs:', response);
 
     return new Response(JSON.stringify(response), {
       status: 200,
