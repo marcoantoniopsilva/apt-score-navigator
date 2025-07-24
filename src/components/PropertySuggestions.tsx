@@ -13,14 +13,32 @@ export const PropertySuggestions = ({ onAddProperty }: PropertySuggestionsProps)
   const { isSearching, suggestions, searchProperties, clearSuggestions } = usePropertySuggestions();
 
   const handleAddToComparison = (suggestion: any) => {
+    console.log('PropertySuggestions: Adicionando sugestão:', suggestion);
+    
     if (onAddProperty) {
-      onAddProperty({
-        ...suggestion,
+      const propertyData = {
         id: `suggestion-${Date.now()}`,
+        title: suggestion.title || 'Imóvel Sugerido',
+        address: suggestion.address || 'Endereço não informado',
+        bedrooms: suggestion.bedrooms || 1,
+        bathrooms: suggestion.bathrooms || 1,
+        parkingSpaces: suggestion.parkingSpaces || 0,
+        area: suggestion.area || 50,
+        floor: suggestion.floor || '',
+        rent: suggestion.rent || 0,
+        condo: suggestion.condo || 0,
+        iptu: suggestion.iptu || 0,
+        fireInsurance: 50,
+        otherFees: 0,
+        totalMonthlyCost: (suggestion.rent || 0) + (suggestion.condo || 0) + (suggestion.iptu || 0) + 50,
         images: suggestion.images || [],
+        sourceUrl: suggestion.sourceUrl || undefined,
         scores: {},
         finalScore: 0
-      });
+      };
+      
+      console.log('PropertySuggestions: Dados formatados:', propertyData);
+      onAddProperty(propertyData);
     }
   };
 
