@@ -7,6 +7,7 @@ import { processExtractedData } from './dataProcessor.ts'
 import { extractImagesFromHTML, extractImagesFromMarkdown } from './imageExtractor.ts'
 import { getUserPreferences } from './userPreferencesService.ts'
 import { generatePropertyScores } from './scoreAnalyzer.ts'
+import { validatePropertyAgainstPreferences } from './validationService.ts'
 
 serve(async (req) => {
   console.log('=== INÍCIO DA EDGE FUNCTION ===');
@@ -59,6 +60,34 @@ serve(async (req) => {
     console.log('Buscando preferências do usuário...');
     const userPreferences = await getUserPreferences(user.id, supabaseUrl, supabaseServiceRoleKey);
     console.log('Preferências do usuário carregadas');
+
+    // Validar dados extraídos contra preferências do usuário
+    console.log('Validando dados extraídos contra preferências...');
+    const validationResult = validatePropertyAgainstPreferences(cleanedData, userPreferences, url);
+    
+    if (!validationResult.isValid) {
+      console.warn('⚠️ PROPRIEDADE NÃO ATENDE CRITÉRIOS:');
+      validationResult.violations.forEach(violation => console.warn(`  - ${violation}`));
+      
+      // Retornar erro com detalhes das violações
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: 'Propriedade não atende aos critérios do usuário',
+          details: {
+            violations: validationResult.violations,
+            score: validationResult.score,
+            message: 'Este imóvel não corresponde às suas preferências especificadas'
+          }
+        }),
+        {
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          status: 422, // Unprocessable Entity
+        },
+      )
+    }
+    
+    console.log('✅ Validação aprovada com score:', validationResult.score);
 
     // Gerar scores personalizados com IA
     console.log('Gerando scores personalizados com IA...');

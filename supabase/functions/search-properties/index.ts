@@ -151,13 +151,21 @@ async function searchWithPerplexity(searchQuery: string, locationType: 'bairro' 
 
   console.log('Fazendo busca com Perplexity:', searchQuery);
 
-  // Ajusta a consulta baseada no tipo de localização
+  // Ajustar consulta com restrições negativas baseadas na localização
   let enhancedQuery = searchQuery;
+  
+  // Adicionar restrições negativas específicas para evitar cidades erradas
+  if (searchQuery.includes('Belo Horizonte') || searchQuery.includes('Santo Agostinho')) {
+    enhancedQuery += ' -"Juiz de Fora" -"Poços de Caldas" -"Contagem" -"Nova Lima" -"Betim"';
+  }
+  
   if (locationType === 'bairro') {
     enhancedQuery += ' site:olx.com.br OR site:zapimoveis.com.br OR site:vivareal.com.br';
   } else {
     enhancedQuery += ' imóveis site:olx.com.br OR site:zapimoveis.com.br OR site:vivareal.com.br';
   }
+  
+  console.log('Enhanced query with negative constraints:', enhancedQuery);
 
   try {
     const response = await fetch('https://api.perplexity.ai/chat/completions', {
@@ -173,15 +181,32 @@ async function searchWithPerplexity(searchQuery: string, locationType: 'bairro' 
             role: 'system',
             content: `Você é um especialista em busca de imóveis. REGRAS OBRIGATÓRIAS:
 
-1. LOCALIZAÇÃO: Busque APENAS na localização exata mencionada. Se for "Santo Agostinho, Belo Horizonte", NÃO aceite imóveis em outras cidades como Poços de Caldas.
+1. LOCALIZAÇÃO: 
+   - Busque APENAS na localização exata mencionada
+   - Se for "Santo Agostinho, Belo Horizonte", NÃO aceite imóveis em outras cidades
+   - PROIBIDO: Juiz de Fora, Poços de Caldas, Contagem, Betim (exceto se explicitamente solicitado)
+   - REJEITE qualquer resultado fora da cidade especificada
 
-2. PREÇO: Respeite rigorosamente a faixa de preço. Se o usuário quer "entre R$ 4000 e R$ 6000", NÃO retorne imóveis de R$ 1.300.
+2. PREÇO: 
+   - Respeite rigorosamente a faixa de preço
+   - Se for "R$ 4000-6000", NÃO retorne imóveis de R$ 1.300, R$ 2.800 ou R$ 8.000
+   - Margem de tolerância máxima: ±5%
 
-3. FORMATO: Retorne apenas URLs válidas dos sites OLX, ZapImóveis, VivaReal ou QuintoAndar.
+3. TIPO DE IMÓVEL:
+   - Para busca de apartamentos, NÃO retorne casas ou outros tipos
+   - Respeite o tipo de imóvel solicitado
 
-4. QUALIDADE: Prefira URLs de imóveis reais e atuais.
+4. FORMATO: 
+   - Retorne apenas URLs válidas dos sites OLX, ZapImóveis, VivaReal ou QuintoAndar
+   - Uma URL por linha, sem textos explicativos
+   - URLs devem ser específicas para imóveis individuais quando possível
 
-Retorne 3-5 URLs, uma por linha, sem explicações.`
+5. QUALIDADE: 
+   - Prefira URLs de imóveis reais e atuais
+   - Evite páginas de listagem geral
+   - Priorize anúncios com detalhes completos
+
+Retorne 3-5 URLs específicas, uma por linha, sem explicações adicionais.`
           },
           {
             role: 'user',

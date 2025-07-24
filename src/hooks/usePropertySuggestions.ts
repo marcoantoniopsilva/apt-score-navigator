@@ -52,8 +52,9 @@ export const usePropertySuggestions = () => {
         return;
       }
 
-      // Extrair dados de cada URL encontrada
+      // Extrair dados de cada URL encontrada com validação automática
       const extractedProperties: PropertySuggestion[] = [];
+      const rejectedProperties: Array<{ url: string; reason: string; violations?: string[] }> = [];
       
       for (const url of searchResult.urls) {
         try {
@@ -68,22 +69,66 @@ export const usePropertySuggestions = () => {
           // Atualizar estado progressivamente
           setSuggestions([...extractedProperties]);
           
-        } catch (error) {
-          console.warn('Falha ao extrair dados de:', url, error);
-          // Continuar com as outras URLs mesmo se uma falhar
+        } catch (error: any) {
+          console.warn('Falha ao extrair dados de:', url);
+          
+          // Verificar se é erro de validação (422)
+          if (error?.message?.includes('não atende aos critérios') || 
+              (error?.details && error?.details?.violations)) {
+            rejectedProperties.push({
+              url,
+              reason: 'Não atende aos critérios de busca',
+              violations: error?.details?.violations || ['Dados incompatíveis com suas preferências']
+            });
+            console.log(`❌ Imóvel rejeitado: ${url}`, error?.details?.violations);
+          } else {
+            rejectedProperties.push({
+              url,
+              reason: 'Erro na extração de dados'
+            });
+            console.warn('Erro na extração:', error);
+          }
         }
       }
 
+      // Log de resultados detalhado
+      console.log(`✅ Propriedades aceitas: ${extractedProperties.length}`);
+      console.log(`❌ Propriedades rejeitadas: ${rejectedProperties.length}`);
+      
+      if (rejectedProperties.length > 0) {
+        console.log('Detalhes das rejeições:');
+        rejectedProperties.forEach(({ url, reason, violations }) => {
+          console.log(`  - ${url}: ${reason}`);
+          if (violations) {
+            violations.forEach(v => console.log(`    * ${v}`));
+          }
+        });
+      }
+
       if (extractedProperties.length === 0) {
+        // Se nenhuma propriedade foi aceita, mostrar detalhes dos problemas
+        const violationSummary = rejectedProperties
+          .filter(r => r.violations)
+          .flatMap(r => r.violations!)
+          .slice(0, 3) // Apenas as 3 principais violações
+          .join('; ');
+        
         toast({
-          title: "Nenhum dado extraído",
-          description: "Não foi possível extrair dados dos imóveis encontrados.",
-          variant: "destructive"
+          title: "Nenhum imóvel compatível encontrado",
+          description: rejectedProperties.length > 0 
+            ? `Problemas: ${violationSummary || 'Imóveis não atendem aos critérios especificados'}`
+            : "Não foi possível extrair dados dos imóveis encontrados.",
+          variant: "destructive",
+          duration: 8000
         });
       } else {
+        const message = rejectedProperties.length > 0 
+          ? `${extractedProperties.length} imóveis compatíveis encontrados (${rejectedProperties.length} rejeitados por não atenderem aos critérios)`
+          : `${extractedProperties.length} imóveis sugeridos com base no seu perfil`;
+          
         toast({
           title: "Sugestões encontradas",
-          description: `${extractedProperties.length} imóveis sugeridos com base no seu perfil.`,
+          description: message,
           duration: 5000
         });
       }

@@ -55,6 +55,14 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
 
     if (!data.success) {
       console.error('propertyExtractionService: Extração falhou:', data.error);
+      
+      // Se é erro de validação, propagar os detalhes
+      if (data.details) {
+        const error = new Error(data.error || 'Falha na extração dos dados');
+        (error as any).details = data.details;
+        throw error;
+      }
+      
       throw new Error(data.error || 'Falha na extração dos dados');
     }
 
