@@ -139,18 +139,15 @@ export function validatePropertyAgainstPreferences(
     score -= 15;
   }
 
-  // MODO DEBUG: Validação muito permissiva para encontrar o problema
-  console.log('=== MODO DEBUG: VALIDAÇÃO PERMISSIVA ===');
-  
-  // Aceitar praticamente qualquer propriedade para debug
+  // Validação ajustada: mais flexível mas ainda criteriosa
   const hasCriticalViolations = violations.some(v => 
-    v.includes('Valor do aluguel inválido (R$ 0 ou negativo)')
+    v.includes('Localização incorreta:') || 
+    v.includes('Valor do aluguel inválido (R$ 0 ou negativo)') ||
+    v.includes('Preço fora da faixa:')
   );
   
-  // Temporariamente aceitar qualquer propriedade que não tenha preço = 0
-  const isValid = !hasCriticalViolations;
-  
-  console.log(`DEBUG: hasCriticalViolations=${hasCriticalViolations}, isValid=${isValid}`);
+  // Aceitar propriedades com score >= 30% sem violações críticas
+  const isValid = score >= 30 && !hasCriticalViolations;
   
   console.log('=== RESULTADO DA VALIDAÇÃO ===');
   console.log(`Válido: ${isValid}`);
