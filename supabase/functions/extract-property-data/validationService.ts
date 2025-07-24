@@ -93,16 +93,19 @@ export function validatePropertyAgainstPreferences(
     }
     
     const precoTotal = propertyData.rent + (propertyData.condo || 0) + (propertyData.iptu || 0);
-    const margemTolerancia = 0.05; // 5% de tolerância
-    const minComTolerancia = minPreco * (1 - margemTolerancia);
-    const maxComTolerancia = maxPreco * (1 + margemTolerancia);
+    
+    // Tolerância muito ampla: -20% no mínimo, +80% no máximo
+    const margemToleranciaMin = 0.20; // 20% para baixo
+    const margemToleranciaMax = 0.80; // 80% para cima
+    const minComTolerancia = minPreco * (1 - margemToleranciaMin);
+    const maxComTolerancia = maxPreco * (1 + margemToleranciaMax);
     
     if (precoTotal < minComTolerancia || precoTotal > maxComTolerancia) {
-      violations.push(`Preço fora da faixa: R$ ${precoTotal} não está entre R$ ${minPreco}-${maxPreco} (tolerância 5%)`);
-      score -= 40; // Penalidade alta por preço incorreto
+      violations.push(`Preço fora da faixa: R$ ${precoTotal} não está entre R$ ${minComTolerancia.toFixed(0)}-${maxComTolerancia.toFixed(0)} (tolerância ampla)`);
+      score -= 25; // Penalidade menor por preço
     }
     
-    console.log(`Validação preço: total=${precoTotal}, faixa=${minPreco}-${maxPreco}, tolerância=${minComTolerancia}-${maxComTolerancia}`);
+    console.log(`Validação preço AMPLA: total=${precoTotal}, faixa original=${minPreco}-${maxPreco}, tolerância=${minComTolerancia.toFixed(0)}-${maxComTolerancia.toFixed(0)}`);
   }
 
   // 3. Validação de Valores Suspeitos

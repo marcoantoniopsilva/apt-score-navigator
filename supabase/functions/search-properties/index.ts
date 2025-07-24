@@ -187,10 +187,10 @@ async function searchWithPerplexity(searchQuery: string, locationType: 'bairro' 
    - Se não encontrar imóveis na localização exata, retorne uma lista vazia
    - Prefira URLs que contenham o nome do bairro/cidade na própria URL
 
-2. FAIXA DE PREÇO RIGOROSA: 
-   - Para "R$ 4.000 - R$ 6.000": APENAS imóveis entre R$ 3.800 e R$ 6.300 (5% tolerância)
-   - JAMAIS retorne imóveis de R$ 1.000, R$ 2.000 ou R$ 8.000+
-   - Se o anúncio não especifica preço na faixa, NÃO inclua
+2. FAIXA DE PREÇO FLEXÍVEL: 
+   - Para "R$ 4.000 - R$ 6.000": aceite imóveis entre R$ 3.000 e R$ 11.000 (faixa ampla)
+   - Priorize imóveis na faixa original, mas aceite valores próximos
+   - É melhor encontrar imóveis próximos da faixa do que não encontrar nenhum
 
 3. TIPO DE IMÓVEL:
    - "apartamentos": APENAS apartamentos, não casas, studios pequenos, quitinetes
