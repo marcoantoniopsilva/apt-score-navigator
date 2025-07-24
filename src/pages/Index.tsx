@@ -9,6 +9,7 @@ import { AppExplanation } from '@/components/AppExplanation';
 import { UserPreferencesDisplay } from '@/components/UserPreferencesDisplay';
 import { MobileWeightsEditor } from '@/components/MobileWeightsEditor';
 import { PropertyComparison } from '@/components/PropertyComparison';
+import { PropertySuggestions } from '@/components/PropertySuggestions';
 
 import { calculateFinalScore } from '@/utils/scoreCalculator';
 import { usePropertyLoader } from '@/hooks/usePropertyLoader';
@@ -224,6 +225,13 @@ const Index = () => {
           }}
           comparisonMode={comparisonMode}
         />
+
+        {/* Seção de Sugestões - aparece sempre que o usuário fez onboarding */}
+        {hasCompletedOnboarding && (
+          <div className="mt-8">
+            <PropertySuggestions onAddProperty={handleAddProperty} />
+          </div>
+        )}
 
         <MobileWeightsEditor
           weights={criteriaWeights}
