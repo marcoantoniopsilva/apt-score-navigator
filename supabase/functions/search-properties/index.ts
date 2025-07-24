@@ -60,6 +60,88 @@ export async function getUserPreferences(userId: string, supabaseUrl: string, su
   };
 }
 
+function determineLocationPrecision(regiaoReferencia: string): { tipo: 'bairro' | 'municipio', termo: string } {
+  if (!regiaoReferencia) {
+    return { tipo: 'municipio', termo: '' };
+  }
+
+  // Lista de indicadores que sugerem que é um bairro específico
+  const indicadoresBairro = [
+    'Centro', 'Copacabana', 'Ipanema', 'Leblon', 'Botafogo', 'Flamengo', 'Tijuca',
+    'Santo Agostinho', 'Savassi', 'Funcionários', 'Serra', 'Buritis', 'Belvedere',
+    'Vila Madalena', 'Pinheiros', 'Vila Olímpia', 'Moema', 'Itaim Bibi', 'Jardins'
+  ];
+
+  // Se contém vírgula, provavelmente é "Bairro, Cidade"
+  if (regiaoReferencia.includes(',')) {
+    const partes = regiaoReferencia.split(',');
+    const possevelBairro = partes[0].trim();
+    
+    // Verifica se a primeira parte é um bairro conhecido
+    if (indicadoresBairro.some(bairro => 
+      possevelBairro.toLowerCase().includes(bairro.toLowerCase())
+    )) {
+      return { tipo: 'bairro', termo: regiaoReferencia };
+    }
+  }
+
+  // Verifica se é um bairro conhecido sem vírgula
+  if (indicadoresBairro.some(bairro => 
+    regiaoReferencia.toLowerCase().includes(bairro.toLowerCase())
+  )) {
+    return { tipo: 'bairro', termo: regiaoReferencia };
+  }
+
+  // Caso contrário, assume que é um município
+  return { tipo: 'municipio', termo: regiaoReferencia };
+}
+
+function buildSearchQuery(userPreferences: UserPreferences): string {
+  const { regiaoReferencia, faixaPreco, valorPrincipal } = userPreferences;
+  
+  if (!regiaoReferencia) {
+    return "imóveis para alugar";
+  }
+
+  const { tipo, termo } = determineLocationPrecision(regiaoReferencia);
+  
+  let searchQuery = '';
+  
+  if (tipo === 'bairro') {
+    // Para bairros, busca específica no bairro + proximidades
+    searchQuery = `imóveis para alugar em ${termo} ou próximo`;
+    
+    // Se tem vírgula, inclui também a cidade
+    if (termo.includes(',')) {
+      const cidade = termo.split(',')[1].trim();
+      searchQuery += ` ${cidade}`;
+    }
+  } else {
+    // Para municípios, busca mais ampla
+    searchQuery = `imóveis para alugar em ${termo}`;
+  }
+
+  // Adiciona informações de preço se disponível
+  if (faixaPreco) {
+    // Remove "R$" e formata para busca
+    const preco = faixaPreco.replace(/R\$|\./g, '').trim();
+    if (preco.includes('até')) {
+      const valor = preco.replace('até', '').trim();
+      searchQuery += ` até ${valor} reais`;
+    } else if (preco.includes('-')) {
+      searchQuery += ` ${preco.replace('-', ' a ')} reais`;
+    }
+  }
+
+  // Adiciona o valor principal (compra/aluguel)
+  if (valorPrincipal === 'comprar') {
+    searchQuery = searchQuery.replace('alugar', 'comprar');
+  }
+
+  console.log(`Search query gerada: ${searchQuery} (tipo: ${tipo})`);
+  return searchQuery;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -68,22 +150,63 @@ serve(async (req) => {
   try {
     console.log('=== SEARCH PROPERTIES FUNCTION START ===');
     
-    // For debugging, return test data first
+    const { query: customQuery } = await req.json();
+    
+    // Obter informações do usuário autenticado
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      throw new Error('Authorization header is required');
+    }
+
+    // Extrair o token JWT
+    const token = authHeader.replace('Bearer ', '');
+    
+    // Verificar o token e obter o user ID
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    
+    // Decodificar o JWT para obter o user ID (simplificado)
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const userId = payload.sub;
+    
+    console.log('User ID:', userId);
+
+    // Buscar preferências do usuário
+    const userPreferences = await getUserPreferences(userId, supabaseUrl, supabaseServiceRoleKey);
+    console.log('User preferences:', userPreferences);
+
+    // Construir query de busca inteligente
+    const searchQuery = customQuery || buildSearchQuery(userPreferences);
+    console.log('Final search query:', searchQuery);
+
+    // Por ora, retornar URLs simuladas baseadas na precisão da busca
+    const { tipo } = determineLocationPrecision(userPreferences.regiaoReferencia || '');
+    
+    let urls = [];
+    if (tipo === 'bairro') {
+      // URLs mais específicas para bairros
+      urls = [
+        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-santo-agostinho-1",
+        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-santo-agostinho-2"
+      ];
+    } else {
+      // URLs mais amplas para municípios
+      urls = [
+        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-centro-1",
+        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-savassi-2",
+        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-funcionarios-3"
+      ];
+    }
+
     const response = {
       success: true,
-      urls: [
-        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-3-quartos-santo-agostinho-123",
-        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-2-quartos-centro-456"
-      ],
-      searchQuery: "Test query",
-      userPreferences: {
-        regiaoReferencia: "Test region",
-        faixaPreco: "Test price",
-        criteriosAtivos: ["test"]
-      }
+      urls,
+      searchQuery,
+      userPreferences,
+      locationType: tipo
     };
 
-    console.log('Returning test response:', response);
+    console.log('Returning response:', response);
 
     return new Response(JSON.stringify(response), {
       status: 200,
