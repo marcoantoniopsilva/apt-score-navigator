@@ -144,158 +144,274 @@ function buildSearchQuery(userPreferences: UserPreferences): string {
 
 async function searchWithPerplexity(searchQuery: string, locationType: 'bairro' | 'municipio'): Promise<{ urls: string[], searchContext: string }> {
   const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
+  
   if (!perplexityApiKey) {
-    console.error('PERPLEXITY_API_KEY not found');
-    throw new Error('PERPLEXITY_API_KEY not found');
+    console.log('Perplexity API key não encontrada, usando fallback inteligente');
+    return {
+      urls: getIntelligentFallback(searchQuery),
+      searchContext: `Fallback search for ${searchQuery}...`
+    };
   }
 
-  console.log('Fazendo busca com Perplexity:', searchQuery);
+  // Tentar múltiplas estratégias de busca
+  const strategies = [
+    {
+      name: 'specific_listings',
+      prompt: buildSpecificListingsPrompt(searchQuery, locationType),
+      searchFilters: ['olx.com.br', 'zapimoveis.com.br', 'vivareal.com.br', 'quintoandar.com.br']
+    },
+    {
+      name: 'broader_search', 
+      prompt: buildBroaderSearchPrompt(searchQuery, locationType),
+      searchFilters: ['olx.com.br', 'zapimoveis.com.br', 'vivareal.com.br', 'quintoandar.com.br', 'imovelweb.com.br']
+    },
+    {
+      name: 'listing_pages',
+      prompt: buildListingPagesPrompt(searchQuery, locationType),
+      searchFilters: ['olx.com.br', 'zapimoveis.com.br', 'vivareal.com.br']
+    }
+  ];
 
-  // Ajustar consulta com restrições negativas baseadas na localização
-  let enhancedQuery = searchQuery;
-  
-  // Adicionar restrições negativas específicas para evitar cidades erradas
-  if (searchQuery.includes('Belo Horizonte') || searchQuery.includes('Santo Agostinho')) {
-    enhancedQuery += ' -"Juiz de Fora" -"Poços de Caldas" -"Contagem" -"Nova Lima" -"Betim"';
+  for (const strategy of strategies) {
+    console.log(`Tentando estratégia: ${strategy.name}`);
+    
+    try {
+      const result = await executePerplexitySearch(strategy.prompt, strategy.searchFilters, perplexityApiKey);
+      
+      if (result.urls.length > 0) {
+        console.log(`Estratégia ${strategy.name} encontrou ${result.urls.length} URLs`);
+        logUrlsByDomain(result.urls);
+        return result;
+      }
+    } catch (error) {
+      console.error(`Erro na estratégia ${strategy.name}:`, error);
+      continue;
+    }
   }
-  
-  if (locationType === 'bairro') {
-    enhancedQuery += ' site:olx.com.br OR site:zapimoveis.com.br OR site:vivareal.com.br';
-  } else {
-    enhancedQuery += ' imóveis site:olx.com.br OR site:zapimoveis.com.br OR site:vivareal.com.br';
-  }
-  
-  console.log('Enhanced query with negative constraints:', enhancedQuery);
 
-  try {
-    const response = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${perplexityApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'sonar',
-        messages: [
-          {
-            role: 'system',
-            content: `Você é um especialista em busca de imóveis no Brasil. REGRAS CRÍTICAS (OBRIGATÓRIAS):
+  console.log('Todas as estratégias falharam, usando fallback inteligente');
+  return {
+    urls: getIntelligentFallback(searchQuery),
+    searchContext: `All search strategies failed for ${searchQuery}, using intelligent fallback`
+  };
+}
 
-1. LOCALIZAÇÃO RIGOROSA: 
-   - Para "Santo Agostinho, Belo Horizonte": APENAS imóveis nesse bairro específico
-   - JAMAIS retorne imóveis de: Juiz de Fora, Poços de Caldas, Contagem, Betim, Nova Lima
-   - Se não encontrar imóveis na localização exata, retorne uma lista vazia
-   - Prefira URLs que contenham o nome do bairro/cidade na própria URL
+function buildSpecificListingsPrompt(searchQuery: string, locationType: 'bairro' | 'municipio'): string {
+  return `Encontre URLs ESPECÍFICAS de anúncios individuais de imóveis para: "${searchQuery}"
+
+CRITÉRIOS RIGOROSOS:
+
+1. LOCALIZAÇÃO EXATA ${locationType === 'bairro' ? 'NO BAIRRO' : 'NA CIDADE'}:
+   - Busque imóveis na localização mencionada
+   - Aceite tanto a localização exata quanto áreas próximas
+   - Priorize anúncios que mencionem o bairro/cidade no título ou descrição
 
 2. FAIXA DE PREÇO FLEXÍVEL: 
-   - Para "R$ 4.000 - R$ 6.000": aceite imóveis entre R$ 3.000 e R$ 11.000 (faixa ampla)
-   - Priorize imóveis na faixa original, mas aceite valores próximos
-   - É melhor encontrar imóveis próximos da faixa do que não encontrar nenhum
+   - Aceite uma faixa ampla de preços para ter mais resultados
+   - Priorize imóveis na faixa mencionada, mas aceite valores próximos
 
-3. TIPO DE IMÓVEL:
-   - "apartamentos": APENAS apartamentos, não casas, studios pequenos, quitinetes
-   - Respeite exatamente o tipo solicitado
+3. TIPOS DE ANÚNCIOS ACEITOS:
+   - URLs de anúncios individuais específicos (PREFERENCIAL)
+   - URLs de páginas de imóveis com múltiplos anúncios (ACEITÁVEL)
+   - URLs de resultados de busca com filtros aplicados (ÚLTIMA OPÇÃO)
 
-4. QUALIDADE DA BUSCA:
-   - Prefira OLX, ZapImóveis, VivaReal, QuintoAndar
-   - URLs específicas de imóveis individuais (não páginas de listagem)
-   - Evite URLs genéricas como "/busca" ou "/search"
-   - Máximo 3 URLs por resposta
+4. SITES PREFERENCIAIS:
+   - olx.com.br (todas variações: mg.olx.com.br, br.olx.com.br)
+   - zapimoveis.com.br (www.zapimoveis.com.br, zapimoveis.com.br)  
+   - vivareal.com.br (www.vivareal.com.br, vivareal.com.br)
+   - quintoandar.com.br (www.quintoandar.com.br)
+   - imovelweb.com.br (www.imovelweb.com.br)
 
-FORMATO DE RESPOSTA: Apenas URLs válidas, uma por linha, sem texto adicional.
+FORMATO: Retorne apenas URLs válidas, uma por linha, máximo 15 URLs.
 
-IMPORTANTE: Se não encontrar imóveis que atendam TODOS os critérios, retorne apenas 1-2 URLs válidas em vez de muitas incompatíveis.`
-          },
-          {
-            role: 'user',
-            content: enhancedQuery
-          }
-        ],
-        temperature: 0.1,
-        top_p: 0.7,
-        max_tokens: 300,
-        return_images: false,
-        return_related_questions: false,
-        search_recency_filter: 'month',
-        frequency_penalty: 1,
-        presence_penalty: 0
-      }),
-    });
+Exemplos de URLs ACEITAS:
+https://mg.olx.com.br/belo-horizonte-e-regiao/imoveis/apartamento-santo-agostinho-12345
+https://www.zapimoveis.com.br/imovel/apartamento-aluguel-2-quartos-santo-agostinho-belo-horizonte
+https://www.vivareal.com.br/imovel/apartamento-2-quartos-aluguel-santo-agostinho-belo-horizonte
+https://www.olx.com.br/imoveis/aluguel/apartamentos/estado-mg/belo-horizonte+santo-agostinho`;
+}
 
-    console.log('Perplexity response status:', response.status);
+function buildBroaderSearchPrompt(searchQuery: string, locationType: 'bairro' | 'municipio'): string {
+  return `Busque qualquer tipo de listagem ou página de imóveis para: "${searchQuery}"
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('Perplexity API error:', response.status, errorText);
-      
-      // Fallback para URLs simuladas
-      console.log('Usando fallback devido ao erro da API');
-      return {
-        urls: locationType === 'bairro' ? [
-          "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-santo-agostinho-1",
-          "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-santo-agostinho-2"
-        ] : [
-          "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-centro-1",
-          "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-savassi-2"
-        ],
-        searchContext: `Fallback search for ${searchQuery}`
-      };
-    }
+ACEITE QUALQUER TIPO DE URL RELACIONADA A IMÓVEIS:
+- Anúncios individuais específicos
+- Páginas de listagem com filtros
+- Resultados de busca pré-filtrados
+- Categorias de imóveis por localização
 
-    const data = await response.json();
-    console.log('Perplexity response data:', JSON.stringify(data, null, 2));
+SITES A INCLUIR:
+- olx.com.br (todas as variações)
+- zapimoveis.com.br 
+- vivareal.com.br
+- quintoandar.com.br
+- imovelweb.com.br
+- wimoveis.com.br
 
-    const searchResult = data.choices?.[0]?.message?.content || '';
-    
-    // Extrair URLs do resultado
-    const urlRegex = /https?:\/\/[^\s]+/g;
-    const foundUrls = searchResult.match(urlRegex) || [];
-    
-    // Filtrar apenas URLs de sites de imóveis conhecidos
-    const validUrls = foundUrls.filter(url => 
-      url.includes('olx.com.br') || 
-      url.includes('zapimoveis.com.br') || 
-      url.includes('vivareal.com.br') ||
-      url.includes('quintoandar.com.br')
-    ).slice(0, 5); // Limita a 5 URLs
+LOCALIZAÇÃO: ${locationType === 'bairro' ? 'Foque no bairro mencionado e áreas próximas' : 'Foque na cidade mencionada'}
 
-    console.log('URLs encontradas:', validUrls);
+Retorne o máximo de URLs possível relacionadas a imóveis na região.`;
+}
 
-    // Se não encontrou URLs válidas, usa fallback
-    if (validUrls.length === 0) {
-      console.log('Nenhuma URL válida encontrada, usando fallback');
-      return {
-        urls: locationType === 'bairro' ? [
-          "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-santo-agostinho-1",
-          "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-santo-agostinho-2"
-        ] : [
-          "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-centro-1",
-          "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-savassi-2"
-        ],
-        searchContext: `Fallback search for ${searchQuery}`
-      };
-    }
+function buildListingPagesPrompt(searchQuery: string, locationType: 'bairro' | 'municipio'): string {
+  return `Encontre páginas de listagem de imóveis para: "${searchQuery}"
 
-    return {
-      urls: validUrls,
-      searchContext: searchResult
-    };
+ACEITE ESPECIALMENTE:
+- Páginas de categoria (ex: /apartamentos-aluguel-belo-horizonte/)
+- Páginas de busca com filtros aplicados
+- Listagens por região/bairro
+- Qualquer página que mostre múltiplos imóveis
 
-  } catch (error) {
-    console.error('Erro na chamada da API Perplexity:', error);
-    
-    // Fallback em caso de erro
-    return {
-      urls: locationType === 'bairro' ? [
-        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-santo-agostinho-1",
-        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-santo-agostinho-2"
-      ] : [
-        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-centro-1",
-        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-savassi-2"
+FOQUE APENAS NOS SITES:
+- olx.com.br 
+- zapimoveis.com.br
+- vivareal.com.br
+
+Retorne URLs de páginas que contenham listas de imóveis, mesmo que não sejam anúncios individuais.`;
+}
+
+async function executePerplexitySearch(prompt: string, searchFilters: string[], perplexityApiKey: string): Promise<{ urls: string[], searchContext: string }> {
+  const response = await fetch('https://api.perplexity.ai/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${perplexityApiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      model: 'llama-3.1-sonar-small-128k-online',
+      messages: [
+        {
+          role: 'system',
+          content: 'Você é um especialista em encontrar listagens de imóveis. Retorne apenas URLs válidas, uma por linha.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
       ],
-      searchContext: `Error fallback search for ${searchQuery}`
-    };
+      temperature: 0.1,
+      top_p: 0.9,
+      max_tokens: 1500,
+      return_images: false,
+      return_related_questions: false,
+      search_domain_filter: searchFilters,
+      search_recency_filter: 'week',
+      frequency_penalty: 1,
+      presence_penalty: 0
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Erro na API Perplexity: ${response.status}`);
   }
+
+  const data = await response.json();
+  console.log('Perplexity response status:', response.status);
+  console.log('Perplexity response data:', JSON.stringify(data, null, 2));
+  
+  const content = data.choices?.[0]?.message?.content || '';
+  
+  // Regex expandido para capturar mais variações de URLs
+  const urlRegex = /https?:\/\/(?:(?:www\.|mg\.|br\.)?(?:olx\.com\.br|zapimoveis\.com\.br|vivareal\.com\.br|quintoandar\.com\.br|imovelweb\.com\.br|wimoveis\.com\.br)\/[^\s\n\r<>"',;()]*)/gi;
+  const foundUrls = content.match(urlRegex) || [];
+  
+  console.log(`URLs encontradas: ${JSON.stringify(foundUrls)}`);
+  
+  // Validação mais permissiva
+  const validUrls = foundUrls.filter(url => {
+    const isValidDomain = /\b(olx|zapimoveis|vivareal|quintoandar|imovelweb|wimoveis)\.com\.br/.test(url);
+    const isNotHomePage = !url.match(/^https?:\/\/(?:www\.)?[^\/]+\/?$/);
+    const isRelevant = 
+      url.includes('imoveis') || 
+      url.includes('apartament') || 
+      url.includes('aluguel') || 
+      url.includes('imovel') ||
+      url.includes('alugar');
+    
+    const isValid = isValidDomain && isNotHomePage && isRelevant;
+    
+    if (!isValid) {
+      console.log(`URL rejeitada: ${url} (domínio=${isValidDomain}, nãoHome=${isNotHomePage}, relevante=${isRelevant})`);
+    } else {
+      console.log(`URL aceita: ${url}`);
+    }
+    
+    return isValid;
+  });
+
+  return {
+    urls: validUrls.slice(0, 12),
+    searchContext: content
+  };
+}
+
+function logUrlsByDomain(urls: string[]): void {
+  const domainCounts = {
+    'olx.com.br': 0,
+    'zapimoveis.com.br': 0,
+    'vivareal.com.br': 0,
+    'quintoandar.com.br': 0,
+    'imovelweb.com.br': 0,
+    'wimoveis.com.br': 0,
+    'outros': 0
+  };
+
+  urls.forEach(url => {
+    if (url.includes('olx.com.br')) domainCounts['olx.com.br']++;
+    else if (url.includes('zapimoveis.com.br')) domainCounts['zapimoveis.com.br']++;
+    else if (url.includes('vivareal.com.br')) domainCounts['vivareal.com.br']++;
+    else if (url.includes('quintoandar.com.br')) domainCounts['quintoandar.com.br']++;
+    else if (url.includes('imovelweb.com.br')) domainCounts['imovelweb.com.br']++;
+    else if (url.includes('wimoveis.com.br')) domainCounts['wimoveis.com.br']++;
+    else domainCounts['outros']++;
+  });
+
+  console.log('URLs encontradas por site:', JSON.stringify(domainCounts, null, 2));
+}
+
+function getIntelligentFallback(searchQuery: string): string[] {
+  console.log(`Gerando fallback inteligente para: ${searchQuery}`);
+  
+  // Extrair informações da query
+  const isSantoAgostinho = searchQuery.toLowerCase().includes('santo agostinho');
+  const isSavassi = searchQuery.toLowerCase().includes('savassi');
+  const isBeloHorizonte = searchQuery.toLowerCase().includes('belo horizonte');
+  
+  // URLs base por região e site
+  const fallbackUrls: string[] = [];
+  
+  if (isSantoAgostinho || searchQuery.includes('Santo Agostinho')) {
+    fallbackUrls.push(
+      "https://mg.olx.com.br/belo-horizonte-e-regiao/imoveis/aluguel/apartamentos?q=santo%20agostinho",
+      "https://www.zapimoveis.com.br/aluguel/apartamentos/mg+belo-horizonte+santo-agostinho/",
+      "https://www.vivareal.com.br/aluguel/mg/belo-horizonte/santo-agostinho/apartamento_residencial/",
+      "https://www.quintoandar.com.br/alugar/imovel/santo-agostinho-belo-horizonte-mg-brasil"
+    );
+  } else if (isSavassi || searchQuery.includes('Savassi')) {
+    fallbackUrls.push(
+      "https://mg.olx.com.br/belo-horizonte-e-regiao/imoveis/aluguel/apartamentos?q=savassi",
+      "https://www.zapimoveis.com.br/aluguel/apartamentos/mg+belo-horizonte+savassi/",
+      "https://www.vivareal.com.br/aluguel/mg/belo-horizonte/savassi/apartamento_residencial/",
+      "https://www.quintoandar.com.br/alugar/imovel/savassi-belo-horizonte-mg-brasil"
+    );
+  } else if (isBeloHorizonte) {
+    fallbackUrls.push(
+      "https://mg.olx.com.br/belo-horizonte-e-regiao/imoveis/aluguel/apartamentos",
+      "https://www.zapimoveis.com.br/aluguel/apartamentos/mg+belo-horizonte/",
+      "https://www.vivareal.com.br/aluguel/mg/belo-horizonte/apartamento_residencial/",
+      "https://www.quintoandar.com.br/alugar/imovel/belo-horizonte-mg-brasil"
+    );
+  } else {
+    // Fallback genérico
+    fallbackUrls.push(
+      "https://mg.olx.com.br/belo-horizonte-e-regiao/imoveis/aluguel/apartamentos",
+      "https://www.zapimoveis.com.br/aluguel/apartamentos/mg+belo-horizonte/",
+      "https://www.vivareal.com.br/aluguel/mg/belo-horizonte/apartamento_residencial/"
+    );
+  }
+  
+  console.log(`Fallback URLs geradas: ${JSON.stringify(fallbackUrls)}`);
+  return fallbackUrls;
 }
 
 serve(async (req) => {
