@@ -76,8 +76,10 @@ export function validatePropertyAgainstPreferences(
     }
   }
 
-  // 2. Validação de Preço
-  if (userPreferences.faixaPreco) {
+  // 2. Validação de Preço - Aplicada apenas durante comparação, não busca inicial
+  // Durante a busca inicial, não aplicamos filtros de preço para ter mais resultados
+  // O preço será validado posteriormente quando o usuário decidir comparar
+  if (userPreferences.faixaPreco && sourceUrl.includes('comparison')) {
     const faixaLimpa = userPreferences.faixaPreco.replace(/R\$|\./g, '').replace(/\s/g, '');
     let minPreco = 0;
     let maxPreco = Infinity;
@@ -94,29 +96,45 @@ export function validatePropertyAgainstPreferences(
     
     const precoTotal = propertyData.rent + (propertyData.condo || 0) + (propertyData.iptu || 0);
     
-    // Tolerância muito ampla: -20% no mínimo, +80% no máximo
-    const margemToleranciaMin = 0.20; // 20% para baixo
-    const margemToleranciaMax = 0.80; // 80% para cima
+    // Tolerância ampla: -30% no mínimo, +50% no máximo
+    const margemToleranciaMin = 0.30; // 30% para baixo
+    const margemToleranciaMax = 0.50; // 50% para cima
     const minComTolerancia = minPreco * (1 - margemToleranciaMin);
     const maxComTolerancia = maxPreco * (1 + margemToleranciaMax);
     
     if (precoTotal < minComTolerancia || precoTotal > maxComTolerancia) {
-      violations.push(`Preço fora da faixa: R$ ${precoTotal} não está entre R$ ${minComTolerancia.toFixed(0)}-${maxComTolerancia.toFixed(0)} (tolerância ampla)`);
-      score -= 25; // Penalidade menor por preço
+      violations.push(`Preço fora da faixa preferida: R$ ${precoTotal} não está entre R$ ${minComTolerancia.toFixed(0)}-${maxComTolerancia.toFixed(0)}`);
+      score -= 15; // Penalidade reduzida para comparação
     }
     
-    console.log(`Validação preço AMPLA: total=${precoTotal}, faixa original=${minPreco}-${maxPreco}, tolerância=${minComTolerancia.toFixed(0)}-${maxComTolerancia.toFixed(0)}`);
+    console.log(`Validação preço COMPARAÇÃO: total=${precoTotal}, faixa original=${minPreco}-${maxPreco}, tolerância=${minComTolerancia.toFixed(0)}-${maxComTolerancia.toFixed(0)}`);
   }
 
-  // 3. Validação de Valores Suspeitos
-  if (propertyData.rent <= 0) {
-    violations.push('Valor do aluguel inválido (R$ 0 ou negativo)');
-    score -= 60; // Dados claramente incorretos
-  }
+  // 3. Validação de Valores Suspeitos baseada na intenção do usuário
+  const isRental = userPreferences.intencao !== 'comprar';
   
-  if (propertyData.rent < 500) {
-    violations.push(`Valor do aluguel muito baixo: R$ ${propertyData.rent} (suspeito)`);
-    score -= 30;
+  if (isRental) {
+    // Validação para aluguel
+    if (propertyData.rent <= 0) {
+      violations.push('Valor do aluguel inválido (R$ 0 ou negativo)');
+      score -= 60; // Dados claramente incorretos
+    }
+    
+    if (propertyData.rent < 500) {
+      violations.push(`Valor do aluguel muito baixo: R$ ${propertyData.rent} (suspeito)`);
+      score -= 30;
+    }
+  } else {
+    // Validação para compra - valores geralmente mais altos
+    if (propertyData.rent <= 0) {
+      violations.push('Valor do imóvel inválido (R$ 0 ou negativo)');
+      score -= 60;
+    }
+    
+    if (propertyData.rent < 50000) {
+      violations.push(`Valor de compra muito baixo: R$ ${propertyData.rent} (suspeito)`);
+      score -= 20; // Penalidade menor pois valores de compra variam muito
+    }
   }
 
   // 4. Validação de Endereço
@@ -142,15 +160,18 @@ export function validatePropertyAgainstPreferences(
     score -= 15;
   }
 
-  // Validação ajustada: mais flexível mas ainda criteriosa
+  // Validação ajustada: mais flexível para busca inicial, mais rigorosa para comparação
+  const isComparison = sourceUrl.includes('comparison');
   const hasCriticalViolations = violations.some(v => 
     v.includes('Localização incorreta:') || 
-    v.includes('Valor do aluguel inválido (R$ 0 ou negativo)') ||
-    v.includes('Preço fora da faixa:')
+    v.includes('Valor do aluguel inválido') ||
+    v.includes('Valor do imóvel inválido') ||
+    (isComparison && v.includes('Preço fora da faixa preferida:'))
   );
   
-  // Aceitar propriedades com score >= 30% sem violações críticas
-  const isValid = score >= 30 && !hasCriticalViolations;
+  // Critérios mais flexíveis para busca inicial (score >= 20%), mais rigorosos para comparação (>= 40%)
+  const minimumScore = isComparison ? 40 : 20;
+  const isValid = score >= minimumScore && !hasCriticalViolations;
   
   console.log('=== RESULTADO DA VALIDAÇÃO ===');
   console.log(`Válido: ${isValid}`);

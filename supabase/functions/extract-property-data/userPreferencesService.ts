@@ -8,6 +8,7 @@ export interface UserPreferences {
   regiaoReferencia?: string;
   faixaPreco?: string;
   valorPrincipal?: string;
+  intencao?: string; // 'alugar' or 'comprar'
 }
 
 export async function getUserPreferences(userId: string, supabaseUrl: string, supabaseServiceRoleKey: string): Promise<UserPreferences> {
@@ -34,7 +35,7 @@ export async function getUserPreferences(userId: string, supabaseUrl: string, su
   // Buscar perfil do usuário
   const { data: perfil, error: perfilError } = await supabase
     .from('user_profiles')
-    .select('regiao_referencia, faixa_preco, valor_principal')
+    .select('regiao_referencia, faixa_preco, valor_principal, intencao')
     .eq('user_id', userId)
     .single();
 
@@ -49,6 +50,7 @@ export async function getUserPreferences(userId: string, supabaseUrl: string, su
     criteriosAtivos: criterios || [],
     regiaoReferencia: perfil?.regiao_referencia,
     faixaPreco: perfil?.faixa_preco,
-    valorPrincipal: perfil?.valor_principal
+    valorPrincipal: perfil?.valor_principal,
+    intencao: perfil?.intencao
   };
 }

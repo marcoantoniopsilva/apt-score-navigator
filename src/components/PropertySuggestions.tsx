@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, MapPin, Bed, Bath, Square, DollarSign } from 'lucide-react';
 import { usePropertySuggestions } from '@/hooks/usePropertySuggestions';
+import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import LoadingState from '@/components/LoadingState';
 
 interface PropertySuggestionsProps {
@@ -11,34 +13,87 @@ interface PropertySuggestionsProps {
 
 export const PropertySuggestions = ({ onAddProperty }: PropertySuggestionsProps) => {
   const { isSearching, suggestions, searchProperties, clearSuggestions } = usePropertySuggestions();
+  const { toast } = useToast();
 
-  const handleAddToComparison = (suggestion: any) => {
-    console.log('PropertySuggestions: Adicionando sugestão:', suggestion);
+  const handleAddToComparison = async (suggestion: any) => {
+    console.log('PropertySuggestions: Adicionando sugestão com avaliação IA:', suggestion);
     
     if (onAddProperty) {
-      const propertyData = {
-        id: `suggestion-${Date.now()}`,
-        title: suggestion.title || 'Imóvel Sugerido',
-        address: suggestion.address || 'Endereço não informado',
-        bedrooms: suggestion.bedrooms || 1,
-        bathrooms: suggestion.bathrooms || 1,
-        parkingSpaces: suggestion.parkingSpaces || 0,
-        area: suggestion.area || 50,
-        floor: suggestion.floor || '',
-        rent: suggestion.rent || 0,
-        condo: suggestion.condo || 0,
-        iptu: suggestion.iptu || 0,
-        fireInsurance: 50,
-        otherFees: 0,
-        totalMonthlyCost: (suggestion.rent || 0) + (suggestion.condo || 0) + (suggestion.iptu || 0) + 50,
-        images: suggestion.images || [],
-        sourceUrl: suggestion.sourceUrl || undefined,
-        scores: {},
-        finalScore: 0
-      };
-      
-      console.log('PropertySuggestions: Dados formatados:', propertyData);
-      onAddProperty(propertyData);
+      try {
+        // Avaliar o imóvel com IA antes de adicionar à comparação
+        const { data: evaluationData, error: evaluationError } = await supabase.functions.invoke('evaluate-property-scores', {
+          body: { propertyData: suggestion }
+        });
+
+        if (evaluationError) {
+          console.warn('Erro na avaliação IA:', evaluationError);
+        }
+
+        const propertyData = {
+          id: `suggestion-${Date.now()}`,
+          title: suggestion.title || 'Imóvel Sugerido',
+          address: suggestion.address || 'Endereço não informado',
+          bedrooms: suggestion.bedrooms || 1,
+          bathrooms: suggestion.bathrooms || 1,
+          parkingSpaces: suggestion.parkingSpaces || 0,
+          area: suggestion.area || 50,
+          floor: suggestion.floor || '',
+          rent: suggestion.rent || 0,
+          condo: suggestion.condo || 0,
+          iptu: suggestion.iptu || 0,
+          fireInsurance: 50,
+          otherFees: 0,
+          totalMonthlyCost: (suggestion.rent || 0) + (suggestion.condo || 0) + (suggestion.iptu || 0) + 50,
+          images: suggestion.images || [],
+          sourceUrl: suggestion.sourceUrl || undefined,
+          scores: evaluationData?.scores || {},
+          finalScore: evaluationData?.finalScore || 0
+        };
+        
+        console.log('PropertySuggestions: Dados formatados com scores IA:', propertyData);
+        onAddProperty(propertyData);
+
+        if (evaluationData?.explanation) {
+          toast({
+            title: "Avaliação concluída",
+            description: evaluationData.explanation,
+            duration: 5000
+          });
+        }
+
+      } catch (error) {
+        console.error('Erro na avaliação do imóvel:', error);
+        
+        // Fallback sem avaliação IA
+        const propertyData = {
+          id: `suggestion-${Date.now()}`,
+          title: suggestion.title || 'Imóvel Sugerido',
+          address: suggestion.address || 'Endereço não informado',
+          bedrooms: suggestion.bedrooms || 1,
+          bathrooms: suggestion.bathrooms || 1,
+          parkingSpaces: suggestion.parkingSpaces || 0,
+          area: suggestion.area || 50,
+          floor: suggestion.floor || '',
+          rent: suggestion.rent || 0,
+          condo: suggestion.condo || 0,
+          iptu: suggestion.iptu || 0,
+          fireInsurance: 50,
+          otherFees: 0,
+          totalMonthlyCost: (suggestion.rent || 0) + (suggestion.condo || 0) + (suggestion.iptu || 0) + 50,
+          images: suggestion.images || [],
+          sourceUrl: suggestion.sourceUrl || undefined,
+          scores: {},
+          finalScore: 0
+        };
+        
+        onAddProperty(propertyData);
+        
+        toast({
+          title: "Imóvel adicionado",
+          description: "Não foi possível avaliar automaticamente, mas o imóvel foi adicionado à comparação.",
+          variant: "default"
+        });
+      }
     }
   };
 
@@ -93,7 +148,7 @@ export const PropertySuggestions = ({ onAddProperty }: PropertySuggestionsProps)
       <div className="text-center py-8">
         <h3 className="text-lg font-semibold mb-2">Sugestões Personalizadas</h3>
         <p className="text-muted-foreground mb-4">
-          Encontre imóveis que combinam com seu perfil e preferências
+          Encontre imóveis que combinam com seu perfil e preferências de busca
         </p>
         <Button onClick={() => searchProperties()}>
           Buscar Sugestões
@@ -108,7 +163,7 @@ export const PropertySuggestions = ({ onAddProperty }: PropertySuggestionsProps)
         <div>
           <h3 className="text-lg font-semibold">Sugestões para você</h3>
           <p className="text-sm text-muted-foreground">
-            {suggestions.length} imóveis encontrados baseados no seu perfil
+            {suggestions.length} imóveis encontrados baseados no seu perfil de busca
           </p>
         </div>
         <div className="space-x-2">

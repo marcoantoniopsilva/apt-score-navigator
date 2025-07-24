@@ -29,7 +29,7 @@ export const usePropertySuggestions = () => {
       
       // Chamar edge function para buscar URLs
       const { data: searchData, error: searchError } = await supabase.functions.invoke('search-properties', {
-        body: { searchQuery: customQuery }
+        body: { query: customQuery }
       });
 
       if (searchError) {

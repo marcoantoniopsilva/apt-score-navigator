@@ -15,6 +15,7 @@ export interface UserPreferences {
   regiaoReferencia?: string;
   faixaPreco?: string;
   valorPrincipal?: string;
+  intencao?: string; // 'alugar' or 'comprar'
 }
 
 export async function getUserPreferences(userId: string, supabaseUrl: string, supabaseServiceRoleKey: string): Promise<UserPreferences> {
@@ -41,7 +42,7 @@ export async function getUserPreferences(userId: string, supabaseUrl: string, su
   // Buscar perfil do usuário
   const { data: perfil, error: perfilError } = await supabase
     .from('user_profiles')
-    .select('regiao_referencia, faixa_preco, valor_principal')
+    .select('regiao_referencia, faixa_preco, valor_principal, intencao')
     .eq('user_id', userId)
     .single();
 
@@ -56,7 +57,8 @@ export async function getUserPreferences(userId: string, supabaseUrl: string, su
     criteriosAtivos: criterios || [],
     regiaoReferencia: perfil?.regiao_referencia,
     faixaPreco: perfil?.faixa_preco,
-    valorPrincipal: perfil?.valor_principal
+    valorPrincipal: perfil?.valor_principal,
+    intencao: perfil?.intencao
   };
 }
 
@@ -97,45 +99,26 @@ function determineLocationPrecision(regiaoReferencia: string): { tipo: 'bairro' 
 }
 
 function buildSearchQuery(userPreferences: UserPreferences): string {
-  const { regiaoReferencia, faixaPreco, valorPrincipal } = userPreferences;
+  const { regiaoReferencia, intencao } = userPreferences;
+  
+  // Default to rent if no intention specified
+  const actionType = intencao === 'comprar' ? 'comprar' : 'alugar';
   
   if (!regiaoReferencia) {
-    return "imóveis para alugar";
+    return `imóveis para ${actionType}`;
   }
 
   const { tipo, termo } = determineLocationPrecision(regiaoReferencia);
   
   let searchQuery = '';
-  let priceFilter = '';
-  
-  // Constrói filtro de preço mais específico
-  if (faixaPreco) {
-    const cleanPrice = faixaPreco.replace(/R\$|\./g, '').replace(/\s/g, '');
-    if (cleanPrice.includes('até')) {
-      const maxValue = cleanPrice.replace('até', '').trim();
-      priceFilter = `valor aluguel até R$ ${maxValue}`;
-    } else if (cleanPrice.includes('-') || cleanPrice.includes('a')) {
-      // Ex: "4000-6000" ou "4000 a 6000"
-      const parts = cleanPrice.split(/[-a]/).map(p => p.trim());
-      if (parts.length === 2) {
-        priceFilter = `valor aluguel entre R$ ${parts[0]} e R$ ${parts[1]}`;
-      }
-    }
-  }
   
   if (tipo === 'bairro') {
     // Para bairros, busca muito específica
     const location = termo.includes(',') ? termo : `${termo}, Belo Horizonte`;
-    searchQuery = `apartamentos ${valorPrincipal === 'comprar' ? 'para comprar' : 'para alugar'} especificamente no bairro ${location}`;
-    if (priceFilter) {
-      searchQuery += ` ${priceFilter}`;
-    }
+    searchQuery = `apartamentos para ${actionType} especificamente no bairro ${location}`;
   } else {
     // Para municípios
-    searchQuery = `imóveis para ${valorPrincipal === 'comprar' ? 'comprar' : 'alugar'} em ${termo}`;
-    if (priceFilter) {
-      searchQuery += ` ${priceFilter}`;
-    }
+    searchQuery = `imóveis para ${actionType} em ${termo}`;
   }
 
   console.log(`Search query gerada: ${searchQuery} (tipo: ${tipo})`);
