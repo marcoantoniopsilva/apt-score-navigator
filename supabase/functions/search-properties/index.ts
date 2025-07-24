@@ -68,154 +68,22 @@ serve(async (req) => {
   try {
     console.log('=== SEARCH PROPERTIES FUNCTION START ===');
     
-    // Get authorization header
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      throw new Error('Authorization header missing');
-    }
-
-    // Create Supabase client to verify user
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
-
-    // Get user from JWT token
-    const jwt = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(jwt);
-    
-    if (authError || !user) {
-      console.error('Auth error:', authError);
-      throw new Error('Invalid authentication token');
-    }
-
-    console.log('User authenticated:', user.id);
-
-    // Get user preferences
-    const userPrefs = await getUserPreferences(user.id, supabaseUrl, supabaseServiceRoleKey);
-    console.log('User preferences loaded:', userPrefs);
-
-    // Parse request body
-    let body;
-    try {
-      body = await req.json();
-    } catch (parseError) {
-      console.error('Error parsing request body:', parseError);
-      throw new Error('Invalid JSON in request body');
-    }
-
-    const { searchQuery } = body;
-    console.log('Custom search query:', searchQuery);
-
-    // Build search prompt based on user preferences
-    let searchPrompt = searchQuery || 'imóveis para alugar';
-    
-    if (userPrefs.regiaoReferencia) {
-      searchPrompt += ` em ${userPrefs.regiaoReferencia}`;
-    }
-    
-    if (userPrefs.faixaPreco) {
-      searchPrompt += ` na faixa de preço ${userPrefs.faixaPreco}`;
-    }
-
-    // Add criteria priorities
-    if (userPrefs.criteriosAtivos.length > 0) {
-      const topCriteria = userPrefs.criteriosAtivos
-        .sort((a, b) => b.peso - a.peso)
-        .slice(0, 3)
-        .map(c => c.criterio_nome);
-      
-      searchPrompt += ` priorizando ${topCriteria.join(', ')}`;
-    }
-
-    console.log('Final search prompt:', searchPrompt);
-
-    // Get Perplexity API key
-    const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
-    if (!perplexityApiKey) {
-      throw new Error('Perplexity API key not configured');
-    }
-
-    // Search for properties using Perplexity
-    const perplexityResponse = await fetch('https://api.perplexity.ai/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${perplexityApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'llama-3.1-sonar-small-128k-online',
-        messages: [
-          {
-            role: 'system',
-            content: `Você é um assistente especializado em encontrar imóveis no Brasil. 
-            Responda APENAS com URLs válidas de imóveis dos sites: OLX, ZAP Imóveis, Viva Real, QuintoAndar, ou outros portais imobiliários brasileiros.
-            Forneça no máximo 5 URLs, uma por linha, sem texto adicional.
-            URLs devem ser links diretos para anúncios específicos de imóveis.`
-          },
-          {
-            role: 'user',
-            content: `Encontre URLs de imóveis para: ${searchPrompt}`
-          }
-        ],
-        temperature: 0.2,
-        max_tokens: 1000
-      }),
-    });
-
-    if (!perplexityResponse.ok) {
-      throw new Error(`Perplexity API error: ${perplexityResponse.status}`);
-    }
-
-    const perplexityData = await perplexityResponse.json();
-    console.log('Perplexity response:', perplexityData);
-
-    // Extract URLs from the response
-    const content = perplexityData.choices?.[0]?.message?.content || '';
-    const urls = content
-      .split('\n')
-      .map((line: string) => line.trim())
-      .filter((line: string) => line.startsWith('http'))
-      .slice(0, 5); // Limit to 5 URLs
-
-    console.log('Extracted URLs:', urls);
-
-    if (urls.length === 0) {
-      // Fallback to test URLs if no valid URLs found
-      console.log('No valid URLs found, using fallback URLs');
-      const fallbackUrls = [
-        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-3-quartos-santo-agostinho-123",
-        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-2-quartos-centro-456"
-      ];
-      
-      const response = {
-        success: true,
-        urls: fallbackUrls,
-        searchQuery: searchPrompt,
-        userPreferences: {
-          regiaoReferencia: userPrefs.regiaoReferencia,
-          faixaPreco: userPrefs.faixaPreco,
-          criteriosAtivos: userPrefs.criteriosAtivos.map(c => c.criterio_nome)
-        }
-      };
-
-      return new Response(JSON.stringify(response), {
-        status: 200,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
+    // For debugging, return test data first
     const response = {
       success: true,
-      urls: urls,
-      searchQuery: searchPrompt,
+      urls: [
+        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-3-quartos-santo-agostinho-123",
+        "https://www.olx.com.br/imoveis/aluguel/estado-mg/belo-horizonte/apartamento-2-quartos-centro-456"
+      ],
+      searchQuery: "Test query",
       userPreferences: {
-        regiaoReferencia: userPrefs.regiaoReferencia,
-        faixaPreco: userPrefs.faixaPreco,
-        criteriosAtivos: userPrefs.criteriosAtivos.map(c => c.criterio_nome)
+        regiaoReferencia: "Test region",
+        faixaPreco: "Test price",
+        criteriosAtivos: ["test"]
       }
     };
 
-    console.log('Final response:', response);
+    console.log('Returning test response:', response);
 
     return new Response(JSON.stringify(response), {
       status: 200,
