@@ -21,41 +21,47 @@ serve(async (req) => {
   }
 
   try {
-    const { searchQuery } = await req.json();
+    console.log('=== SEARCH PROPERTIES DEBUG START ===');
+    const body = await req.json();
+    console.log('Request body:', body);
+    const { searchQuery } = body;
     
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      throw new Error('Authorization header missing');
-    }
-
+    console.log('Configurando Supabase client...');
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const perplexityApiKey = Deno.env.get('PERPLEXITY_API_KEY');
 
     if (!perplexityApiKey) {
+      console.error('Perplexity API key not configured');
       throw new Error('Perplexity API key not configured');
     }
 
+    console.log('Criando cliente Supabase...');
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
     
-    // Verificar autenticação
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    // Buscar preferências do usuário (usando user_id diretamente ou um valor padrão)
+    const authHeader = req.headers.get('Authorization');
+    let userPreferences: UserPreferences = {};
     
-    if (authError || !user) {
-      throw new Error('User not authenticated');
+    if (authHeader) {
+      try {
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+        
+        if (user && !authError) {
+          console.log('Usuário autenticado:', user.id);
+          const { data: perfil } = await supabase
+            .from('user_profiles')
+            .select('regiao_referencia, faixa_preco, valor_principal, objetivo_principal, situacao_moradia')
+            .eq('user_id', user.id)
+            .single();
+          
+          userPreferences = perfil || {};
+        }
+      } catch (error) {
+        console.log('Erro na autenticação, usando preferências padrão:', error);
+      }
     }
-
-    console.log('Usuário autenticado:', user.id);
-
-    // Buscar preferências do usuário
-    const { data: perfil } = await supabase
-      .from('user_profiles')
-      .select('regiao_referencia, faixa_preco, valor_principal, objetivo_principal, situacao_moradia')
-      .eq('user_id', user.id)
-      .single();
-
-    const userPreferences: UserPreferences = perfil || {};
     console.log('Preferências do usuário:', userPreferences);
 
     // Construir query personalizada para Perplexity
