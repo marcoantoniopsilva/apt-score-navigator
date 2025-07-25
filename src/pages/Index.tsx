@@ -186,6 +186,13 @@ const Index = () => {
         <div className="mb-6">
           <SubscriptionStatus />
         </div>
+
+        {/* Busca Manual - movido para o topo após o card de plano */}
+        {hasCompletedOnboarding && (
+          <div className="mb-8">
+            <ManualPropertySearch onAddProperty={handleAddProperty} />
+          </div>
+        )}
         
         <PropertyControls
           weights={criteriaWeights}
@@ -226,12 +233,6 @@ const Index = () => {
           comparisonMode={comparisonMode}
         />
 
-        {/* Seção de Sugestões - aparece sempre que o usuário fez onboarding */}
-        {hasCompletedOnboarding && (
-          <div className="mt-8">
-            <ManualPropertySearch onAddProperty={handleAddProperty} />
-          </div>
-        )}
 
         <MobileWeightsEditor
           weights={criteriaWeights}
