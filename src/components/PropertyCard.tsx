@@ -3,6 +3,9 @@ import React, { useState } from 'react';
 import { Property, CriteriaWeights } from '@/types/property';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { ChevronDown, ChevronUp } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { calculateFinalScore } from '@/utils/scoreCalculator';
 import { PropertyHeader } from '@/components/PropertyHeader';
 import { PropertyBasicInfo } from '@/components/PropertyBasicInfo';
@@ -34,6 +37,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedProperty, setEditedProperty] = useState(property);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   console.log('PropertyCard: isEditing =', isEditing);
   console.log(`PropertyCard ${property.id}: showComparisonCheckbox =`, showComparisonCheckbox);
@@ -112,16 +116,17 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         </div>
       )}
 
-      {/* Imagem da propriedade */}
+      {/* Imagem da propriedade - sempre visível */}
       {property.images && property.images.length > 0 && (
         <div className="mb-4 rounded-lg overflow-hidden">
           <PropertyImage 
             property={property} 
-            className="w-full h-48 sm:h-56 object-cover"
+            className={`w-full object-cover transition-all duration-300 ${isExpanded ? 'h-48 sm:h-56' : 'h-32 sm:h-40'}`}
           />
         </div>
       )}
 
+      {/* Header - sempre visível */}
       <PropertyHeader
         property={property}
         rank={rank}
@@ -130,37 +135,79 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
         onDelete={onDelete}
       />
 
+      {/* Informações básicas - sempre visível */}
       <PropertyBasicInfo property={property} />
 
-      <PropertyCosts property={property} />
-
-      <PropertyScores
-        property={property}
-        editedProperty={editedProperty}
-        weights={weights}
-        isEditing={isEditing}
-        onScoreChange={handleScoreChange}
-        onSave={handleSave}
-        onCancel={handleCancel}
-      />
-
-      <PropertyLocationSummary
-        property={property}
-        onSummaryUpdate={handleLocationSummaryUpdate}
-      />
-
-      {property.sourceUrl && (
-        <div className="mt-4 pt-4 border-t">
-          <a 
-            href={property.sourceUrl} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-700 text-sm underline break-all"
-          >
-            Ver anúncio original →
-          </a>
+      {/* Custo total resumido - sempre visível */}
+      <div className="mb-4 p-3 bg-muted rounded-lg">
+        <div className="flex justify-between items-center">
+          <span className="text-sm text-muted-foreground">Custo Total</span>
+          <span className="text-lg font-semibold text-primary">
+            R$ {property.totalMonthlyCost.toLocaleString('pt-BR')}
+          </span>
         </div>
-      )}
+        <div className="text-sm text-muted-foreground mt-1">
+          Pontuação: {property.finalScore.toFixed(1)}/10
+        </div>
+      </div>
+
+      {/* Botão de expandir/colapsar */}
+      <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>
+        <CollapsibleTrigger asChild>
+          <Button 
+            variant="ghost" 
+            className="w-full mb-4 flex items-center justify-center gap-2 hover:bg-muted"
+          >
+            {isExpanded ? (
+              <>
+                <ChevronUp className="h-4 w-4" />
+                Mostrar menos detalhes
+              </>
+            ) : (
+              <>
+                <ChevronDown className="h-4 w-4" />
+                Mostrar mais detalhes
+              </>
+            )}
+          </Button>
+        </CollapsibleTrigger>
+
+        <CollapsibleContent className="space-y-4">
+          {/* Detalhes dos custos */}
+          <PropertyCosts property={property} />
+
+          {/* Pontuações detalhadas */}
+          <PropertyScores
+            property={property}
+            editedProperty={editedProperty}
+            weights={weights}
+            isEditing={isEditing}
+            onScoreChange={handleScoreChange}
+            onSave={handleSave}
+            onCancel={handleCancel}
+          />
+
+          {/* Resumo da localização */}
+          <PropertyLocationSummary
+            property={property}
+            onSummaryUpdate={handleLocationSummaryUpdate}
+          />
+
+          {/* Link do anúncio original */}
+          {property.sourceUrl && (
+            <div className="pt-4 border-t">
+              <a 
+                href={property.sourceUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-blue-600 hover:text-blue-700 text-sm underline break-all"
+              >
+                Ver anúncio original →
+              </a>
+            </div>
+          )}
+        </CollapsibleContent>
+      </Collapsible>
     </Card>
   );
 };
