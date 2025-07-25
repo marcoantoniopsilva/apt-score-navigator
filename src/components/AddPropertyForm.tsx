@@ -88,7 +88,8 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
       activeCriteria.forEach(criterio => {
         const scoreValue = data.scores[criterio.key];
         console.log(`AddPropertyForm: Mapeando ${criterio.key} -> ${scoreValue}`);
-        newScores[criterio.key] = scoreValue || 5;
+        // Usar a sugestão da IA se disponível, senão usar 5 como padrão
+        newScores[criterio.key] = typeof scoreValue === 'number' ? scoreValue : 5;
       });
       console.log('AddPropertyForm: Scores finais a serem aplicados:', newScores);
       setScores(newScores);

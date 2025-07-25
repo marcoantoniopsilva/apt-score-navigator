@@ -35,7 +35,7 @@ export const PropertyScoresForm: React.FC<PropertyScoresFormProps> = ({
       <h3 className="text-lg font-semibold mb-4">
         Avaliação por Critérios (0-10)
         <span className="block text-sm font-normal text-muted-foreground mt-1">
-          Baseado no seu perfil. Sugestões geradas pela IA estão marcadas em azul.
+          Baseado no seu perfil. Sugestões da IA já foram aplicadas automaticamente.
         </span>
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -104,8 +104,8 @@ export const PropertyScoresForm: React.FC<PropertyScoresFormProps> = ({
       {Object.keys(suggestedScores).length > 0 && (
         <div className="mt-4 p-4 bg-blue-50 rounded-lg">
           <p className="text-sm text-blue-800">
-            <strong>💡 Dica:</strong> As sugestões foram geradas com base na análise do anúncio e no seu perfil. 
-            Você pode aceitar as sugestões clicando em "Usar sugestão" ou ajustar manualmente conforme seu gosto.
+            <strong>💡 Dica:</strong> As sugestões da IA foram aplicadas automaticamente com base na análise do anúncio e no seu perfil. 
+            Você pode ajustar as notas manualmente conforme seu gosto.
           </p>
         </div>
       )}
