@@ -35,21 +35,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       (event, session) => {
         if (!mounted) return;
         
-        console.log('Auth state changed:', event, session?.user?.email);
+        console.log('Auth state changed:', event, session?.user?.email, 'loading:', loading);
         
-        if (event === 'SIGNED_OUT' || event === 'TOKEN_REFRESHED') {
-          setSession(session);
-          setUser(session?.user ?? null);
-        } else if (event === 'SIGNED_IN') {
-          setSession(session);
-          setUser(session?.user ?? null);
-        } else {
-          // For other events, just update the state
-          setSession(session);
-          setUser(session?.user ?? null);
-        }
-        
+        setSession(session);
+        setUser(session?.user ?? null);
         setLoading(false);
+        
+        console.log('Auth state updated - user:', session?.user?.email, 'loading set to false');
       }
     );
 
