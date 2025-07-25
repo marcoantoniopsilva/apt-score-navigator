@@ -278,14 +278,15 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
       };
 
       if (onAddProperty) {
+        // Em vez de salvar diretamente, passa os dados para abrir o formulário
         onAddProperty(formattedProperty);
       }
 
       setUrlInput('');
       
       toast({
-        title: "Imóvel extraído com sucesso",
-        description: evaluationData?.explanation || "Dados do imóvel foram extraídos e adicionados à comparação",
+        title: "Dados extraídos com sucesso",
+        description: "O formulário foi aberto para você revisar e editar os dados antes de salvar",
         duration: 5000
       });
 

@@ -13,11 +13,12 @@ import { useCriteria } from '@/hooks/useCriteria';
 interface AddPropertyFormProps {
   onSubmit: (property: Property) => void;
   onCancel: () => void;
+  extractedData?: any;
 }
 
-export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCancel }) => {
+export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCancel, extractedData }) => {
   const [url, setUrl] = useState('');
-  const [extractedData, setExtractedData] = useState<any>(null);
+  const [urlExtractedData, setUrlExtractedData] = useState<any>(null);
   const { activeCriteria, getCriteriaLabel } = useCriteria();
   const [suggestedScores, setSuggestedScores] = useState<Record<string, number>>({});
   
@@ -50,9 +51,17 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
     }
   }, [activeCriteria]);
 
+  // Preencher formulário com dados extraídos se fornecidos
+  useEffect(() => {
+    if (extractedData) {
+      console.log('AddPropertyForm: Preenchendo formulário com dados extraídos:', extractedData);
+      handleDataExtracted(extractedData);
+    }
+  }, [extractedData]);
+
   const handleDataExtracted = (data: any) => {
     console.log('AddPropertyForm: Dados extraídos recebidos para preenchimento:', data);
-    setExtractedData(data);
+    setUrlExtractedData(data);
     
     // Preencher APENAS os campos do formulário, SEM SALVAR no banco
     setFormData({
@@ -149,7 +158,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
       fireInsurance: Number(formData.fireInsurance),
       otherFees: Number(formData.otherFees),
       totalMonthlyCost: Number(formData.rent) + Number(formData.condo) + Number(formData.iptu) + Number(formData.fireInsurance) + Number(formData.otherFees),
-      images: extractedData?.images || [],
+      images: (extractedData || urlExtractedData)?.images || [],
       sourceUrl: url || undefined,
       scores: validatedScores,
       finalScore: 0

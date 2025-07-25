@@ -30,6 +30,7 @@ import { toast } from 'sonner';
 const Index = () => {
   const [comparisonMode, setComparisonMode] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [extractedPropertyData, setExtractedPropertyData] = useState<any>(null);
   
   const { properties, setProperties, isLoading, loadProperties } = usePropertyLoader();
   const { sortBy, sortOrder, setSortBy, setSortOrder } = usePropertySorting();
@@ -117,6 +118,13 @@ const Index = () => {
     handleDeleteProperty
   } = usePropertyActions(properties, setProperties, criteriaWeights, loadProperties);
 
+  // Função para lidar com dados extraídos do ManualPropertySearch
+  const handleExtractedProperty = (propertyData: any) => {
+    console.log('Index: Dados extraídos recebidos:', propertyData);
+    setExtractedPropertyData(propertyData);
+    setShowAddForm(true);
+  };
+
   const {
     selectedProperties,
     isComparisonOpen,
@@ -190,7 +198,7 @@ const Index = () => {
         {/* Busca Manual - movido para o topo após o card de plano */}
         {hasCompletedOnboarding && (
           <div className="mb-8">
-            <ManualPropertySearch onAddProperty={handleAddProperty} />
+            <ManualPropertySearch onAddProperty={handleExtractedProperty} />
           </div>
         )}
         
@@ -254,7 +262,11 @@ const Index = () => {
       {showAddForm && (
         <AddPropertyForm 
           onSubmit={handleAddProperty}
-          onCancel={() => setShowAddForm(false)}
+          onCancel={() => {
+            setShowAddForm(false);
+            setExtractedPropertyData(null);
+          }}
+          extractedData={extractedPropertyData}
         />
       )}
 
