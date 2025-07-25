@@ -168,7 +168,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
       otherFees: Number(formData.otherFees),
       totalMonthlyCost: Number(formData.rent) + Number(formData.condo) + Number(formData.iptu) + Number(formData.fireInsurance) + Number(formData.otherFees),
       images: (extractedData || urlExtractedData)?.images || [],
-      sourceUrl: (extractedData || urlExtractedData)?.sourceUrl || url || undefined,
+      sourceUrl: url || undefined,
       scores: validatedScores,
       finalScore: 0
     };
