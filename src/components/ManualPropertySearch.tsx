@@ -24,6 +24,80 @@ interface ExternalPortal {
   description: string;
 }
 
+// Função para processar a região e extrair estado, município e bairro
+const parseRegion = (region: string) => {
+  const normalize = (text: string) => text.toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9\-]/g, '');
+
+  // Mapear estados para URLs
+  const estadoMap: Record<string, string> = {
+    'mg': 'minas-gerais',
+    'sp': 'sao-paulo',
+    'rj': 'rio-de-janeiro',
+    'rs': 'rio-grande-do-sul',
+    'pr': 'parana',
+    'sc': 'santa-catarina',
+    'go': 'goias',
+    'mt': 'mato-grosso',
+    'ms': 'mato-grosso-do-sul',
+    'df': 'distrito-federal',
+    'es': 'espirito-santo',
+    'ba': 'bahia',
+    'pe': 'pernambuco',
+    'ce': 'ceara',
+    'pb': 'paraiba',
+    'rn': 'rio-grande-do-norte',
+    'al': 'alagoas',
+    'se': 'sergipe',
+    'pi': 'piaui',
+    'ma': 'maranhao',
+    'to': 'tocantins',
+    'pa': 'para',
+    'ap': 'amapa',
+    'am': 'amazonas',
+    'rr': 'roraima',
+    'ac': 'acre',
+    'ro': 'rondonia'
+  };
+
+  // Separar por vírgulas e limpar espaços
+  const parts = region.split(',').map(part => part.trim());
+  
+  let bairro = '';
+  let municipio = 'belo-horizonte';
+  let estado = 'minas-gerais';
+
+  if (parts.length === 1) {
+    // Apenas uma parte - pode ser bairro, município ou estado
+    const part = normalize(parts[0]);
+    if (estadoMap[parts[0].toLowerCase()]) {
+      estado = estadoMap[parts[0].toLowerCase()];
+    } else {
+      // Assumir que é bairro se não for estado conhecido
+      bairro = part;
+    }
+  } else if (parts.length === 2) {
+    // Duas partes - município, estado OU bairro, município
+    const [first, second] = parts;
+    if (estadoMap[second.toLowerCase()]) {
+      municipio = normalize(first);
+      estado = estadoMap[second.toLowerCase()];
+    } else {
+      bairro = normalize(first);
+      municipio = normalize(second);
+    }
+  } else if (parts.length >= 3) {
+    // Três ou mais partes - bairro, município, estado
+    bairro = normalize(parts[0]);
+    municipio = normalize(parts[1]);
+    const estadoKey = parts[2].toLowerCase();
+    estado = estadoMap[estadoKey] || normalize(parts[2]);
+  }
+
+  return { estado, municipio, bairro };
+};
+
 export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProps) => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [urlInput, setUrlInput] = useState('');
@@ -101,13 +175,16 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
       description: 'Portal líder em anúncios imobiliários',
       searchParams: (profile) => {
         const intent = profile?.intencao === 'alugar' ? 'aluguel' : 'venda';
-        const region = profile?.regiao_referencia || 'santo-agostinho';
+        const region = profile?.regiao_referencia || 'santo-agostinho, belo-horizonte, mg';
         
-        const normalizedRegion = region.toLowerCase()
-          .replace(/\s+/g, '-')
-          .replace(/[^a-z0-9\-]/g, '');
+        // Processar região para extrair bairro, município e estado
+        const { estado, municipio, bairro } = parseRegion(region);
         
-        return `/${intent}/minas-gerais/belo-horizonte/bairros/${normalizedRegion}/`;
+        if (bairro) {
+          return `/${intent}/${estado}/${municipio}/bairros/${bairro}/`;
+        } else {
+          return `/${intent}/${estado}/${municipio}/`;
+        }
       }
     },
     {
