@@ -33,47 +33,105 @@ export function validatePropertyAgainstPreferences(
   console.log('Property data:', JSON.stringify(propertyData, null, 2));
   console.log('User preferences:', JSON.stringify(userPreferences, null, 2));
 
-  // 1. Validação de Localização
+  // 1. Validação RIGOROSA de Localização
   if (userPreferences.regiaoReferencia) {
     const referenciaLower = userPreferences.regiaoReferencia.toLowerCase();
     const addressLower = propertyData.address.toLowerCase();
     
-    // Extrair cidade de referência
+    console.log('=== VALIDAÇÃO DE LOCALIZAÇÃO ===');
+    console.log('Referência do usuário:', userPreferences.regiaoReferencia);
+    console.log('Endereço da propriedade:', propertyData.address);
+    
+    // Extrair cidade e estado de referência
     let cidadeReferencia = '';
+    let estadoReferencia = '';
+    
     if (referenciaLower.includes('belo horizonte')) {
       cidadeReferencia = 'belo horizonte';
+      estadoReferencia = 'mg';
     } else if (referenciaLower.includes('rio de janeiro')) {
       cidadeReferencia = 'rio de janeiro';
+      estadoReferencia = 'rj';
     } else if (referenciaLower.includes('são paulo')) {
       cidadeReferencia = 'são paulo';
+      estadoReferencia = 'sp';
     }
     
-    // Verificar cidades completamente incorretas (fora da região)
-    const cidadesProibidas = ['juiz de fora', 'poços de caldas', 'contagem', 'betim', 'nova lima'];
-    const cidadeEncontrada = cidadesProibidas.find(cidade => addressLower.includes(cidade));
+    // Lista de cidades proibidas para Belo Horizonte
+    const cidadesProibidasBH = [
+      'juiz de fora', 'poços de caldas', 'contagem', 'betim', 'nova lima', 'sabará',
+      'lagoa santa', 'pedro leopoldo', 'ribeirão das neves', 'vespasiano',
+      'rio de janeiro', 'são paulo', 'salvador', 'brasília', 'fortaleza',
+      'recife', 'porto alegre', 'curitiba', 'goiânia', 'campinas',
+      'uberlândia', 'montes claros', 'ipatinga', 'sete lagoas'
+    ];
     
-    if (cidadeEncontrada) {
-      violations.push(`Localização incorreta: imóvel em ${cidadeEncontrada}, mas preferência é ${userPreferences.regiaoReferencia}`);
-      score -= 60; // Penalidade severa por cidade completamente errada
+    // Lista de estados proibidos para Minas Gerais
+    const estadosProibidos = ['rj', 'sp', 'ba', 'pr', 'rs', 'sc', 'go', 'df', 'es', 'pe', 'ce'];
+    
+    // Verificar se está em estado diferente
+    let estadoEncontrado = '';
+    for (const estado of estadosProibidos) {
+      if (addressLower.includes(`, ${estado}`) || addressLower.includes(`- ${estado}`) || 
+          addressLower.endsWith(` ${estado}`) || addressLower.includes(` ${estado} `)) {
+        estadoEncontrado = estado.toUpperCase();
+        break;
+      }
+    }
+    
+    if (estadoEncontrado && estadoReferencia === 'mg') {
+      violations.push(`Estado incorreto: imóvel em ${estadoEncontrado}, mas preferência é em Minas Gerais`);
+      score -= 80; // Penalidade máxima por estado errado
+      console.log('❌ REJEITADO: Estado incorreto');
+    }
+    
+    // Verificar cidades específicas proibidas
+    const cidadeEncontrada = cidadesProibidasBH.find(cidade => addressLower.includes(cidade));
+    
+    if (cidadeEncontrada && cidadeReferencia === 'belo horizonte') {
+      violations.push(`Município incorreto: imóvel em ${cidadeEncontrada}, mas preferência é Belo Horizonte`);
+      score -= 70; // Penalidade alta por município errado
+      console.log(`❌ REJEITADO: Município incorreto - ${cidadeEncontrada}`);
     } else if (cidadeReferencia && !addressLower.includes(cidadeReferencia)) {
-      // Se não tem a cidade de referência mas também não está nas cidades proibidas, penalidade menor
-      violations.push(`Cidade não confirmada no endereço: esperado ${cidadeReferencia}`);
-      score -= 20; // Penalidade menor quando a cidade não é confirmada
+      // Se não tem a cidade de referência, verificar se pelo menos tem indicadores da região
+      const indicadoresBH = ['bh', 'b.h.', 'minas gerais', 'mg'];
+      const temIndicadorBH = indicadoresBH.some(ind => addressLower.includes(ind));
+      
+      if (!temIndicadorBH) {
+        violations.push(`Região não confirmada: esperado ${cidadeReferencia}, endereço não indica Belo Horizonte/MG`);
+        score -= 40;
+        console.log('❌ REJEITADO: Região não confirmada');
+      }
     }
     
-    // Verificação de bairro mais flexível
-    if (referenciaLower.includes('santo agostinho')) {
-      if (!addressLower.includes('santo agostinho')) {
-        // Verificar se está em Belo Horizonte pelo menos
-        if (addressLower.includes('belo horizonte') || addressLower.includes('bh')) {
-          violations.push(`Bairro não confirmado: preferência é Santo Agostinho`);
-          score -= 15; // Penalidade menor se está em BH mas bairro não confirmado
+    // Verificação específica de bairro (mais flexível)
+    if (referenciaLower.includes('santa efigênia') || referenciaLower.includes('santa efigenia')) {
+      if (!addressLower.includes('santa efigênia') && !addressLower.includes('santa efigenia')) {
+        if (addressLower.includes('belo horizonte') || addressLower.includes('bh') || addressLower.includes('mg')) {
+          violations.push(`Bairro não confirmado: preferência é Santa Efigênia`);
+          score -= 15; // Penalidade menor se está em BH mas bairro diferente
+          console.log('⚠️ AVISO: Bairro não confirmado');
         } else {
-          violations.push(`Bairro incorreto: preferência é Santo Agostinho, mas imóvel parece estar em outro local`);
-          score -= 25; // Penalidade maior se nem a cidade está clara
+          violations.push(`Bairro e cidade incorretos: preferência é Santa Efigênia, Belo Horizonte`);
+          score -= 50;
+          console.log('❌ REJEITADO: Bairro e cidade incorretos');
+        }
+      }
+    } else if (referenciaLower.includes('santo agostinho')) {
+      if (!addressLower.includes('santo agostinho')) {
+        if (addressLower.includes('belo horizonte') || addressLower.includes('bh') || addressLower.includes('mg')) {
+          violations.push(`Bairro não confirmado: preferência é Santo Agostinho`);
+          score -= 15;
+          console.log('⚠️ AVISO: Bairro não confirmado');
+        } else {
+          violations.push(`Bairro e cidade incorretos: preferência é Santo Agostinho, Belo Horizonte`);
+          score -= 50;
+          console.log('❌ REJEITADO: Bairro e cidade incorretos');
         }
       }
     }
+    
+    console.log('Score após validação de localização:', score);
   }
 
   // 2. Validação de Preço - Aplicada apenas durante comparação, não busca inicial
@@ -175,14 +233,19 @@ export function validatePropertyAgainstPreferences(
   // Validação ajustada: mais flexível para busca inicial, mais rigorosa para comparação
   const isComparison = sourceUrl.includes('comparison');
   const hasCriticalViolations = violations.some(v => 
-    v.includes('Localização incorreta:') || 
+    v.includes('Estado incorreto:') ||
+    v.includes('Município incorreto:') ||
+    v.includes('Região não confirmada:') ||
+    v.includes('Bairro e cidade incorretos:') ||
     v.includes('Valor do aluguel inválido') ||
     v.includes('Valor do imóvel inválido') ||
+    v.includes('Valor muito alto para aluguel:') ||
+    v.includes('Valor muito baixo para compra:') ||
     (isComparison && v.includes('Preço fora da faixa preferida:'))
   );
   
-  // Critérios mais flexíveis para busca inicial (score >= 20%), mais rigorosos para comparação (>= 40%)
-  const minimumScore = isComparison ? 40 : 20;
+  // Critérios mais rigorosos: qualquer violação crítica de localização rejeita automaticamente
+  const minimumScore = isComparison ? 50 : 30; // Aumentado para ser mais rigoroso
   const isValid = score >= minimumScore && !hasCriticalViolations;
   
   console.log('=== RESULTADO DA VALIDAÇÃO ===');
