@@ -176,7 +176,26 @@ FORMATO DA RESPOSTA (apenas JSON):
     // Parse do JSON da resposta
     let aiResult;
     try {
-      aiResult = JSON.parse(content);
+      // Limpar a resposta removendo markdown code blocks se existirem
+      let cleanContent = content.trim();
+      
+      // Se a resposta contém ```json, extrair apenas o conteúdo JSON
+      const jsonMatch = cleanContent.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+      if (jsonMatch) {
+        cleanContent = jsonMatch[1].trim();
+      }
+      
+      // Se ainda começa e termina com backticks, remover
+      if (cleanContent.startsWith('```') && cleanContent.endsWith('```')) {
+        cleanContent = cleanContent.slice(3, -3).trim();
+        if (cleanContent.startsWith('json')) {
+          cleanContent = cleanContent.slice(4).trim();
+        }
+      }
+      
+      console.log('Conteúdo limpo para parse:', cleanContent);
+      
+      aiResult = JSON.parse(cleanContent);
     } catch (parseError) {
       console.error('Erro ao fazer parse da resposta da IA:', parseError);
       // Fallback com scores padrão
