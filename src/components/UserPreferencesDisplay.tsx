@@ -18,15 +18,25 @@ const getIntencaoLabel = (intencao: string) => {
   }
 };
 
-const getObjetivoLabel = (objetivo: string) => {
-  switch (objetivo) {
-    case 'morar_conforto': return 'Morar com conforto';
-    case 'investir': return 'Investir para valorizar';
-    case 'alugar_depois': return 'Comprar para alugar';
-    case 'primeiro_imovel': return 'Primeiro imóvel';
-    case 'tranquilidade': return 'Quero mais tranquilidade';
-    default: return objetivo;
+const getObjetivoLabel = (objetivo: string | string[]) => {
+  const getLabel = (obj: string) => {
+    switch (obj) {
+      case 'morar_conforto': return 'Morar com conforto';
+      case 'investir': return 'Investir para valorizar';
+      case 'alugar_depois': return 'Comprar para alugar';
+      case 'primeiro_imovel': return 'Primeiro imóvel';
+      case 'tranquilidade': return 'Quero mais tranquilidade';
+      case 'bastante_espaco': return 'Bastante espaço';
+      case 'morar_perto_trabalho': return 'Morar perto do trabalho';
+      case 'ficar_perto_familia': return 'Ficar perto da família';
+      default: return obj;
+    }
+  };
+  
+  if (Array.isArray(objetivo)) {
+    return objetivo.map(getLabel).join(', ');
   }
+  return getLabel(objetivo);
 };
 
 const getProfileTypeLabel = (profileType: string) => {
@@ -40,17 +50,44 @@ const getProfileTypeLabel = (profileType: string) => {
   }
 };
 
-const getValorPrincipalLabel = (valor: string) => {
-  switch (valor) {
-    case 'preco': return 'Preço';
-    case 'localizacao': return 'Localização';
-    case 'comodidade': return 'Comodidade';
-    case 'estilo': return 'Estilo';
-    case 'tamanho': return 'Tamanho';
-    case 'silencio': return 'Silêncio';
-    case 'seguranca': return 'Segurança';
-    default: return valor;
+const getValorPrincipalLabel = (valor: string | string[]) => {
+  const getLabel = (val: string) => {
+    switch (val) {
+      case 'preco': return 'Preço alto';
+      case 'localizacao': return 'Longe de tudo';
+      case 'comodidade': return 'Falta de comodidade';
+      case 'estilo': return 'Estilo / design ruim';
+      case 'tamanho': return 'Pouco espaço';
+      case 'silencio': return 'Muito barulho';
+      case 'seguranca': return 'Região perigosa';
+      default: return val;
+    }
+  };
+  
+  if (Array.isArray(valor)) {
+    return valor.map(getLabel).join(', ');
   }
+  return getLabel(valor);
+};
+
+const getSituacaoMoradiaLabel = (situacao: string | string[]) => {
+  const getLabel = (sit: string) => {
+    switch (sit) {
+      case 'sozinho': return 'Sozinho';
+      case 'com_parceiro': return 'Parceiro(a)';
+      case 'com_filhos': return 'Filhos';
+      case 'filhos_e_companheiro': return 'Filhos e companheiro(a)';
+      case 'com_familiares': return 'Familiares';
+      case 'amigos': return 'Amigos';
+      case 'nao_sei': return 'Ainda não sei';
+      default: return sit;
+    }
+  };
+  
+  if (Array.isArray(situacao)) {
+    return situacao.map(getLabel).join(', ');
+  }
+  return getLabel(situacao);
 };
 
 export const UserPreferencesDisplay: React.FC<UserPreferencesDisplayProps> = ({
@@ -77,52 +114,74 @@ export const UserPreferencesDisplay: React.FC<UserPreferencesDisplayProps> = ({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1">PERFIL</p>
-            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-              {getProfileTypeLabel(userProfile.profile_type)}
-            </Badge>
-          </div>
-          
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1">INTENÇÃO</p>
-            <p className="text-sm font-medium">
-              {getIntencaoLabel(userProfile.intencao)}
-            </p>
-          </div>
-          
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-1">PRIORIDADE</p>
-            <p className="text-sm font-medium">
-              {getValorPrincipalLabel(userProfile.valor_principal)}
-            </p>
-          </div>
-          
-          {userProfile.faixa_preco && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-4">
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1">ORÇAMENTO</p>
-              <div className="flex items-center gap-1">
-                <DollarSign className="h-3 w-3 text-green-600" />
-                <span className="text-sm font-medium">
-                  {userProfile.faixa_preco}
-                </span>
-              </div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">PERFIL</p>
+              <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                {getProfileTypeLabel(userProfile.profile_type)}
+              </Badge>
             </div>
-          )}
-          
-          {userProfile.regiao_referencia && (
+            
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-1">REGIÃO</p>
-              <div className="flex items-center gap-1">
-                <MapPin className="h-3 w-3 text-blue-600" />
-                <span className="text-sm font-medium">
-                  {userProfile.regiao_referencia}
-                </span>
-              </div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">INTENÇÃO</p>
+              <p className="text-sm font-medium">
+                {getIntencaoLabel(userProfile.intencao)}
+              </p>
             </div>
-          )}
+
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">OBJETIVOS</p>
+              <p className="text-sm font-medium">
+                {getObjetivoLabel(userProfile.objetivo_principal_multi || userProfile.objetivo_principal)}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">SITUAÇÃO DE MORADIA</p>
+              <p className="text-sm font-medium">
+                {getSituacaoMoradiaLabel(userProfile.situacao_moradia_multi || userProfile.situacao_moradia)}
+              </p>
+            </div>
+            
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-1">O QUE INCOMODA</p>
+              <p className="text-sm font-medium">
+                {getValorPrincipalLabel(userProfile.valor_principal_multi || userProfile.valor_principal)}
+              </p>
+            </div>
+          </div>
         </div>
+        
+        {(userProfile.faixa_preco || userProfile.regiao_referencia) && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-primary/10">
+            {userProfile.faixa_preco && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1">ORÇAMENTO</p>
+                <div className="flex items-center gap-1">
+                  <DollarSign className="h-3 w-3 text-green-600" />
+                  <span className="text-sm font-medium">
+                    {userProfile.faixa_preco}
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            {userProfile.regiao_referencia && (
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-1">REGIÃO</p>
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-3 w-3 text-blue-600" />
+                  <span className="text-sm font-medium">
+                    {userProfile.regiao_referencia}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

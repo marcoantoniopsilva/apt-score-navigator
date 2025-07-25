@@ -6,9 +6,9 @@ export class UserProfileService {
     userId: string,
     profileType: UserProfileType,
     intencao: string,
-    objetivoPrincipal: string,
-    situacaoMoradia: string,
-    valorPrincipal: string,
+    objetivoPrincipal: string | string[],
+    situacaoMoradia: string | string[],
+    valorPrincipal: string | string[],
     faixaPreco?: string,
     regiaoReferencia?: string
   ): Promise<{ success: boolean; error?: string }> {
@@ -27,9 +27,12 @@ export class UserProfileService {
           .update({
             profile_type: profileType,
             intencao,
-            objetivo_principal: objetivoPrincipal,
-            situacao_moradia: situacaoMoradia,
-            valor_principal: valorPrincipal,
+            objetivo_principal: Array.isArray(objetivoPrincipal) ? objetivoPrincipal[0] : objetivoPrincipal,
+            situacao_moradia: Array.isArray(situacaoMoradia) ? situacaoMoradia[0] : situacaoMoradia,
+            valor_principal: Array.isArray(valorPrincipal) ? valorPrincipal[0] : valorPrincipal,
+            objetivo_principal_multi: Array.isArray(objetivoPrincipal) ? objetivoPrincipal : [objetivoPrincipal],
+            situacao_moradia_multi: Array.isArray(situacaoMoradia) ? situacaoMoradia : [situacaoMoradia],
+            valor_principal_multi: Array.isArray(valorPrincipal) ? valorPrincipal : [valorPrincipal],
             faixa_preco: faixaPreco,
             regiao_referencia: regiaoReferencia
           })
@@ -44,9 +47,12 @@ export class UserProfileService {
             user_id: userId,
             profile_type: profileType,
             intencao,
-            objetivo_principal: objetivoPrincipal,
-            situacao_moradia: situacaoMoradia,
-            valor_principal: valorPrincipal,
+            objetivo_principal: Array.isArray(objetivoPrincipal) ? objetivoPrincipal[0] : objetivoPrincipal,
+            situacao_moradia: Array.isArray(situacaoMoradia) ? situacaoMoradia[0] : situacaoMoradia,
+            valor_principal: Array.isArray(valorPrincipal) ? valorPrincipal[0] : valorPrincipal,
+            objetivo_principal_multi: Array.isArray(objetivoPrincipal) ? objetivoPrincipal : [objetivoPrincipal],
+            situacao_moradia_multi: Array.isArray(situacaoMoradia) ? situacaoMoradia : [situacaoMoradia],
+            valor_principal_multi: Array.isArray(valorPrincipal) ? valorPrincipal : [valorPrincipal],
             faixa_preco: faixaPreco,
             regiao_referencia: regiaoReferencia
           });

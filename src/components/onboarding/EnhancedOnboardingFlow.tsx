@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { OnboardingIntro } from './OnboardingIntro';
-import { ProfileForm } from './ProfileForm';
+import { EnhancedProfileForm } from './EnhancedProfileForm';
 import { EnhancedCriteriaSelection } from './EnhancedCriteriaSelection';
 import { EnhancedWeightsEditor } from './EnhancedWeightsEditor';
 import { PreferencesForm } from './PreferencesForm';
@@ -175,7 +175,7 @@ export const EnhancedOnboardingFlow: React.FC<EnhancedOnboardingFlowProps> = ({
       
       case OnboardingStep.PROFILE:
         return (
-          <ProfileForm 
+          <EnhancedProfileForm 
             onComplete={handleAnswersComplete} 
             onBack={handleBack} 
           />

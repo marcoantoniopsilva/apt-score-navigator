@@ -29,25 +29,34 @@ const PROFILE_DESCRIPTIONS: Record<UserProfileType, string> = {
   aposentado_tranquilo: 'Valorizando tranquilidade e comodidade'
 };
 
-const ANSWER_LABELS = {
+const ANSWER_LABELS: Record<string, Record<string, string>> = {
   objetivo_principal: {
-    morar: 'Morar',
-    investir: 'Investir',
-    alugar_depois: 'Alugar depois'
+    'morar_conforto': 'Morar com conforto',
+    'investir': 'Investir para valorizar',
+    'alugar_depois': 'Comprar para alugar',
+    'primeiro_imovel': 'Primeiro imóvel',
+    'tranquilidade': 'Quero mais tranquilidade',
+    'bastante_espaco': 'Bastante espaço',
+    'morar_perto_trabalho': 'Morar perto do trabalho',
+    'ficar_perto_familia': 'Ficar perto da família'
   },
   situacao_moradia: {
-    sozinho: 'Sozinho(a)',
-    com_parceiro: 'Com parceiro(a)',
-    com_filhos: 'Com filhos',
-    outro: 'Outro'
+    'sozinho': 'Sozinho',
+    'com_parceiro': 'Parceiro(a)',
+    'com_filhos': 'Filhos',
+    'filhos_e_companheiro': 'Filhos e companheiro(a)',
+    'com_familiares': 'Familiares',
+    'amigos': 'Amigos',
+    'nao_sei': 'Ainda não sei'
   },
   valor_principal: {
-    preco: 'Preço',
-    localizacao: 'Localização',
-    comodidade: 'Comodidade',
-    estilo: 'Estilo / design',
-    tamanho: 'Tamanho',
-    silencio: 'Silêncio / vizinhança tranquila'
+    'preco': 'Preço alto',
+    'localizacao': 'Longe de tudo',
+    'comodidade': 'Falta de comodidade',
+    'estilo': 'Estilo / design ruim',
+    'tamanho': 'Pouco espaço',
+    'silencio': 'Muito barulho',
+    'seguranca': 'Região perigosa'
   }
 };
 
@@ -61,6 +70,13 @@ export const ProfileSummary: React.FC<ProfileSummaryProps> = ({
 }) => {
   const getCriteriaLabel = (criteriaId: string) => {
     return CRITERIOS_DISPONÍVEIS.find(c => c.id === criteriaId)?.label || criteriaId;
+  };
+
+  const getAnswerLabels = (key: keyof OnboardingAnswers, value: string | string[]) => {
+    if (Array.isArray(value)) {
+      return value.map(v => ANSWER_LABELS[key]?.[v] || v).join(', ');
+    }
+    return ANSWER_LABELS[key]?.[value] || value;
   };
 
   const sortedCriteria = criteria
@@ -96,19 +112,19 @@ export const ProfileSummary: React.FC<ProfileSummaryProps> = ({
             <div>
               <span className="font-medium">Objetivo:</span>
               <p className="text-muted-foreground">
-                {ANSWER_LABELS.objetivo_principal[answers.objetivo_principal]}
+                {getAnswerLabels('objetivo_principal', answers.objetivo_principal)}
               </p>
             </div>
             <div>
               <span className="font-medium">Situação:</span>
               <p className="text-muted-foreground">
-                {ANSWER_LABELS.situacao_moradia[answers.situacao_moradia]}
+                {getAnswerLabels('situacao_moradia', answers.situacao_moradia)}
               </p>
             </div>
             <div>
               <span className="font-medium">Mais valoriza:</span>
               <p className="text-muted-foreground">
-                {ANSWER_LABELS.valor_principal[answers.valor_principal]}
+                {getAnswerLabels('valor_principal', answers.valor_principal)}
               </p>
             </div>
           </div>

@@ -249,12 +249,15 @@ export type Database = {
           id: string
           intencao: string | null
           objetivo_principal: string
+          objetivo_principal_multi: string[] | null
           profile_type: string
           regiao_referencia: string | null
           situacao_moradia: string
+          situacao_moradia_multi: string[] | null
           updated_at: string
           user_id: string
           valor_principal: string
+          valor_principal_multi: string[] | null
         }
         Insert: {
           created_at?: string
@@ -262,12 +265,15 @@ export type Database = {
           id?: string
           intencao?: string | null
           objetivo_principal: string
+          objetivo_principal_multi?: string[] | null
           profile_type: string
           regiao_referencia?: string | null
           situacao_moradia: string
+          situacao_moradia_multi?: string[] | null
           updated_at?: string
           user_id: string
           valor_principal: string
+          valor_principal_multi?: string[] | null
         }
         Update: {
           created_at?: string
@@ -275,12 +281,15 @@ export type Database = {
           id?: string
           intencao?: string | null
           objetivo_principal?: string
+          objetivo_principal_multi?: string[] | null
           profile_type?: string
           regiao_referencia?: string | null
           situacao_moradia?: string
+          situacao_moradia_multi?: string[] | null
           updated_at?: string
           user_id?: string
           valor_principal?: string
+          valor_principal_multi?: string[] | null
         }
         Relationships: []
       }

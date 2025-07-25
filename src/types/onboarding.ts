@@ -1,8 +1,8 @@
 export interface OnboardingAnswers {
   intencao: 'alugar' | 'comprar';
-  objetivo_principal: 'morar_conforto' | 'investir' | 'alugar_depois' | 'primeiro_imovel' | 'tranquilidade';
-  situacao_moradia: 'sozinho' | 'com_parceiro' | 'com_filhos' | 'com_familiares' | 'nao_sei';
-  valor_principal: 'preco' | 'localizacao' | 'comodidade' | 'estilo' | 'tamanho' | 'silencio' | 'seguranca';
+  objetivo_principal: string | string[]; // Múltipla seleção (até 2)
+  situacao_moradia: string | string[]; // Múltipla seleção (até 2)
+  valor_principal: string | string[]; // Múltipla seleção
   faixa_preco: string;
   regiao_referencia: string;
 }
@@ -22,6 +22,9 @@ export interface UserProfile {
   objetivo_principal: string;
   situacao_moradia: string;
   valor_principal: string;
+  objetivo_principal_multi?: string[];
+  situacao_moradia_multi?: string[];
+  valor_principal_multi?: string[];
   faixa_preco?: string;
   regiao_referencia?: string;
   created_at?: string;

@@ -35,7 +35,7 @@ export async function getUserPreferences(userId: string, supabaseUrl: string, su
   // Buscar perfil do usuário
   const { data: perfil, error: perfilError } = await supabase
     .from('user_profiles')
-    .select('regiao_referencia, faixa_preco, valor_principal, intencao')
+    .select('regiao_referencia, faixa_preco, valor_principal, valor_principal_multi, intencao')
     .eq('user_id', userId)
     .single();
 
@@ -50,7 +50,7 @@ export async function getUserPreferences(userId: string, supabaseUrl: string, su
     criteriosAtivos: criterios || [],
     regiaoReferencia: perfil?.regiao_referencia,
     faixaPreco: perfil?.faixa_preco,
-    valorPrincipal: perfil?.valor_principal,
+    valorPrincipal: perfil?.valor_principal_multi?.[0] || perfil?.valor_principal,
     intencao: perfil?.intencao
   };
 }

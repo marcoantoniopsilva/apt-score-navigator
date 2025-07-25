@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { OnboardingAnswers, UserProfileType, PERFIL_PESOS_SUGERIDOS, CRITERIOS_DISPONÍVEIS } from '@/types/onboarding';
-import { ProfileQuestions } from './onboarding/ProfileQuestions';
+import { EnhancedProfileForm } from './onboarding/EnhancedProfileForm';
 import { CriteriaSelection } from './onboarding/CriteriaSelection';
 import { WeightsEditor } from './onboarding/WeightsEditor';
 import { ProfileSummary } from './onboarding/ProfileSummary';
@@ -120,7 +120,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, onCl
   const renderCurrentStep = () => {
     switch (currentStep) {
       case 1:
-        return <ProfileQuestions onComplete={handleAnswersComplete} />;
+        return <EnhancedProfileForm onComplete={handleAnswersComplete} onBack={() => {}} />;
       case 2:
         return (
           <CriteriaSelection 
