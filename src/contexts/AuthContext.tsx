@@ -29,6 +29,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     let mounted = true;
+    console.log('AuthContext useEffect iniciado');
 
     // Set up auth state listener first
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -46,15 +47,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // Then check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    console.log('Checking for existing session...');
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
       if (!mounted) return;
+      
+      console.log('getSession result:', { session: session?.user?.email, error });
       
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      console.log('Initial session loaded, loading set to false');
+    }).catch((error) => {
+      console.error('Error getting session:', error);
+      setLoading(false);
     });
 
     return () => {
+      console.log('AuthContext cleanup');
       mounted = false;
       subscription.unsubscribe();
     };
