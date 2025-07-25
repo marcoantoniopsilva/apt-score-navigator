@@ -110,8 +110,20 @@ export function validatePropertyAgainstPreferences(
     console.log(`Validação preço COMPARAÇÃO: total=${precoTotal}, faixa original=${minPreco}-${maxPreco}, tolerância=${minComTolerancia.toFixed(0)}-${maxComTolerancia.toFixed(0)}`);
   }
 
-  // 3. Validação de Valores Suspeitos baseada na intenção do usuário
-  const isRental = userPreferences.intencao !== 'comprar';
+  // 3. Validação de Intenção e Valores Suspeitos baseada na intenção do usuário
+  const isRental = userPreferences.intencao === 'alugar';
+  const isForSale = userPreferences.intencao === 'comprar';
+  
+  // Validação rigorosa da intenção - sempre aplicada
+  if (isRental && propertyData.rent > 50000) {
+    violations.push(`Valor muito alto para aluguel: R$ ${propertyData.rent} (provável imóvel à venda)`);
+    score -= 50; // Penalidade alta por confundir venda com aluguel
+  }
+  
+  if (isForSale && propertyData.rent < 50000) {
+    violations.push(`Valor muito baixo para compra: R$ ${propertyData.rent} (provável aluguel)`);
+    score -= 50; // Penalidade alta por confundir aluguel com venda
+  }
   
   if (isRental) {
     // Validação para aluguel

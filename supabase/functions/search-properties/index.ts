@@ -356,6 +356,7 @@ function getIntelligentFallback(searchQuery: string): string[] {
   console.log(`Gerando fallback inteligente para: ${searchQuery}`);
   
   // Extrair informações da query
+  const isSantaEfigenia = searchQuery.toLowerCase().includes('santa efigênia') || searchQuery.toLowerCase().includes('santa efigenia');
   const isSantoAgostinho = searchQuery.toLowerCase().includes('santo agostinho');
   const isSavassi = searchQuery.toLowerCase().includes('savassi');
   const isBeloHorizonte = searchQuery.toLowerCase().includes('belo horizonte');
@@ -363,7 +364,14 @@ function getIntelligentFallback(searchQuery: string): string[] {
   // URLs base por região e site
   const fallbackUrls: string[] = [];
   
-  if (isSantoAgostinho || searchQuery.includes('Santo Agostinho')) {
+  if (isSantaEfigenia) {
+    fallbackUrls.push(
+      "https://mg.olx.com.br/belo-horizonte-e-regiao/imoveis/aluguel/apartamentos?q=santa%20efigenia",
+      "https://www.zapimoveis.com.br/aluguel/apartamentos/mg+belo-horizonte+santa-efigenia/",
+      "https://www.vivareal.com.br/aluguel/mg/belo-horizonte/santa-efigenia/apartamento_residencial/",
+      "https://www.quintoandar.com.br/alugar/imovel/santa-efigenia-belo-horizonte-mg-brasil"
+    );
+  } else if (isSantoAgostinho || searchQuery.includes('Santo Agostinho')) {
     fallbackUrls.push(
       "https://mg.olx.com.br/belo-horizonte-e-regiao/imoveis/aluguel/apartamentos?q=santo%20agostinho",
       "https://www.zapimoveis.com.br/aluguel/apartamentos/mg+belo-horizonte+santo-agostinho/",

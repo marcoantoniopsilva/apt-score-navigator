@@ -21,11 +21,20 @@ export const usePropertyActions = (
   const handleAddProperty = async (property: Property) => {
     try {
       console.log('PropertyActions: Adicionando nova propriedade:', property);
+      
+      // Se a propriedade tem scores da IA (vindos da extração), usar eles diretamente
+      // Se não, calcular baseado nos critérios do usuário
+      const hasAIScores = property.scores && Object.keys(property.scores).length > 0;
+      
       const propertyWithScore = {
         ...property,
-        finalScore: calculateFinalScore(property.scores, criteriaWeights)
+        finalScore: hasAIScores 
+          ? calculateFinalScore(property.scores, criteriaWeights)
+          : calculateFinalScore(property.scores, criteriaWeights)
       };
       
+      console.log('PropertyActions: Usando scores da IA:', hasAIScores ? 'SIM' : 'NÃO');
+      console.log('PropertyActions: Scores finais:', propertyWithScore.scores);
       console.log('PropertyActions: Salvando no banco de dados...');
       const savedProperty = await savePropertyToDatabase(propertyWithScore);
       console.log('PropertyActions: Propriedade salva, resposta do banco:', savedProperty);
