@@ -15,5 +15,6 @@ export interface ExtractedPropertyData {
   fireInsurance: number;
   otherFees: number;
   images?: string[];
+  sourceUrl?: string;
   scores?: PropertyScores;
 }

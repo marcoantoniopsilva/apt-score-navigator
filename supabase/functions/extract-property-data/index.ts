@@ -109,6 +109,7 @@ serve(async (req) => {
       ...cleanedData,
       images: extractedImages || [],
       scores: propertyScores, // Adicionar scores gerados pela IA
+      sourceUrl: url, // Incluir a URL original
       // Converter snake_case para camelCase para compatibilidade com o frontend
       parkingSpaces: cleanedData.parking_spaces || 0,
       fireInsurance: cleanedData.fire_insurance || 50,
