@@ -101,13 +101,13 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
       description: 'Portal líder em anúncios imobiliários',
       searchParams: (profile) => {
         const intent = profile?.intencao === 'alugar' ? 'aluguel' : 'venda';
-        const region = profile?.regiao_referencia || 'belo-horizonte';
+        const region = profile?.regiao_referencia || 'santo-agostinho';
         
         const normalizedRegion = region.toLowerCase()
           .replace(/\s+/g, '-')
           .replace(/[^a-z0-9\-]/g, '');
         
-        return `/${intent}/minas-gerais/${normalizedRegion}/`;
+        return `/${intent}/minas-gerais/belo-horizonte/bairros/${normalizedRegion}/`;
       }
     },
     {
