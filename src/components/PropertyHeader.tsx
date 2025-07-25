@@ -10,6 +10,7 @@ interface PropertyHeaderProps {
   isEditing: boolean;
   onEditToggle: () => void;
   onDelete: (id: string) => void;
+  enableTitleLink?: boolean;
 }
 
 export const PropertyHeader: React.FC<PropertyHeaderProps> = ({
@@ -17,7 +18,8 @@ export const PropertyHeader: React.FC<PropertyHeaderProps> = ({
   rank,
   isEditing,
   onEditToggle,
-  onDelete
+  onDelete,
+  enableTitleLink = true
 }) => {
   const getRankColor = (rank: number) => {
     if (rank === 1) return 'bg-yellow-500';
@@ -40,7 +42,21 @@ export const PropertyHeader: React.FC<PropertyHeaderProps> = ({
           #{rank}
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">{property.title}</h3>
+          {enableTitleLink && property.sourceUrl ? (
+            <a 
+              href={property.sourceUrl} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="block"
+              title="Ver anúncio original"
+            >
+              <h3 className="text-lg sm:text-xl font-semibold text-gray-900 truncate hover:text-blue-600 transition-colors cursor-pointer">
+                {property.title}
+              </h3>
+            </a>
+          ) : (
+            <h3 className="text-lg sm:text-xl font-semibold text-gray-900 truncate">{property.title}</h3>
+          )}
           <div className="flex items-center text-gray-600 mt-1">
             <MapPin className="h-4 w-4 mr-1 flex-shrink-0" />
             <span className="text-sm truncate">{property.address}</span>

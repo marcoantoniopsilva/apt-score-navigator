@@ -6,9 +6,10 @@ import { Home } from 'lucide-react';
 interface PropertyImageProps {
   property: Property;
   className?: string;
+  enableLink?: boolean;
 }
 
-export const PropertyImage: React.FC<PropertyImageProps> = ({ property, className = '' }) => {
+export const PropertyImage: React.FC<PropertyImageProps> = ({ property, className = '', enableLink = true }) => {
   console.log('PropertyImage: Renderizando para propriedade', property.id);
   console.log('PropertyImage: Imagens disponíveis:', property.images);
   
@@ -26,11 +27,11 @@ export const PropertyImage: React.FC<PropertyImageProps> = ({ property, classNam
 
   console.log('PropertyImage: Exibindo imagem:', mainImage);
 
-  return (
+  const imageElement = (
     <img
       src={mainImage}
       alt={property.title}
-      className={`object-cover ${className}`}
+      className={`object-cover ${className} ${enableLink && property.sourceUrl ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''}`}
       onLoad={() => {
         console.log('PropertyImage: Imagem carregada com sucesso:', mainImage);
       }}
@@ -46,4 +47,21 @@ export const PropertyImage: React.FC<PropertyImageProps> = ({ property, classNam
       }}
     />
   );
+
+  // Se tem sourceUrl e links estão habilitados, envolver em link
+  if (enableLink && property.sourceUrl) {
+    return (
+      <a 
+        href={property.sourceUrl} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        className="block"
+        title="Ver anúncio original"
+      >
+        {imageElement}
+      </a>
+    );
+  }
+
+  return imageElement;
 };
