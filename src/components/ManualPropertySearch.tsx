@@ -26,7 +26,25 @@ interface ExternalPortal {
 
 // Função para processar a região e extrair estado, município e bairro
 const parseRegion = (region: string) => {
-  const normalize = (text: string) => text.toLowerCase()
+  const removeAccents = (text: string) => {
+    return text
+      .replace(/[áàâãä]/g, 'a')
+      .replace(/[éèêë]/g, 'e')
+      .replace(/[íìîï]/g, 'i')
+      .replace(/[óòôõö]/g, 'o')
+      .replace(/[úùûü]/g, 'u')
+      .replace(/[ç]/g, 'c')
+      .replace(/[ñ]/g, 'n')
+      .replace(/[ÁÀÂÃÄ]/g, 'A')
+      .replace(/[ÉÈÊË]/g, 'E')
+      .replace(/[ÍÌÎÏ]/g, 'I')
+      .replace(/[ÓÒÔÕÖ]/g, 'O')
+      .replace(/[ÚÙÛÜ]/g, 'U')
+      .replace(/[Ç]/g, 'C')
+      .replace(/[Ñ]/g, 'N');
+  };
+
+  const normalize = (text: string) => removeAccents(text).toLowerCase()
     .replace(/\s+/g, '-')
     .replace(/[^a-z0-9\-]/g, '');
 
