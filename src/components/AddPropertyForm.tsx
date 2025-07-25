@@ -61,6 +61,8 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
 
   const handleDataExtracted = (data: any) => {
     console.log('AddPropertyForm: Dados extraídos recebidos para preenchimento:', data);
+    console.log('AddPropertyForm: Scores recebidos:', data.scores);
+    console.log('AddPropertyForm: Critérios ativos:', activeCriteria.map(c => c.key));
     setUrlExtractedData(data);
     
     // Preencher APENAS os campos do formulário, SEM SALVAR no banco
@@ -81,12 +83,18 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
     
     // Atualizar scores baseado nos dados extraídos ou usar scores sugeridos
     if (data.scores && typeof data.scores === 'object') {
+      console.log('AddPropertyForm: Processando scores recebidos:', data.scores);
       const newScores: Record<string, number> = {};
       activeCriteria.forEach(criterio => {
-        newScores[criterio.key] = data.scores[criterio.key] || 5;
+        const scoreValue = data.scores[criterio.key];
+        console.log(`AddPropertyForm: Mapeando ${criterio.key} -> ${scoreValue}`);
+        newScores[criterio.key] = scoreValue || 5;
       });
+      console.log('AddPropertyForm: Scores finais a serem aplicados:', newScores);
       setScores(newScores);
       setSuggestedScores(data.scores); // Guardar as sugestões
+    } else {
+      console.log('AddPropertyForm: Não há scores nos dados extraídos');
     }
     
     console.log('AddPropertyForm: Formulário preenchido, aguardando submissão do usuário');
