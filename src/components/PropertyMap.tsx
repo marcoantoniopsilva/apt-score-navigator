@@ -20,27 +20,33 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState<string>('');
   const [isLoadingToken, setIsLoadingToken] = useState(true);
+  const [debugInfo, setDebugInfo] = useState<string>('Inicializando...');
   const markersRef = useRef<mapboxgl.Marker[]>([]);
 
   // Busca o token do Mapbox configurado no Supabase
   useEffect(() => {
     const fetchMapboxToken = async () => {
+      setDebugInfo('Buscando token do Mapbox...');
       try {
         const { data, error } = await supabase.functions.invoke('get-mapbox-token');
         
         if (error) {
           console.error('Erro ao buscar token do Mapbox:', error);
+          setDebugInfo('❌ Erro ao carregar token do Mapbox');
           toast.error('Erro ao carregar configuração do mapa');
           return;
         }
         
         if (data?.token) {
           setMapboxToken(data.token);
+          setDebugInfo('✅ Token do Mapbox carregado');
         } else {
+          setDebugInfo('❌ Token do Mapbox não configurado');
           toast.error('Token do Mapbox não configurado. Entre em contato com o administrador.');
         }
       } catch (error) {
         console.error('Erro ao buscar token:', error);
+        setDebugInfo('❌ Erro ao configurar o mapa');
         toast.error('Erro ao configurar o mapa');
       } finally {
         setIsLoadingToken(false);
@@ -185,11 +191,11 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
   // Atualiza marcadores quando as propriedades mudam
   useEffect(() => {
     if (!map.current || !properties.length) {
-      console.log('PropertyMap: Não pode adicionar marcadores - mapa:', !!map.current, 'propriedades:', properties.length);
+      setDebugInfo(`❌ Não pode adicionar marcadores - Mapa: ${!!map.current ? 'OK' : 'Não carregado'}, Propriedades: ${properties.length}`);
       return;
     }
 
-    console.log('PropertyMap: Iniciando adição de marcadores para', properties.length, 'propriedades');
+    setDebugInfo(`🔄 Iniciando adição de ${properties.length} marcadores...`);
 
     // Remove marcadores existentes
     markersRef.current.forEach(marker => marker.remove());
@@ -197,17 +203,15 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
 
     // Adiciona novos marcadores com delay para garantir que o mapa esteja pronto
     const addMarkers = async () => {
-      console.log('PropertyMap: Função addMarkers iniciada');
       const bounds = new mapboxgl.LngLatBounds();
       let markersAdded = 0;
 
       for (const property of properties) {
-        console.log('PropertyMap: Processando propriedade:', property.title);
+        setDebugInfo(`🔍 Geocodificando: ${property.title.substring(0, 30)}...`);
         const coordinates = await geocodeAddress(property.address);
         
         if (coordinates) {
           const [lng, lat] = coordinates;
-          console.log('PropertyMap: Adicionando marcador em:', lng, lat);
           
           // Cria marcador personalizado
           const markerElement = createScoreIcon(property.finalScore);
@@ -230,24 +234,26 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
           markersRef.current.push(marker);
           bounds.extend([lng, lat]);
           markersAdded++;
-          console.log('PropertyMap: Marcador adicionado. Total:', markersAdded);
+          setDebugInfo(`✅ ${markersAdded}/${properties.length} marcadores adicionados`);
         } else {
-          console.warn('PropertyMap: Não foi possível geocodificar:', property.address);
+          setDebugInfo(`❌ Erro ao geocodificar: ${property.address.substring(0, 30)}...`);
         }
       }
 
-      console.log('PropertyMap: Finalizado. Total de marcadores adicionados:', markersAdded);
-
-      // Ajusta o mapa para mostrar todos os marcadores
-      if (!bounds.isEmpty() && markersRef.current.length > 1) {
-        console.log('PropertyMap: Ajustando mapa para mostrar todos os marcadores');
-        map.current?.fitBounds(bounds, { padding: 50 });
-      } else if (markersRef.current.length === 1) {
-        console.log('PropertyMap: Centralizando mapa na única propriedade');
-        // Se há apenas uma propriedade, centraliza nela
-        const firstMarker = markersRef.current[0];
-        map.current?.setCenter(firstMarker.getLngLat());
-        map.current?.setZoom(14);
+      if (markersAdded > 0) {
+        setDebugInfo(`✅ ${markersAdded} marcadores no mapa!`);
+        
+        // Ajusta o mapa para mostrar todos os marcadores
+        if (!bounds.isEmpty() && markersRef.current.length > 1) {
+          map.current?.fitBounds(bounds, { padding: 50 });
+        } else if (markersRef.current.length === 1) {
+          // Se há apenas uma propriedade, centraliza nela
+          const firstMarker = markersRef.current[0];
+          map.current?.setCenter(firstMarker.getLngLat());
+          map.current?.setZoom(14);
+        }
+      } else {
+        setDebugInfo('❌ Nenhum marcador foi adicionado ao mapa');
       }
     };
 
@@ -288,8 +294,19 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
   }
 
   return (
-    <div className="w-full h-96 rounded-lg overflow-hidden border shadow-lg">
-      <div ref={mapContainer} className="w-full h-full" />
+    <div className="w-full space-y-2">
+      {/* Painel de Debug Visual */}
+      <div className="bg-slate-100 border rounded-lg p-3">
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="text-xs">Debug</Badge>
+          <span className="text-sm font-mono">{debugInfo}</span>
+        </div>
+      </div>
+      
+      {/* Mapa */}
+      <div className="w-full h-96 rounded-lg overflow-hidden border shadow-lg">
+        <div ref={mapContainer} className="w-full h-full" />
+      </div>
     </div>
   );
 };
