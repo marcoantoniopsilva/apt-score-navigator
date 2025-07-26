@@ -10,6 +10,7 @@ import { UserPreferencesDisplay } from '@/components/UserPreferencesDisplay';
 import { MobileWeightsEditor } from '@/components/MobileWeightsEditor';
 import { PropertyComparison } from '@/components/PropertyComparison';
 import { ManualPropertySearch } from '@/components/ManualPropertySearch';
+import { SessionManager } from '@/components/SessionManager';
 
 import { calculateFinalScore } from '@/utils/scoreCalculator';
 import { usePropertyLoader } from '@/hooks/usePropertyLoader';
@@ -165,129 +166,130 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <AppHeader 
-        title="Comparador de Imóveis"
-        subtitle={userProfile?.intencao ? 
-          `Encontre o melhor apartamento para ${userProfile.intencao}` : 
-          "Encontre o melhor apartamento para você"
-        }
-        onAddProperty={handleAddPropertyWithLimits}
-        onRefresh={loadProperties}
-        isLoading={isLoading}
-      />
+    <SessionManager>
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+        <AppHeader 
+          title="Comparador de Imóveis"
+          subtitle={userProfile?.intencao ? 
+            `Encontre o melhor apartamento para ${userProfile.intencao}` : 
+            "Encontre o melhor apartamento para você"
+          }
+          onAddProperty={handleAddPropertyWithLimits}
+          onRefresh={loadProperties}
+          isLoading={isLoading}
+        />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-        <AppExplanation />
-        
-        {userProfile && (
-          <UserPreferencesDisplay
-            userProfile={userProfile}
-            onEdit={() => setShowOnboarding(true)}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+          <AppExplanation />
+          
+          {userProfile && (
+            <UserPreferencesDisplay
+              userProfile={userProfile}
+              onEdit={() => setShowOnboarding(true)}
+            />
+          )}
+          
+          <div className="mb-6">
+            <SessionExpiredMessage error={sessionError} />
+          </div>
+          
+          <div className="mb-6">
+            <SubscriptionStatus />
+          </div>
+
+          {/* Busca Manual - movido para o topo após o card de plano */}
+          {hasCompletedOnboarding && (
+            <div className="mb-8">
+              <ManualPropertySearch onAddProperty={handleExtractedProperty} />
+            </div>
+          )}
+          
+          <PropertyControls
+            weights={criteriaWeights}
+            onWeightsChange={(newWeights) => {
+              // Atualiza cada critério individualmente
+              Object.entries(newWeights).forEach(([key, weight]) => {
+                updateCriteriaWeight(key, weight);
+              });
+            }}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            onSortByChange={setSortBy}
+            onSortOrderChange={setSortOrder}
+            propertiesCount={properties.length}
+          />
+
+          <PropertyList
+            properties={displayedProperties}
+            weights={criteriaWeights}
+            isLoading={isLoading}
+            onUpdate={handleUpdateProperty}
+            onDelete={handleDeleteProperty}
+            onAddProperty={handleAddPropertyWithLimits}
+            sortBy={sortBy}
+            sortOrder={sortOrder}
+            selectedProperties={comparisonMode ? selectedProperties : undefined}
+            onToggleSelection={comparisonMode ? togglePropertySelection : undefined}
+            isPropertySelected={comparisonMode ? isPropertySelected : undefined}
+            selectedCount={comparisonMode ? selectedCount : 0}
+            canCompare={comparisonMode ? canCompare : false}
+            onCompare={comparisonMode ? openComparison : undefined}
+            onClearSelection={comparisonMode ? clearSelection : undefined}
+            onActivateComparison={handleComparisonWithLimits}
+            onDeactivateComparison={() => {
+              console.log('Desativando modo comparação');
+              setComparisonMode(false);
+            }}
+            comparisonMode={comparisonMode}
+          />
+
+          <MobileWeightsEditor
+            weights={criteriaWeights}
+            onWeightsChange={(newWeights) => {
+              // Atualiza cada critério individualmente
+              Object.entries(newWeights).forEach(([key, weight]) => {
+                updateCriteriaWeight(key, weight);
+              });
+            }}
+            onReset={() => {
+              // Reset para valores padrão dos critérios ativos
+              activeCriteria.forEach(criterion => {
+                updateCriteriaWeight(criterion.key, 3);
+              });
+            }}
+          />
+        </div>
+
+        {showAddForm && (
+          <AddPropertyForm 
+            onSubmit={handleAddProperty}
+            onCancel={() => {
+              setShowAddForm(false);
+              setExtractedPropertyData(null);
+            }}
+            extractedData={extractedPropertyData}
           />
         )}
-        
-        <div className="mb-6">
-          <SessionExpiredMessage error={sessionError} />
-        </div>
-        
-        <div className="mb-6">
-          <SubscriptionStatus />
-        </div>
 
-        {/* Busca Manual - movido para o topo após o card de plano */}
-        {hasCompletedOnboarding && (
-          <div className="mb-8">
-            <ManualPropertySearch onAddProperty={handleExtractedProperty} />
-          </div>
+        {isComparisonOpen && (
+          <PropertyComparison
+            properties={selectedProperties}
+            onRemoveProperty={removeProperty}
+            onClose={closeComparison}
+          />
         )}
-        
-        <PropertyControls
-          weights={criteriaWeights}
-          onWeightsChange={(newWeights) => {
-            // Atualiza cada critério individualmente
-            Object.entries(newWeights).forEach(([key, weight]) => {
-              updateCriteriaWeight(key, weight);
-            });
-          }}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          onSortByChange={setSortBy}
-          onSortOrderChange={setSortOrder}
-          propertiesCount={properties.length}
+
+        <UpgradeModal 
+          open={showUpgradeModal} 
+          onOpenChange={setShowUpgradeModal} 
         />
 
-        <PropertyList
-          properties={displayedProperties}
-          weights={criteriaWeights}
-          isLoading={isLoading}
-          onUpdate={handleUpdateProperty}
-          onDelete={handleDeleteProperty}
-          onAddProperty={handleAddPropertyWithLimits}
-          sortBy={sortBy}
-          sortOrder={sortOrder}
-          selectedProperties={comparisonMode ? selectedProperties : undefined}
-          onToggleSelection={comparisonMode ? togglePropertySelection : undefined}
-          isPropertySelected={comparisonMode ? isPropertySelected : undefined}
-          selectedCount={comparisonMode ? selectedCount : 0}
-          canCompare={comparisonMode ? canCompare : false}
-          onCompare={comparisonMode ? openComparison : undefined}
-          onClearSelection={comparisonMode ? clearSelection : undefined}
-          onActivateComparison={handleComparisonWithLimits}
-          onDeactivateComparison={() => {
-            console.log('Desativando modo comparação');
-            setComparisonMode(false);
-          }}
-          comparisonMode={comparisonMode}
-        />
-
-
-        <MobileWeightsEditor
-          weights={criteriaWeights}
-          onWeightsChange={(newWeights) => {
-            // Atualiza cada critério individualmente
-            Object.entries(newWeights).forEach(([key, weight]) => {
-              updateCriteriaWeight(key, weight);
-            });
-          }}
-          onReset={() => {
-            // Reset para valores padrão dos critérios ativos
-            activeCriteria.forEach(criterion => {
-              updateCriteriaWeight(criterion.key, 3);
-            });
-          }}
+        <EnhancedOnboardingModal
+          open={showOnboarding}
+          onOpenChange={setShowOnboarding}
         />
       </div>
-
-      {showAddForm && (
-        <AddPropertyForm 
-          onSubmit={handleAddProperty}
-          onCancel={() => {
-            setShowAddForm(false);
-            setExtractedPropertyData(null);
-          }}
-          extractedData={extractedPropertyData}
-        />
-      )}
-
-      {isComparisonOpen && (
-        <PropertyComparison
-          properties={selectedProperties}
-          onRemoveProperty={removeProperty}
-          onClose={closeComparison}
-        />
-      )}
-
-      <UpgradeModal 
-        open={showUpgradeModal} 
-        onOpenChange={setShowUpgradeModal} 
-      />
-
-      <EnhancedOnboardingModal
-        open={showOnboarding}
-        onOpenChange={setShowOnboarding}
-      />
-    </div>
+    </SessionManager>
   );
 };
 

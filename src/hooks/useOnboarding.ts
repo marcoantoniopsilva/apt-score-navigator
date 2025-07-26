@@ -233,7 +233,21 @@ export const useOnboarding = () => {
       }
     );
 
-    return () => subscription.unsubscribe();
+    // Escuta eventos de sessão restaurada
+    const handleSessionRefresh = async () => {
+      console.log('useOnboarding: Sessão restaurada, revalidando dados...');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        await loadOnboardingData(session.user.id);
+      }
+    };
+
+    window.addEventListener('session-refreshed', handleSessionRefresh);
+
+    return () => {
+      subscription.unsubscribe();
+      window.removeEventListener('session-refreshed', handleSessionRefresh);
+    };
   }, []);
 
   return {

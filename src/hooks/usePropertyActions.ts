@@ -8,6 +8,7 @@ import {
   deletePropertyFromDatabase 
 } from '@/services/propertyDatabaseService';
 import { useToast } from '@/hooks/use-toast';
+import { apiCall } from '@/utils/apiUtils';
 
 export const usePropertyActions = (
   properties: Property[],
@@ -141,7 +142,11 @@ export const usePropertyActions = (
       console.log('PropertyActions: Iniciando exclusão da propriedade:', id);
       console.log('PropertyActions: Propriedades atuais no estado:', properties.map(p => ({ id: p.id, title: p.title })));
       
-      await deletePropertyFromDatabase(id);
+      // Use apiCall wrapper for better session management
+      await apiCall(
+        () => deletePropertyFromDatabase(id),
+        { retries: 3, refreshOnAuth: true }
+      );
       console.log('PropertyActions: Propriedade deletada do banco com sucesso');
       
       setProperties(prev => {
@@ -157,11 +162,21 @@ export const usePropertyActions = (
       console.log('PropertyActions: Propriedade deletada com sucesso');
     } catch (error) {
       console.error('PropertyActions: Erro ao deletar propriedade:', error);
-      toast({
-        title: "Erro ao deletar",
-        description: "Não foi possível deletar a propriedade. Tente novamente.",
-        variant: "destructive"
-      });
+      
+      // Check if it's a session-related error
+      if (error instanceof Error && error.message.includes('Session expired')) {
+        toast({
+          title: "Sessão expirada",
+          description: "Sua sessão expirou. Por favor, atualize a página e tente novamente.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Erro ao deletar",
+          description: "Não foi possível deletar a propriedade. Tente novamente.",
+          variant: "destructive"
+        });
+      }
     }
   };
 

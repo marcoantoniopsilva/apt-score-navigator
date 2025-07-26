@@ -36,15 +36,21 @@ export const apiCall = async <T>(
         
         if (refreshError || !session) {
           console.error('Session refresh failed:', refreshError);
+          // Notify components about session expiration
+          window.dispatchEvent(new CustomEvent('session-expired'));
           throw new Error('Session expired. Please log in again.');
         }
 
         console.log('Session refreshed successfully, retrying API call');
+        // Notify components about session refresh
+        window.dispatchEvent(new CustomEvent('session-refreshed'));
+        
         // Retry the API call once after refresh
         return await executeWithTimeout();
         
       } catch (refreshError) {
         console.error('Session refresh error:', refreshError);
+        window.dispatchEvent(new CustomEvent('session-expired'));
         throw new Error('Session expired. Please log in again.');
       }
     }

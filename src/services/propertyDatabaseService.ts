@@ -101,11 +101,20 @@ export const deletePropertyFromDatabase = async (propertyId: string) => {
   return await supabaseQuery(async () => {
     console.log('deletePropertyFromDatabase: Iniciando exclusão da propriedade:', propertyId);
     
-    const { data: { session } } = await supabase.auth.getSession();
+    // Double-check session validity before deletion
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
     
-    if (!session) {
-      throw new Error('Usuário não autenticado');
+    if (sessionError) {
+      console.error('Session error during deletion:', sessionError);
+      throw new Error('Session error. Please refresh and try again.');
     }
+    
+    if (!session || !session.user) {
+      console.error('No valid session found for deletion');
+      throw new Error('Session expired. Please log in again.');
+    }
+
+    console.log('deletePropertyFromDatabase: Session valid, proceeding with deletion');
 
     const result = await supabase
       .from('properties')
@@ -114,9 +123,14 @@ export const deletePropertyFromDatabase = async (propertyId: string) => {
       .eq('user_id', session.user.id)
       .select();
 
+    if (result.error) {
+      console.error('Database deletion error:', result.error);
+      throw result.error;
+    }
+
     console.log('deletePropertyFromDatabase: Propriedade deletada com sucesso');
     return result;
-  }, { retries: 1, refreshOnAuth: true });
+  }, { retries: 2, refreshOnAuth: true });
 };
 
 // Função para carregar propriedades salvas do banco

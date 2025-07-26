@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { sessionValidator, isAuthError } from '@/utils/sessionUtils';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SessionMonitorState {
   isSessionValid: boolean;
@@ -37,6 +38,29 @@ export const useSessionMonitor = () => {
 
       if (!sessionState.isValid && sessionState.error) {
         console.warn('Session validation failed:', sessionState.error);
+        
+        // Attempt automatic refresh if session needs refresh
+        if (sessionState.needsRefresh) {
+          console.log('Attempting automatic session refresh...');
+          try {
+            const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+            
+            if (!refreshError && refreshedSession) {
+              console.log('Session refreshed successfully');
+              setState(prev => ({
+                ...prev,
+                isSessionValid: true,
+                sessionError: null,
+                isMonitoring: false
+              }));
+              
+              // Notify other components about session refresh
+              window.dispatchEvent(new CustomEvent('session-refreshed'));
+            }
+          } catch (refreshError) {
+            console.error('Session refresh failed:', refreshError);
+          }
+        }
       }
 
     } catch (error) {

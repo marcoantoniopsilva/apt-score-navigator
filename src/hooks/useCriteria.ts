@@ -120,21 +120,47 @@ export const useCriteria = () => {
     }
   }, [hasCompletedOnboarding, userPreferences, userProfile]);
 
-  // Escuta eventos de atualização de critérios
+  // Escuta eventos de atualização de critérios e sessão
   useEffect(() => {
     const handleCriteriaUpdate = () => {
       console.log('useCriteria: Critérios atualizados, forçando recálculo...');
-      // Força uma atualização dos critérios
-      const timestamp = Date.now();
-      console.log('useCriteria: Timestamp de atualização:', timestamp);
+      // Triggere a re-execution of the main criteria effect
+      window.dispatchEvent(new CustomEvent('force-criteria-reload'));
+    };
+
+    const handleSessionRefresh = () => {
+      console.log('useCriteria: Sessão restaurada, recarregando critérios...');
+      // Triggere a re-execution of the main criteria effect  
+      window.dispatchEvent(new CustomEvent('force-criteria-reload'));
     };
 
     window.addEventListener('criteria-updated', handleCriteriaUpdate);
+    window.addEventListener('session-refreshed', handleSessionRefresh);
     
     return () => {
       window.removeEventListener('criteria-updated', handleCriteriaUpdate);
+      window.removeEventListener('session-refreshed', handleSessionRefresh);
     };
   }, []);
+
+  // Force reload when requested
+  useEffect(() => {
+    const handleForceReload = () => {
+      console.log('useCriteria: Força recarregamento solicitado');
+      // This will trigger the main useEffect by changing dependencies
+      if (hasCompletedOnboarding && userProfile) {
+        // Re-process the criteria logic
+        const timestamp = Date.now();
+        console.log('useCriteria: Forced reload at:', timestamp);
+      }
+    };
+
+    window.addEventListener('force-criteria-reload', handleForceReload);
+    
+    return () => {
+      window.removeEventListener('force-criteria-reload', handleForceReload);
+    };
+  }, [hasCompletedOnboarding, userProfile, userPreferences]);
 
   // Função para atualizar peso de um critério
   const updateCriteriaWeight = (criteriaKey: string, newWeight: number) => {
