@@ -117,65 +117,52 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
   // Cria popup com informações da propriedade
   const createPropertyPopup = (property: Property): string => {
     return `
-      <div class="p-4 max-w-sm">
-        <h3 class="font-bold text-lg mb-2">${property.title}</h3>
-        <p class="text-sm text-gray-600 mb-2 flex items-center">
-          <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"></path>
-          </svg>
-          ${property.address}
-        </p>
+      <div class="p-3 w-64">
+        <h3 class="font-bold text-base mb-2 leading-tight">${property.title}</h3>
         
-        <div class="grid grid-cols-2 gap-2 mb-3 text-sm">
+        <div class="grid grid-cols-2 gap-1 mb-2 text-xs">
           <div class="flex items-center">
-            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
             </svg>
-            ${property.bedrooms} quartos
+            ${property.bedrooms}Q
           </div>
           <div class="flex items-center">
-            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1.323l3.954 1.582 1.599-.8a1 1 0 01.894 1.79l-1.233.616 1.738 5.42a1 1 0 01-.285 1.05A3.989 3.989 0 0115 14a3.989 3.989 0 01-2.667-1.019 1 1 0 01-.285-1.05l1.715-5.349L11 5.677V7a1 1 0 11-2 0V3a1 1 0 011-1zm-6 8a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm0 4a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1z" clip-rule="evenodd"></path>
             </svg>
-            ${property.bathrooms} banheiros
+            ${property.bathrooms}B
           </div>
           <div class="flex items-center">
-            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm0 2h12v8H4V6z" clip-rule="evenodd"></path>
             </svg>
             ${property.area}m²
           </div>
           <div class="flex items-center">
-            <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
               <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z"></path>
               <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1V5a1 1 0 00-1-1H3z"></path>
             </svg>
-            ${property.parkingSpaces} vagas
+            ${property.parkingSpaces}V
           </div>
         </div>
         
-        <div class="flex justify-between items-center mb-3">
+        <div class="flex justify-between items-center mb-2">
           <div>
-            <span class="text-lg font-bold text-green-600">R$ ${property.rent.toLocaleString()}</span>
-            <span class="text-sm text-gray-500">/mês</span>
+            <span class="text-base font-bold text-green-600">R$ ${property.rent.toLocaleString()}</span>
+            <span class="text-xs text-gray-500">/mês</span>
           </div>
-          <div class="flex items-center">
-            <span class="text-sm mr-1">Pontuação:</span>
-            <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white ${getScoreColor(property.finalScore)}">
-              ${property.finalScore.toFixed(1)}
-            </span>
-          </div>
-        </div>
-        
-        <div class="text-xs text-gray-500 mb-3">
-          Total mensal: R$ ${property.totalMonthlyCost.toLocaleString()}
+          <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium text-white ${getScoreColor(property.finalScore)}">
+            ${property.finalScore.toFixed(1)}
+          </span>
         </div>
         
         <button 
-          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-3 rounded-lg transition-colors duration-200 text-sm"
           onclick="window.selectPropertyFromMap('${property.id}')"
         >
-          Ver detalhes completos
+          Ver detalhes
         </button>
       </div>
     `;
