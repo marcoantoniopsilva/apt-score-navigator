@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
-import { Rocket, Target, BarChart3, Settings, CheckCircle } from 'lucide-react';
+import { Rocket, Target, BarChart3, Settings, CheckCircle, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import apartmentJourneyImage from '@/assets/apartment-choice-journey.jpg';
 
@@ -11,6 +11,10 @@ const Landing = () => {
 
   const handleGetStarted = () => {
     navigate('/onboarding');
+  };
+
+  const handleLogin = () => {
+    navigate('/auth');
   };
 
   const features = [
@@ -38,6 +42,23 @@ const Landing = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5">
+      {/* Header Navigation */}
+      <header className="container mx-auto px-4 py-6">
+        <div className="flex justify-between items-center">
+          <div className="text-xl font-bold text-foreground">
+            Apt Score Navigator
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={handleLogin}
+            className="flex items-center gap-2"
+          >
+            <LogIn className="w-4 h-4" />
+            Entrar
+          </Button>
+        </div>
+      </header>
+
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-16 lg:py-24">
         <div className="max-w-4xl mx-auto text-center">
@@ -133,20 +154,38 @@ const Landing = () => {
                 Comece agora e deixe nossa IA ajudar você a tomar a melhor decisão na escolha do seu próximo apartamento.
               </p>
               
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                transition={{ type: "spring", stiffness: 400, damping: 17 }}
-              >
-                <Button 
-                  size="lg" 
-                  onClick={handleGetStarted}
-                  className="text-lg px-8 py-6 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300"
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
                 >
-                  <Rocket className="w-5 h-5 mr-2" />
-                  Começar Agora
-                </Button>
-              </motion.div>
+                  <Button 
+                    size="lg" 
+                    onClick={handleGetStarted}
+                    className="text-lg px-8 py-6 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    <Rocket className="w-5 h-5 mr-2" />
+                    Começar Agora
+                  </Button>
+                </motion.div>
+                
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 17 }}
+                >
+                  <Button 
+                    size="lg" 
+                    variant="outline"
+                    onClick={handleLogin}
+                    className="text-lg px-8 py-6 border-primary/50 text-primary hover:bg-primary/10 shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    <LogIn className="w-5 h-5 mr-2" />
+                    Já tenho conta
+                  </Button>
+                </motion.div>
+              </div>
               
               <p className="text-sm text-muted-foreground mt-4">
                 Gratuito para começar • Sem cartão de crédito necessário
