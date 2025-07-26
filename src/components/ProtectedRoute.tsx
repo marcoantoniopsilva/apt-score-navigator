@@ -12,6 +12,8 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, loading } = useAuth();
   
   console.log('ProtectedRoute render - user:', user?.email, 'loading:', loading);
+  console.log('ProtectedRoute - current location:', window.location.pathname);
+  console.log('ProtectedRoute - will redirect to landing:', !user && !loading);
 
   if (loading) {
     return (

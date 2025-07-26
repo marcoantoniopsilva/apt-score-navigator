@@ -30,6 +30,7 @@ const App = () => (
                 <Index />
               </ProtectedRoute>
             } />
+            <Route path="/test-app" element={<div>Teste de rota funcionando</div>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
