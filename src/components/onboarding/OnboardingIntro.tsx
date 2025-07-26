@@ -18,7 +18,7 @@ export const OnboardingIntro: React.FC<OnboardingIntroProps> = ({ onContinue }) 
       <Card className="border-primary/20 shadow-lg">
         <CardContent className="pt-6 px-6 pb-8 flex flex-col items-center text-center">
           <div className="text-5xl mb-4">👋</div>
-          <h2 className="text-2xl font-bold mb-4">Bem-vindo ao Apt Score Navigator!</h2>
+          <h2 className="text-2xl font-bold mb-4">Bem-vindo ao Nestly!</h2>
           <p className="text-muted-foreground mb-8">
             Em poucos passos, vamos entender o que importa para você e encontrar o imóvel ideal com base no seu perfil.
           </p>
