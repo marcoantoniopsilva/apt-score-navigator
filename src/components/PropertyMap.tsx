@@ -22,6 +22,20 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
   const [isLoadingToken, setIsLoadingToken] = useState(true);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
 
+  // Função global para selecionar propriedade do popup
+  useEffect(() => {
+    (window as any).selectPropertyFromMap = (propertyId: string) => {
+      const property = properties.find(p => p.id === propertyId);
+      if (property && onPropertySelect) {
+        onPropertySelect(property);
+      }
+    };
+
+    return () => {
+      delete (window as any).selectPropertyFromMap;
+    };
+  }, [properties, onPropertySelect]);
+
   // Busca o token do Mapbox configurado no Supabase
   useEffect(() => {
     const fetchMapboxToken = async () => {
@@ -153,9 +167,16 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
           </div>
         </div>
         
-        <div class="text-xs text-gray-500">
+        <div class="text-xs text-gray-500 mb-3">
           Total mensal: R$ ${property.totalMonthlyCost.toLocaleString()}
         </div>
+        
+        <button 
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200"
+          onclick="window.selectPropertyFromMap('${property.id}')"
+        >
+          Ver detalhes completos
+        </button>
       </div>
     `;
   };
@@ -220,17 +241,14 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
           const marker = new mapboxgl.Marker({ element: markerElement })
             .setLngLat([lng, lat])
             .setPopup(
-              new mapboxgl.Popup({ offset: 25 })
+              new mapboxgl.Popup({ 
+                offset: 25,
+                closeButton: true,
+                closeOnClick: false 
+              })
                 .setHTML(createPropertyPopup(property))
             )
             .addTo(map.current!);
-
-          // Adiciona evento de clique
-          markerElement.addEventListener('click', () => {
-            if (onPropertySelect) {
-              onPropertySelect(property);
-            }
-          });
 
           markersRef.current.push(marker);
           bounds.extend([lng, lat]);
