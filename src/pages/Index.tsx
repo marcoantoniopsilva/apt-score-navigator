@@ -170,10 +170,7 @@ const Index = () => {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <AppHeader 
           title="Nestly"
-          subtitle={userProfile?.intencao ? 
-            `Encontre o melhor apartamento para ${userProfile.intencao}` : 
-            "Encontre o melhor apartamento para você"
-          }
+          subtitle="Seu novo jeito de escolher imóveis"
           onAddProperty={handleAddPropertyWithLimits}
           onRefresh={loadProperties}
           isLoading={isLoading}
