@@ -245,20 +245,20 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
     {
       name: 'OLX Imóveis',
       icon: '🔄',
-      baseUrl: 'https://mg.olx.com.br',
+      baseUrl: 'https://www.olx.com.br',
       description: 'Marketplace com variedade de opções',
       searchParams: (profile) => {
         const intent = profile?.intencao === 'alugar' ? 'aluguel' : 'venda';
-        const region = profile?.regiao_referencia || '';
+        const region = profile?.regiao_referencia || 'belo horizonte';
         
-        let searchUrl = '/imoveis';
-        if (intent === 'aluguel') searchUrl += '/aluguel';
-        if (region) {
-          const normalizedRegion = region.toLowerCase().replace(/\s+/g, '-');
-          searchUrl += `?q=${encodeURIComponent(region)}`;
-        }
+        // Processar região para extrair apenas o município
+        const { municipio } = parseRegion(region);
         
-        return searchUrl;
+        // Converter hífens em espaços para o nome da cidade
+        const cityName = municipio.replace(/-/g, ' ');
+        
+        // Formato: /imoveis/intent?q=cidade
+        return `/imoveis/${intent}?q=${encodeURIComponent(cityName)}`;
       }
     }
   ];
