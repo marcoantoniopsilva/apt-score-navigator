@@ -194,12 +194,12 @@ const MapFilters: React.FC<MapFiltersProps> = ({ properties, onFilterChange }) =
               <MapPin className="w-4 h-4 mr-1" />
               Localização
             </Label>
-            <Select value={filters.location} onValueChange={(value) => setFilters(prev => ({ ...prev, location: value }))}>
+            <Select value={filters.location || "all"} onValueChange={(value) => setFilters(prev => ({ ...prev, location: value === "all" ? "" : value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Todas as localizações" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as localizações</SelectItem>
+                <SelectItem value="all">Todas as localizações</SelectItem>
                 {uniqueLocations.map(location => (
                   <SelectItem key={location} value={location}>
                     {location}
@@ -212,12 +212,12 @@ const MapFilters: React.FC<MapFiltersProps> = ({ properties, onFilterChange }) =
           {/* Filtro de Quartos */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Quartos</Label>
-            <Select value={filters.bedrooms} onValueChange={(value) => setFilters(prev => ({ ...prev, bedrooms: value }))}>
+            <Select value={filters.bedrooms || "any"} onValueChange={(value) => setFilters(prev => ({ ...prev, bedrooms: value === "any" ? "" : value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Qualquer quantidade" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Qualquer quantidade</SelectItem>
+                <SelectItem value="any">Qualquer quantidade</SelectItem>
                 {[1, 2, 3, 4, 5].map(num => (
                   <SelectItem key={num} value={num.toString()}>
                     {num} {num === 1 ? 'quarto' : 'quartos'}
@@ -230,12 +230,12 @@ const MapFilters: React.FC<MapFiltersProps> = ({ properties, onFilterChange }) =
           {/* Filtro de Vagas */}
           <div className="space-y-2">
             <Label className="text-sm font-medium">Vagas de Garagem</Label>
-            <Select value={filters.parkingSpaces} onValueChange={(value) => setFilters(prev => ({ ...prev, parkingSpaces: value }))}>
+            <Select value={filters.parkingSpaces || "any"} onValueChange={(value) => setFilters(prev => ({ ...prev, parkingSpaces: value === "any" ? "" : value }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Qualquer quantidade" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Qualquer quantidade</SelectItem>
+                <SelectItem value="any">Qualquer quantidade</SelectItem>
                 {[0, 1, 2, 3, 4].map(num => (
                   <SelectItem key={num} value={num.toString()}>
                     {num} {num === 1 ? 'vaga' : 'vagas'}
