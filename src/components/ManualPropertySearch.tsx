@@ -267,13 +267,8 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
       baseUrl: 'https://www.quintoandar.com.br',
       description: 'Plataforma moderna de aluguel de imóveis',
       searchParams: (profile) => {
-        const intent = profile?.intencao;
+        const intent = profile?.intencao === 'alugar' ? 'alugar' : 'comprar';
         const region = profile?.regiao_referencia || 'belo horizonte, mg';
-        
-        // QuintoAndar só funciona para aluguel
-        if (intent !== 'alugar') {
-          return '/';
-        }
         
         // Processar região para extrair estado, município e bairro
         const { estado, municipio, bairro } = parseRegion(region);
@@ -311,11 +306,11 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
         
         const estadoSigla = estadoReverseMap[estado] || 'mg';
         
-        // Formato: /alugar/imovel/bairro-cidade-estado-brasil ou /alugar/imovel/cidade-estado-brasil
+        // Formato: /intent/imovel/bairro-cidade-estado-brasil ou /intent/imovel/cidade-estado-brasil
         if (bairro) {
-          return `/alugar/imovel/${bairro}-${municipio}-${estadoSigla}-brasil`;
+          return `/${intent}/imovel/${bairro}-${municipio}-${estadoSigla}-brasil`;
         } else {
-          return `/alugar/imovel/${municipio}-${estadoSigla}-brasil`;
+          return `/${intent}/imovel/${municipio}-${estadoSigla}-brasil`;
         }
       }
     }
