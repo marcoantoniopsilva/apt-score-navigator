@@ -1,12 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Home, Mail, Lock, UserPlus, LogIn } from 'lucide-react';
+import { Home, Mail, Lock, UserPlus, LogIn, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -30,7 +30,7 @@ const Auth = () => {
   // Redirect if already authenticated
   useEffect(() => {
     if (user) {
-      navigate('/');
+      navigate('/app');
     }
   }, [user, navigate]);
 
@@ -60,7 +60,7 @@ const Auth = () => {
           title: "Login realizado",
           description: "Bem-vindo de volta!",
         });
-        navigate('/');
+        navigate('/app');
       }
     } catch (error) {
       toast({
@@ -118,7 +118,7 @@ const Auth = () => {
           title: "Cadastro realizado",
           description: "Conta criada com sucesso! Você já pode usar o sistema.",
         });
-        navigate('/');
+        navigate('/app');
       }
     } catch (error) {
       toast({
@@ -132,8 +132,20 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
+        <div className="mb-4">
+          <Button
+            variant="ghost"
+            asChild
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Link to="/" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Voltar para início
+            </Link>
+          </Button>
+        </div>
         <div className="text-center mb-8">
           <div className="bg-blue-600 p-3 rounded-lg inline-block mb-4">
             <Home className="h-8 w-8 text-white" />
