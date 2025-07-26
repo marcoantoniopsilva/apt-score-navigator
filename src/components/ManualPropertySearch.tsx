@@ -178,12 +178,49 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
         const intent = profile?.intencao === 'alugar' ? 'aluguel' : 'venda';
         const region = profile?.regiao_referencia || 'belo-horizonte-mg';
         
-        // Normalizar nome da região para URL
-        const normalizedRegion = region.toLowerCase()
-          .replace(/\s+/g, '-')
-          .replace(/[^a-z0-9\-]/g, '');
+        // Processar região para extrair estado, município e bairro
+        const { estado, municipio, bairro } = parseRegion(region);
         
-        return `/${intent}/imoveis/${normalizedRegion}/`;
+        // Converter estado completo para sigla
+        const estadoReverseMap: Record<string, string> = {
+          'minas-gerais': 'mg',
+          'sao-paulo': 'sp',
+          'rio-de-janeiro': 'rj',
+          'rio-grande-do-sul': 'rs',
+          'parana': 'pr',
+          'santa-catarina': 'sc',
+          'goias': 'go',
+          'mato-grosso': 'mt',
+          'mato-grosso-do-sul': 'ms',
+          'distrito-federal': 'df',
+          'espirito-santo': 'es',
+          'bahia': 'ba',
+          'pernambuco': 'pe',
+          'ceara': 'ce',
+          'paraiba': 'pb',
+          'rio-grande-do-norte': 'rn',
+          'alagoas': 'al',
+          'sergipe': 'se',
+          'piaui': 'pi',
+          'maranhao': 'ma',
+          'tocantins': 'to',
+          'para': 'pa',
+          'amapa': 'ap',
+          'amazonas': 'am',
+          'roraima': 'rr',
+          'acre': 'ac',
+          'rondonia': 'ro'
+        };
+        
+        const estadoSigla = estadoReverseMap[estado] || 'mg';
+        
+        // Formato: /aluguel/imoveis/estado+cidade++bairro/
+        // Se não há bairro, usar apenas estado+cidade
+        if (bairro) {
+          return `/${intent}/imoveis/${estadoSigla}+${municipio}++${bairro}/`;
+        } else {
+          return `/${intent}/imoveis/${estadoSigla}+${municipio}/`;
+        }
       }
     },
     {
