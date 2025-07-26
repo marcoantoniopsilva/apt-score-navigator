@@ -164,7 +164,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
   useEffect(() => {
     if (!mapContainer.current || !mapboxToken) return;
 
-    console.log('PropertyMap: Inicializando mapa com token:', mapboxToken.substring(0, 10) + '...');
+    console.log('PropertyMap: Inicializando mapa...');
     mapboxgl.accessToken = mapboxToken;
 
     map.current = new mapboxgl.Map({
@@ -193,23 +193,22 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
   // Atualiza marcadores quando as propriedades mudam
   useEffect(() => {
     if (!map.current || !properties.length) {
-      console.log('PropertyMap: Não pode adicionar marcadores - mapa:', !!map.current, 'propriedades:', properties.length);
+      console.log('PropertyMap: Aguardando mapa e propriedades...');
       return;
     }
 
-    console.log('PropertyMap: Iniciando adição de marcadores para', properties.length, 'propriedades');
+    console.log('PropertyMap: Adicionando marcadores para', properties.length, 'propriedades');
 
     // Remove marcadores existentes
     markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
 
-    // Adiciona novos marcadores com delay para garantir que o mapa esteja pronto
+    // Adiciona novos marcadores
     const addMarkers = async () => {
       const bounds = new mapboxgl.LngLatBounds();
       let markersAdded = 0;
 
       for (const property of properties) {
-        console.log('PropertyMap: Processando propriedade:', property.title);
         const coordinates = await geocodeAddress(property.address);
         
         if (coordinates) {
@@ -236,20 +235,16 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
           markersRef.current.push(marker);
           bounds.extend([lng, lat]);
           markersAdded++;
-          console.log('PropertyMap: Marcador adicionado. Total:', markersAdded);
-        } else {
-          console.warn('PropertyMap: Não foi possível geocodificar:', property.address);
         }
       }
 
-      console.log('PropertyMap: Finalizado. Total de marcadores adicionados:', markersAdded);
+      console.log('PropertyMap: Total de marcadores adicionados:', markersAdded);
 
+      // Ajusta o mapa para mostrar todos os marcadores
       if (markersAdded > 0) {
-        // Ajusta o mapa para mostrar todos os marcadores
         if (!bounds.isEmpty() && markersRef.current.length > 1) {
           map.current?.fitBounds(bounds, { padding: 50 });
         } else if (markersRef.current.length === 1) {
-          // Se há apenas uma propriedade, centraliza nela
           const firstMarker = markersRef.current[0];
           map.current?.setCenter(firstMarker.getLngLat());
           map.current?.setZoom(14);
@@ -257,7 +252,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
       }
     };
 
-    // Aguarda um pouco para garantir que o mapa esteja completamente carregado
+    // Aguarda o mapa estar pronto
     const timeoutId = setTimeout(() => {
       addMarkers();
     }, 1000);
