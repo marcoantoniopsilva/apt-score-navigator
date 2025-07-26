@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { MapPin, Home, Car, Bath, Bed } from 'lucide-react';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PropertyMapProps {
   properties: Property[];
@@ -18,22 +19,35 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState<string>('');
+  const [isLoadingToken, setIsLoadingToken] = useState(true);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
 
-  // Solicita o token do Mapbox ao usuário se não estiver configurado
+  // Busca o token do Mapbox configurado no Supabase
   useEffect(() => {
-    const savedToken = localStorage.getItem('mapbox-token');
-    if (savedToken) {
-      setMapboxToken(savedToken);
-    } else {
-      const token = prompt('Para usar o mapa, insira seu token público do Mapbox (disponível em https://mapbox.com/):');
-      if (token) {
-        localStorage.setItem('mapbox-token', token);
-        setMapboxToken(token);
-      } else {
-        toast.error('Token do Mapbox é necessário para exibir o mapa');
+    const fetchMapboxToken = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-mapbox-token');
+        
+        if (error) {
+          console.error('Erro ao buscar token do Mapbox:', error);
+          toast.error('Erro ao carregar configuração do mapa');
+          return;
+        }
+        
+        if (data?.token) {
+          setMapboxToken(data.token);
+        } else {
+          toast.error('Token do Mapbox não configurado. Entre em contato com o administrador.');
+        }
+      } catch (error) {
+        console.error('Erro ao buscar token:', error);
+        toast.error('Erro ao configurar o mapa');
+      } finally {
+        setIsLoadingToken(false);
       }
-    }
+    };
+
+    fetchMapboxToken();
   }, []);
 
   // Geocodifica endereços usando a API do Nominatim
@@ -204,26 +218,29 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
     addMarkers();
   }, [properties, onPropertySelect]);
 
+  if (isLoadingToken) {
+    return (
+      <Card className="w-full h-96 flex items-center justify-center">
+        <CardContent className="text-center">
+          <MapPin className="w-12 h-12 mx-auto mb-4 text-muted-foreground animate-pulse" />
+          <CardTitle className="mb-2">Carregando mapa...</CardTitle>
+          <p className="text-muted-foreground">
+            Configurando o mapa interativo
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (!mapboxToken) {
     return (
       <Card className="w-full h-96 flex items-center justify-center">
         <CardContent className="text-center">
           <MapPin className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <CardTitle className="mb-2">Token do Mapbox necessário</CardTitle>
-          <p className="text-muted-foreground mb-4">
-            Para visualizar o mapa, você precisa configurar um token do Mapbox.
+          <CardTitle className="mb-2">Mapa não disponível</CardTitle>
+          <p className="text-muted-foreground">
+            O token do Mapbox não foi configurado. Entre em contato com o administrador.
           </p>
-          <Button 
-            onClick={() => {
-              const token = prompt('Insira seu token público do Mapbox:');
-              if (token) {
-                localStorage.setItem('mapbox-token', token);
-                setMapboxToken(token);
-              }
-            }}
-          >
-            Configurar Token
-          </Button>
         </CardContent>
       </Card>
     );
