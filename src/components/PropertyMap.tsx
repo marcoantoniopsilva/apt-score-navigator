@@ -20,33 +20,27 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState<string>('');
   const [isLoadingToken, setIsLoadingToken] = useState(true);
-  const [debugInfo, setDebugInfo] = useState<string>('Inicializando...');
   const markersRef = useRef<mapboxgl.Marker[]>([]);
 
   // Busca o token do Mapbox configurado no Supabase
   useEffect(() => {
     const fetchMapboxToken = async () => {
-      setDebugInfo('Buscando token do Mapbox...');
       try {
         const { data, error } = await supabase.functions.invoke('get-mapbox-token');
         
         if (error) {
           console.error('Erro ao buscar token do Mapbox:', error);
-          setDebugInfo('❌ Erro ao carregar token do Mapbox');
           toast.error('Erro ao carregar configuração do mapa');
           return;
         }
         
         if (data?.token) {
           setMapboxToken(data.token);
-          setDebugInfo('✅ Token do Mapbox carregado');
         } else {
-          setDebugInfo('❌ Token do Mapbox não configurado');
           toast.error('Token do Mapbox não configurado. Entre em contato com o administrador.');
         }
       } catch (error) {
         console.error('Erro ao buscar token:', error);
-        setDebugInfo('❌ Erro ao configurar o mapa');
         toast.error('Erro ao configurar o mapa');
       } finally {
         setIsLoadingToken(false);
@@ -56,32 +50,40 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
     fetchMapboxToken();
   }, []);
 
-  // Geocodifica endereços usando a API do Nominatim
+  // Geocodifica endereços usando a API do Nominatim com múltiplas tentativas
   const geocodeAddress = async (address: string): Promise<[number, number] | null> => {
-    try {
-      console.log('PropertyMap: Geocodificando endereço:', address);
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address + ', Brasil')}&format=json&limit=1&addressdetails=1`,
-        {
-          headers: {
-            'User-Agent': 'AptScoreNavigator/1.0'
+    // Lista de variações do endereço para tentar
+    const addressVariations = [
+      `${address}, Brasil`,
+      `${address}, Belo Horizonte, MG, Brasil`,
+      address,
+      address.replace(/,.*$/, ', Belo Horizonte, MG, Brasil'), // Remove tudo após primeira vírgula
+    ];
+
+    for (const addressToTry of addressVariations) {
+      try {
+        const response = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addressToTry)}&format=json&limit=1&addressdetails=1`,
+          {
+            headers: {
+              'User-Agent': 'AptScoreNavigator/1.0'
+            }
           }
+        );
+        const data = await response.json();
+        
+        if (data && data.length > 0) {
+          const coords: [number, number] = [parseFloat(data[0].lon), parseFloat(data[0].lat)];
+          console.log(`✅ Geocodificação bem-sucedida para: ${address} -> ${coords}`);
+          return coords;
         }
-      );
-      const data = await response.json();
-      console.log('PropertyMap: Resposta da geocodificação:', data);
-      
-      if (data && data.length > 0) {
-        const coords: [number, number] = [parseFloat(data[0].lon), parseFloat(data[0].lat)];
-        console.log('PropertyMap: Coordenadas encontradas:', coords);
-        return coords;
+      } catch (error) {
+        console.warn(`Erro ao tentar geocodificar "${addressToTry}":`, error);
       }
-      console.log('PropertyMap: Nenhuma coordenada encontrada para:', address);
-      return null;
-    } catch (error) {
-      console.error('PropertyMap: Erro ao geocodificar endereço:', error);
-      return null;
     }
+    
+    console.warn(`❌ Não foi possível geocodificar: ${address}`);
+    return null;
   };
 
   // Cria ícone personalizado baseado na pontuação
@@ -191,11 +193,11 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
   // Atualiza marcadores quando as propriedades mudam
   useEffect(() => {
     if (!map.current || !properties.length) {
-      setDebugInfo(`❌ Não pode adicionar marcadores - Mapa: ${!!map.current ? 'OK' : 'Não carregado'}, Propriedades: ${properties.length}`);
+      console.log('PropertyMap: Não pode adicionar marcadores - mapa:', !!map.current, 'propriedades:', properties.length);
       return;
     }
 
-    setDebugInfo(`🔄 Iniciando adição de ${properties.length} marcadores...`);
+    console.log('PropertyMap: Iniciando adição de marcadores para', properties.length, 'propriedades');
 
     // Remove marcadores existentes
     markersRef.current.forEach(marker => marker.remove());
@@ -207,7 +209,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
       let markersAdded = 0;
 
       for (const property of properties) {
-        setDebugInfo(`🔍 Geocodificando: ${property.title.substring(0, 30)}...`);
+        console.log('PropertyMap: Processando propriedade:', property.title);
         const coordinates = await geocodeAddress(property.address);
         
         if (coordinates) {
@@ -234,15 +236,15 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
           markersRef.current.push(marker);
           bounds.extend([lng, lat]);
           markersAdded++;
-          setDebugInfo(`✅ ${markersAdded}/${properties.length} marcadores adicionados`);
+          console.log('PropertyMap: Marcador adicionado. Total:', markersAdded);
         } else {
-          setDebugInfo(`❌ Erro ao geocodificar: ${property.address.substring(0, 30)}...`);
+          console.warn('PropertyMap: Não foi possível geocodificar:', property.address);
         }
       }
 
+      console.log('PropertyMap: Finalizado. Total de marcadores adicionados:', markersAdded);
+
       if (markersAdded > 0) {
-        setDebugInfo(`✅ ${markersAdded} marcadores no mapa!`);
-        
         // Ajusta o mapa para mostrar todos os marcadores
         if (!bounds.isEmpty() && markersRef.current.length > 1) {
           map.current?.fitBounds(bounds, { padding: 50 });
@@ -252,8 +254,6 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
           map.current?.setCenter(firstMarker.getLngLat());
           map.current?.setZoom(14);
         }
-      } else {
-        setDebugInfo('❌ Nenhum marcador foi adicionado ao mapa');
       }
     };
 
@@ -294,19 +294,8 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
   }
 
   return (
-    <div className="w-full space-y-2">
-      {/* Painel de Debug Visual */}
-      <div className="bg-slate-100 border rounded-lg p-3">
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="text-xs">Debug</Badge>
-          <span className="text-sm font-mono">{debugInfo}</span>
-        </div>
-      </div>
-      
-      {/* Mapa */}
-      <div className="w-full h-96 rounded-lg overflow-hidden border shadow-lg">
-        <div ref={mapContainer} className="w-full h-full" />
-      </div>
+    <div className="w-full h-96 rounded-lg overflow-hidden border shadow-lg">
+      <div ref={mapContainer} className="w-full h-full" />
     </div>
   );
 };
