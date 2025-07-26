@@ -169,7 +169,7 @@ const Index = () => {
     <SessionManager>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <AppHeader 
-          title="Comparador de Imóveis"
+          title="Nestly"
           subtitle={userProfile?.intencao ? 
             `Encontre o melhor apartamento para ${userProfile.intencao}` : 
             "Encontre o melhor apartamento para você"

@@ -100,7 +100,7 @@ const Landing = () => {
           className="max-w-4xl mx-auto"
         >
           <h2 className="text-3xl lg:text-4xl font-bold text-center text-foreground mb-4">
-            Como Funciona o Comparador de Imóveis
+            Como Funciona o Nestly
           </h2>
           <p className="text-lg text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
             Um sistema inteligente que analisa suas preferências e ajuda você a tomar a melhor decisão.

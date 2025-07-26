@@ -216,7 +216,7 @@ const Auth = () => {
             <Home className="h-8 w-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Comparador de Imóveis
+            Nestly
           </h1>
           <p className="text-gray-600">
             Entre para comparar e encontrar o melhor apartamento
