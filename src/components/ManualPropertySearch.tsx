@@ -260,6 +260,64 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
         // Formato: /imoveis/intent?q=cidade
         return `/imoveis/${intent}?q=${encodeURIComponent(cityName)}`;
       }
+    },
+    {
+      name: 'QuintoAndar',
+      icon: '🏢',
+      baseUrl: 'https://www.quintoandar.com.br',
+      description: 'Plataforma moderna de aluguel de imóveis',
+      searchParams: (profile) => {
+        const intent = profile?.intencao;
+        const region = profile?.regiao_referencia || 'belo horizonte, mg';
+        
+        // QuintoAndar só funciona para aluguel
+        if (intent !== 'alugar') {
+          return '/';
+        }
+        
+        // Processar região para extrair estado, município e bairro
+        const { estado, municipio, bairro } = parseRegion(region);
+        
+        // Converter estado completo para sigla
+        const estadoReverseMap: Record<string, string> = {
+          'minas-gerais': 'mg',
+          'sao-paulo': 'sp',
+          'rio-de-janeiro': 'rj',
+          'rio-grande-do-sul': 'rs',
+          'parana': 'pr',
+          'santa-catarina': 'sc',
+          'goias': 'go',
+          'mato-grosso': 'mt',
+          'mato-grosso-do-sul': 'ms',
+          'distrito-federal': 'df',
+          'espirito-santo': 'es',
+          'bahia': 'ba',
+          'pernambuco': 'pe',
+          'ceara': 'ce',
+          'paraiba': 'pb',
+          'rio-grande-do-norte': 'rn',
+          'alagoas': 'al',
+          'sergipe': 'se',
+          'piaui': 'pi',
+          'maranhao': 'ma',
+          'tocantins': 'to',
+          'para': 'pa',
+          'amapa': 'ap',
+          'amazonas': 'am',
+          'roraima': 'rr',
+          'acre': 'ac',
+          'rondonia': 'ro'
+        };
+        
+        const estadoSigla = estadoReverseMap[estado] || 'mg';
+        
+        // Formato: /alugar/imovel/bairro-cidade-estado-brasil ou /alugar/imovel/cidade-estado-brasil
+        if (bairro) {
+          return `/alugar/imovel/${bairro}-${municipio}-${estadoSigla}-brasil`;
+        } else {
+          return `/alugar/imovel/${municipio}-${estadoSigla}-brasil`;
+        }
+      }
     }
   ];
 
