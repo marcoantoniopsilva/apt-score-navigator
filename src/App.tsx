@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import Success from "./pages/Success";
 import NotFound from "./pages/NotFound";
 import Landing from "./pages/Landing";
+import Onboarding from "./pages/Onboarding";
 
 const queryClient = new QueryClient();
 
@@ -23,6 +24,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/" element={<Landing />} />
+            <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/success" element={<Success />} />
             <Route path="/app" element={

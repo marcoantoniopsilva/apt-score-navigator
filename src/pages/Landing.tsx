@@ -10,7 +10,7 @@ const Landing = () => {
   const navigate = useNavigate();
 
   const handleGetStarted = () => {
-    navigate('/auth');
+    navigate('/onboarding');
   };
 
   const features = [

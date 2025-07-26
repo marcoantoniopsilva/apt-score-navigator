@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,12 +9,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Home, Mail, Lock, UserPlus, LogIn, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { UserProfileService } from '@/services/userProfileService';
 
 const Auth = () => {
   const { signIn, signUp, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
+  const [defaultTab, setDefaultTab] = useState('login');
   
   const [loginForm, setLoginForm] = useState({
     email: '',
@@ -26,6 +29,14 @@ const Auth = () => {
     password: '',
     confirmPassword: ''
   });
+
+  // Check if coming from onboarding and set default tab
+  useEffect(() => {
+    const mode = searchParams.get('mode');
+    if (mode === 'signup') {
+      setDefaultTab('signup');
+    }
+  }, [searchParams]);
 
   // Redirect if already authenticated
   useEffect(() => {
@@ -116,8 +127,12 @@ const Auth = () => {
       } else {
         toast({
           title: "Cadastro realizado",
-          description: "Conta criada com sucesso! Você já pode usar o sistema.",
+          description: "Conta criada com sucesso! Processando suas preferências...",
         });
+        
+        // Processar dados do onboarding se existirem
+        await processOnboardingData();
+        
         navigate('/app');
       }
     } catch (error) {
@@ -128,6 +143,56 @@ const Auth = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const processOnboardingData = async () => {
+    try {
+      const onboardingDataStr = localStorage.getItem('onboarding_data');
+      if (!onboardingDataStr) return;
+
+      const onboardingData = JSON.parse(onboardingDataStr);
+      const { profile, answers, criteria, weights } = onboardingData;
+
+      if (!user?.id) return;
+
+      // Salvar perfil do usuário
+      const profileResult = await UserProfileService.saveUserProfile(
+        user.id,
+        profile,
+        answers.intencao,
+        answers.objetivo_principal,
+        answers.situacao_moradia,
+        answers.valor_principal,
+        answers.faixa_preco,
+        answers.regiao_referencia
+      );
+
+      if (!profileResult.success) {
+        console.error('Erro ao salvar perfil:', profileResult.error);
+        return;
+      }
+
+      // Salvar preferências de critérios
+      const preferencesResult = await UserProfileService.saveUserCriteriaPreferences(
+        user.id,
+        weights
+      );
+
+      if (!preferencesResult.success) {
+        console.error('Erro ao salvar preferências:', preferencesResult.error);
+        return;
+      }
+
+      // Limpar dados do localStorage
+      localStorage.removeItem('onboarding_data');
+      
+      toast({
+        title: "Preferências salvas",
+        description: "Suas preferências do onboarding foram aplicadas com sucesso!",
+      });
+    } catch (error) {
+      console.error('Erro ao processar dados do onboarding:', error);
     }
   };
 
@@ -166,7 +231,7 @@ const Auth = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="login" className="w-full">
+            <Tabs defaultValue={defaultTab} className="w-full">
               <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="login" className="flex items-center gap-2">
                   <LogIn className="h-4 w-4" />
