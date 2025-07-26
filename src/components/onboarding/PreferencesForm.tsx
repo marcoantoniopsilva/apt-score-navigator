@@ -26,7 +26,10 @@ const FAIXAS_PRECO_COMPRA = [
   'R$ 400.000 - R$ 600.000',
   'R$ 600.000 - R$ 800.000',
   'R$ 800.000 - R$ 1.200.000',
-  'Acima de R$ 1.200.000'
+  'R$ 1.200.000 - R$ 2.000.000',
+  'R$ 2.000.000 - R$ 3.000.000',
+  'R$ 3.000.000 - R$ 5.000.000',
+  'Acima de R$ 5.000.000'
 ];
 
 export const PreferencesForm: React.FC<PreferencesFormProps> = ({
