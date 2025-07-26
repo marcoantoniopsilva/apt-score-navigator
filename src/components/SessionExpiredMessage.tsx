@@ -4,15 +4,20 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useSessionMonitor } from '@/hooks/useSessionMonitor';
 
 export const SessionExpiredMessage = ({ error }: { error?: string }) => {
   const [isVisible, setIsVisible] = useState(false);
   const { user, session } = useAuth();
+  const { isSessionValid, sessionError, isAuthError } = useSessionMonitor();
   const navigate = useNavigate();
 
   useEffect(() => {
     // Check if error indicates session expiry
-    if (error && (error.includes('JWT') || error.includes('expired') || error.includes('invalid_token'))) {
+    const hasAuthError = error && isAuthError(error);
+    const hasSessionError = sessionError && isAuthError(sessionError);
+    
+    if (hasAuthError || hasSessionError || !isSessionValid) {
       setIsVisible(true);
     } else if (!user && !session) {
       // Also check if user suddenly became null (could indicate expired session)
@@ -21,12 +26,12 @@ export const SessionExpiredMessage = ({ error }: { error?: string }) => {
         setIsVisible(true);
         localStorage.removeItem('was_logged_in');
       }
-    } else if (user && session) {
-      // User is logged in, store this state
+    } else if (user && session && isSessionValid) {
+      // User is logged in with valid session, store this state
       localStorage.setItem('was_logged_in', 'true');
       setIsVisible(false);
     }
-  }, [error, user, session]);
+  }, [error, user, session, isSessionValid, sessionError, isAuthError]);
 
   const handleLoginRedirect = () => {
     navigate('/auth');

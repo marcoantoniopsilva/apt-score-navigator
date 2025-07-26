@@ -1,6 +1,7 @@
 
 import { supabase } from '@/integrations/supabase/client';
 import { ExtractedPropertyData } from '@/types/extractedProperty';
+import { supabaseFunction } from '@/utils/apiUtils';
 
 export const extractPropertyFromUrl = async (url: string): Promise<ExtractedPropertyData> => {
   console.log('propertyExtractionService: Iniciando extração para URL:', url);
@@ -17,41 +18,14 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
   try {
     console.log('propertyExtractionService: Iniciando processo de extração');
     
-    // Obter o token de sessão atual
-    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
-    console.log('propertyExtractionService: Verificando sessão:', {
-      hasSession: !!session,
-      sessionError: sessionError,
-      userId: session?.user?.id,
-      token: session?.access_token ? 'Present' : 'Missing'
-    });
-    
-    if (sessionError) {
-      console.error('propertyExtractionService: Erro ao obter sessão:', sessionError);
-      throw new Error(`Erro de sessão: ${sessionError.message}`);
-    }
-    
-    if (!session) {
-      console.error('propertyExtractionService: Nenhuma sessão encontrada');
-      throw new Error('Usuário não autenticado. Faça login para extrair propriedades.');
-    }
-
-    console.log('propertyExtractionService: Chamando edge function para extração apenas...');
-    
-    const { data, error } = await supabase.functions.invoke('extract-property-data', {
-      body: { url },
-      headers: {
-        Authorization: `Bearer ${session.access_token}`
-      }
+    // Usar o wrapper com gestão automática de sessão
+    const data = await supabaseFunction<any>('extract-property-data', { url }, {
+      retries: 2,
+      timeout: 30000,
+      refreshOnAuth: true
     });
 
-    console.log('propertyExtractionService: Resposta da edge function:', { data, error });
-
-    if (error) {
-      console.error('propertyExtractionService: Erro na edge function:', error);
-      throw new Error(`Erro ao extrair dados: ${error.message}`);
-    }
+    console.log('propertyExtractionService: Resposta da edge function:', { data });
 
     if (!data.success) {
       console.error('propertyExtractionService: Extração falhou:', data.error);
