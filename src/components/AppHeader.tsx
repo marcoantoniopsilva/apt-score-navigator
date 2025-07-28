@@ -49,7 +49,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
             <div className="flex-shrink-0">
               <img src={imoblyLogo} alt="Imobly" className="h-8 w-auto sm:h-10" />
             </div>
-            <div className="flex items-center space-x-2 min-w-0 flex-1">
+            <div className="flex items-center space-x-1 min-w-0 flex-1">
               <h1 className="text-lg sm:text-xl font-bold text-white">Imobly</h1>
               <div className="min-w-0 flex-1">
                 <p className="text-sm sm:text-base text-white/90 truncate">
