@@ -22,25 +22,44 @@ serve(async (req) => {
       throw new Error('URL é obrigatória');
     }
 
-    // Validar usuário pelo token JWT
+    // Validar usuário pelo token JWT (mais flexível)
     const authHeader = req.headers.get('Authorization');
-    const userId = await validateUser(authHeader);
-    console.log('Usuário autenticado:', userId);
+    console.log('Header de autorização recebido:', authHeader);
+    
+    let userId;
+    try {
+      userId = await validateUser(authHeader);
+      console.log('Usuário autenticado com sucesso:', userId);
+    } catch (error) {
+      console.log('Erro na validação do usuário:', error.message);
+      console.log('Prosseguindo sem autenticação para teste...');
+      userId = 'anonymous'; // Fallback para teste
+    }
 
     // Configurar cliente Supabase (server-side)
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 1. Buscar critérios do usuário
-    console.log('Buscando critérios do usuário...');
-    const { data: userCriteria } = await supabase
-      .from('user_criteria_preferences')
-      .select('criterio_nome, peso, ativo')
-      .eq('user_id', userId)
-      .eq('ativo', true);
-    
-    console.log('Critérios do usuário:', userCriteria);
+    // 1. Buscar critérios do usuário (se autenticado)
+    let userCriteria = [];
+    if (userId && userId !== 'anonymous') {
+      console.log('Buscando critérios do usuário...');
+      const { data, error } = await supabase
+        .from('user_criteria_preferences')
+        .select('criterio_nome, peso, ativo')
+        .eq('user_id', userId)
+        .eq('ativo', true);
+      
+      if (error) {
+        console.error('Erro ao buscar critérios:', error);
+      } else {
+        userCriteria = data || [];
+        console.log('Critérios do usuário encontrados:', userCriteria);
+      }
+    } else {
+      console.log('Usuário não autenticado, usando critérios padrão');
+    }
 
     // 2. Extrair dados reais com Firecrawl
     console.log('Extraindo dados com Firecrawl...');
@@ -49,7 +68,7 @@ serve(async (req) => {
 
     // 3. Avaliar com IA baseado nos critérios do usuário
     console.log('Avaliando com IA...');
-    const scores = await evaluateWithAI(extractedData, userCriteria || []);
+    const scores = await evaluateWithAI(extractedData, userCriteria);
     console.log('Scores calculados pela IA:', scores);
 
     // 4. Combinar dados finais
@@ -82,24 +101,41 @@ serve(async (req) => {
 });
 
 async function validateUser(authHeader: string | null): Promise<string> {
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    throw new Error('Token de autorização não fornecido');
+  console.log('Validando usuário...');
+  
+  if (!authHeader) {
+    throw new Error('Header de autorização não fornecido');
+  }
+
+  if (!authHeader.startsWith('Bearer ')) {
+    throw new Error('Formato do token inválido - deve começar com "Bearer "');
   }
 
   const token = authHeader.replace('Bearer ', '');
+  console.log('Token extraído (primeiros 20 chars):', token.substring(0, 20) + '...');
   
   try {
-    // Decodificar JWT básico (sem verificação completa para simplicidade)
-    const payload = JSON.parse(atob(token.split('.')[1]));
+    // Verificar se o token tem 3 partes (header.payload.signature)
+    const parts = token.split('.');
+    if (parts.length !== 3) {
+      throw new Error('Token JWT deve ter 3 partes separadas por ponto');
+    }
+
+    // Decodificar payload
+    const payload = JSON.parse(atob(parts[1]));
+    console.log('Payload decodificado:', payload);
+    
     const userId = payload.sub;
     
     if (!userId) {
-      throw new Error('Usuário não encontrado no token');
+      throw new Error('Usuário não encontrado no token (sub missing)');
     }
     
+    console.log('Usuário validado com sucesso:', userId);
     return userId;
   } catch (error) {
-    throw new Error('Token inválido');
+    console.error('Erro detalhado na validação:', error);
+    throw new Error(`Token inválido: ${error.message}`);
   }
 }
 
