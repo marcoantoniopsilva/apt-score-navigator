@@ -48,8 +48,23 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
         initialScores[criterio.key] = 5; // Score padrão
       });
       setScores(initialScores);
+      
+      // Se temos dados extraídos pendentes, aplicar os scores agora
+      if (urlExtractedData && urlExtractedData.scores) {
+        console.log('AddPropertyForm: Aplicando scores dos dados extraídos após critérios carregarem');
+        const newScores: Record<string, number> = {};
+        activeCriteria.forEach(criterio => {
+          const scoreValue = urlExtractedData.scores[criterio.key];
+          console.log(`AddPropertyForm: Mapeando ${criterio.key} -> ${scoreValue}`);
+          // Usar a sugestão da IA se disponível, senão usar 5 como padrão
+          newScores[criterio.key] = typeof scoreValue === 'number' ? scoreValue : 5;
+        });
+        console.log('AddPropertyForm: Aplicando scores finais:', newScores);
+        setScores(newScores);
+        setSuggestedScores(urlExtractedData.scores);
+      }
     }
-  }, [activeCriteria]);
+  }, [activeCriteria, urlExtractedData]);
 
   // Preencher formulário com dados extraídos se fornecidos
   useEffect(() => {
@@ -81,19 +96,25 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
       otherFees: data.otherFees || 0
     });
     
-    // Atualizar scores baseado nos dados extraídos ou usar scores sugeridos
+    // Atualizar scores baseado nos dados extraídos
     if (data.scores && typeof data.scores === 'object') {
       console.log('AddPropertyForm: Processando scores recebidos:', data.scores);
-      const newScores: Record<string, number> = {};
-      activeCriteria.forEach(criterio => {
-        const scoreValue = data.scores[criterio.key];
-        console.log(`AddPropertyForm: Mapeando ${criterio.key} -> ${scoreValue}`);
-        // Usar a sugestão da IA se disponível, senão usar 5 como padrão
-        newScores[criterio.key] = typeof scoreValue === 'number' ? scoreValue : 5;
-      });
-      console.log('AddPropertyForm: Scores finais a serem aplicados:', newScores);
-      setScores(newScores);
-      setSuggestedScores(data.scores); // Guardar as sugestões
+      setSuggestedScores(data.scores); // Guardar as sugestões sempre
+      
+      // Se os critérios já estão carregados, aplicar imediatamente
+      if (activeCriteria.length > 0) {
+        const newScores: Record<string, number> = {};
+        activeCriteria.forEach(criterio => {
+          const scoreValue = data.scores[criterio.key];
+          console.log(`AddPropertyForm: Mapeando ${criterio.key} -> ${scoreValue}`);
+          // Usar a sugestão da IA se disponível, senão usar 5 como padrão
+          newScores[criterio.key] = typeof scoreValue === 'number' ? scoreValue : 5;
+        });
+        console.log('AddPropertyForm: Aplicando scores finais imediatamente:', newScores);
+        setScores(newScores);
+      } else {
+        console.log('AddPropertyForm: Critérios ainda não carregados, aguardando...');
+      }
     } else {
       console.log('AddPropertyForm: Não há scores nos dados extraídos');
     }
