@@ -16,12 +16,9 @@ import { useSimpleSession } from '@/hooks/useSimpleSession';
 import { usePropertyActions } from '@/hooks/usePropertyActions';
 import { usePropertySorting } from '@/hooks/usePropertySorting';
 import { usePropertyComparison } from '@/hooks/usePropertyComparison';
-import { useSubscription } from '@/hooks/useSubscription';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { useTabVisibility } from '@/hooks/useTabVisibility';
 import { EnhancedOnboardingModal } from '@/components/EnhancedOnboardingModal';
-import { SubscriptionStatus } from '@/components/SubscriptionStatus';
-import { UpgradeModal } from '@/components/UpgradeModal';
 import { UserProfileType } from '@/types/onboarding';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -31,7 +28,6 @@ import { toast } from 'sonner';
  */
 const OptimizedIndex = () => {
   const [comparisonMode, setComparisonMode] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
   const [extractedPropertyData, setExtractedPropertyData] = useState<any>(null);
 
@@ -45,7 +41,6 @@ const OptimizedIndex = () => {
   const { properties, isLoading, refreshProperties, updateProperty, removeProperty } = useOptimizedProperties();
   const { criteriaWeights, updateCriteriaWeight, activeCriteria, getWeightsObject, isLoading: criteriaLoading } = useOptimizedCriteria();
   const { sortBy, sortOrder, setSortBy, setSortOrder } = usePropertySorting();
-  const { isPro, loading: subscriptionLoading } = useSubscription();
   
   // Onboarding hook
   const {
@@ -111,27 +106,16 @@ const OptimizedIndex = () => {
     }
   };
 
-  // Plan limit checks
-  const handleAddPropertyWithLimits = () => {
-    if (!isPro && properties.length >= 5) {
-      toast.error('Limite de 5 propriedades atingido. Faça upgrade para o plano Pro.');
-      setShowUpgradeModal(true);
-      return;
-    }
+  // Property actions
+  const handleAddProperty = () => {
     setShowAddForm(true);
   };
 
-  const handleComparisonWithLimits = () => {
-    if (!isPro) {
-      toast.error('Funcionalidade de comparação disponível apenas no plano Pro.');
-      setShowUpgradeModal(true);
-      return;
-    }
-    setComparisonMode(true);
+  const handleToggleComparison = () => {
+    setComparisonMode(!comparisonMode);
   };
 
-  // Property actions - simplified
-  const handleAddProperty = async (propertyData: any) => {
+  const handleAddPropertySubmit = async (propertyData: any) => {
     // This would normally trigger a mutation and refresh the cache
     console.log('Adding property:', propertyData);
     setShowAddForm(false);
@@ -187,7 +171,7 @@ const OptimizedIndex = () => {
       <AppHeader 
         title="Imobly"
         subtitle="Seu novo jeito de escolher imóveis"
-        onAddProperty={handleAddPropertyWithLimits}
+        onAddProperty={handleAddProperty}
         onRefresh={refreshProperties}
         isLoading={isLoading}
       />
@@ -202,9 +186,6 @@ const OptimizedIndex = () => {
           />
         )}
         
-        <div className="mb-6">
-          <SubscriptionStatus />
-        </div>
 
         {hasCompletedOnboarding && (
           <div className="mb-8">
@@ -228,7 +209,7 @@ const OptimizedIndex = () => {
           isLoading={isLoading}
           onUpdate={handleUpdateProperty}
           onDelete={handleDeleteProperty}
-          onAddProperty={handleAddPropertyWithLimits}
+          onAddProperty={handleAddProperty}
           sortBy={sortBy}
           sortOrder={sortOrder}
           selectedProperties={comparisonMode ? selectedProperties : undefined}
@@ -238,7 +219,7 @@ const OptimizedIndex = () => {
           canCompare={comparisonMode ? canCompare : false}
           onCompare={comparisonMode ? openComparison : undefined}
           onClearSelection={comparisonMode ? clearSelection : undefined}
-          onActivateComparison={handleComparisonWithLimits}
+          onActivateComparison={handleToggleComparison}
           onDeactivateComparison={() => setComparisonMode(false)}
           comparisonMode={comparisonMode}
         />
@@ -252,7 +233,7 @@ const OptimizedIndex = () => {
 
       {showAddForm && (
         <AddPropertyForm 
-          onSubmit={handleAddProperty}
+          onSubmit={handleAddPropertySubmit}
           onCancel={() => {
             setShowAddForm(false);
             setExtractedPropertyData(null);
@@ -269,10 +250,6 @@ const OptimizedIndex = () => {
         />
       )}
 
-      <UpgradeModal 
-        open={showUpgradeModal} 
-        onOpenChange={setShowUpgradeModal} 
-      />
 
       <EnhancedOnboardingModal
         open={showOnboarding}

@@ -17,25 +17,20 @@ import { usePropertyLoader } from '@/hooks/usePropertyLoader';
 import { usePropertyActions } from '@/hooks/usePropertyActions';
 import { usePropertySorting } from '@/hooks/usePropertySorting';
 import { usePropertyComparison } from '@/hooks/usePropertyComparison';
-import { useSubscription } from '@/hooks/useSubscription';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { EnhancedOnboardingModal } from '@/components/EnhancedOnboardingModal';
 import { useCriteria } from '@/hooks/useCriteria';
-import { SubscriptionStatus } from '@/components/SubscriptionStatus';
-import { UpgradeModal } from '@/components/UpgradeModal';
-import { SessionExpiredMessage } from '@/components/SessionExpiredMessage';
+
 import { UserProfileType } from '@/types/onboarding';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const Index = () => {
   const [comparisonMode, setComparisonMode] = useState(false);
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [extractedPropertyData, setExtractedPropertyData] = useState<any>(null);
   
   const { properties, setProperties, isLoading, loadProperties } = usePropertyLoader();
   const { sortBy, sortOrder, setSortBy, setSortOrder } = usePropertySorting();
-  const { isPro, loading: subscriptionLoading, checkSubscription, sessionError } = useSubscription();
   
   // Hook de critérios dinâmicos - DEVE vir antes de qualquer useEffect/useState condicional
   const { criteriaWeights, updateCriteriaWeight, activeCriteria, getWeightsObject } = useCriteria();
@@ -92,29 +87,19 @@ const Index = () => {
     }
   };
   
-  // Verificar limites do plano gratuito
-  const handleAddPropertyWithLimits = () => {
-    if (!isPro && properties.length >= 5) {
-      toast.error('Limite de 5 propriedades atingido. Faça upgrade para o plano Pro para adicionar mais propriedades.');
-      setShowUpgradeModal(true);
-      return;
-    }
+  // Property actions  
+  const handleAddProperty = () => {
     setShowAddForm(true);
   };
 
-  const handleComparisonWithLimits = () => {
-    if (!isPro) {
-      toast.error('Funcionalidade de comparação disponível apenas no plano Pro.');
-      setShowUpgradeModal(true);
-      return;
-    }
-    setComparisonMode(true);
+  const handleToggleComparison = () => {
+    setComparisonMode(!comparisonMode);
   };
 
   const {
     showAddForm,
     setShowAddForm,
-    handleAddProperty,
+    handleAddProperty: handleAddPropertySubmit,
     handleUpdateProperty,
     handleDeleteProperty
   } = usePropertyActions(properties, setProperties, criteriaWeights, loadProperties);
@@ -171,7 +156,7 @@ const Index = () => {
         <AppHeader 
           title="Imobly"
           subtitle="Seu novo jeito de escolher imóveis"
-          onAddProperty={handleAddPropertyWithLimits}
+        onAddProperty={handleAddProperty}
           onRefresh={loadProperties}
           isLoading={isLoading}
         />
@@ -186,13 +171,7 @@ const Index = () => {
             />
           )}
           
-          <div className="mb-6">
-            <SessionExpiredMessage error={sessionError} />
-          </div>
           
-          <div className="mb-6">
-            <SubscriptionStatus />
-          </div>
 
           {/* Busca Manual - movido para o topo após o card de plano */}
           {hasCompletedOnboarding && (
@@ -222,7 +201,7 @@ const Index = () => {
             isLoading={isLoading}
             onUpdate={handleUpdateProperty}
             onDelete={handleDeleteProperty}
-            onAddProperty={handleAddPropertyWithLimits}
+            onAddProperty={handleAddProperty}
             sortBy={sortBy}
             sortOrder={sortOrder}
             selectedProperties={comparisonMode ? selectedProperties : undefined}
@@ -232,7 +211,7 @@ const Index = () => {
             canCompare={comparisonMode ? canCompare : false}
             onCompare={comparisonMode ? openComparison : undefined}
             onClearSelection={comparisonMode ? clearSelection : undefined}
-            onActivateComparison={handleComparisonWithLimits}
+            onActivateComparison={handleToggleComparison}
             onDeactivateComparison={() => {
               console.log('Desativando modo comparação');
               setComparisonMode(false);
@@ -258,8 +237,8 @@ const Index = () => {
         </div>
 
         {showAddForm && (
-          <AddPropertyForm 
-            onSubmit={handleAddProperty}
+        <AddPropertyForm 
+          onSubmit={handleAddPropertySubmit}
             onCancel={() => {
               setShowAddForm(false);
               setExtractedPropertyData(null);
@@ -276,10 +255,6 @@ const Index = () => {
           />
         )}
 
-        <UpgradeModal 
-          open={showUpgradeModal} 
-          onOpenChange={setShowUpgradeModal} 
-        />
 
         <EnhancedOnboardingModal
           open={showOnboarding}
