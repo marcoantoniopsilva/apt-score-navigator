@@ -202,55 +202,50 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
   };
 
   const testUserPreferences = async () => {
-    console.log('🔍 Teste simples iniciado...');
+    console.log('🔍 Testando nova função extract-property-data...');
     
     try {
-      // Teste 1: Verificar se o Supabase está funcionando
-      console.log('📊 Testando conexão com Supabase...');
+      const { data: session } = await supabase.auth.getSession();
       
-      // Teste 2: Tentar uma query simples sem autenticação
-      const { data: testData, error: testError } = await supabase
-        .from('user_profiles')
-        .select('count')
-        .limit(1);
-      
-      console.log('📊 Resultado da query teste:', { testData, testError });
-      
-      // Teste 3: Verificar usuário atual
-      console.log('👤 Verificando usuário atual...');
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      
-      console.log('👤 Usuário:', user);
-      console.log('❌ Erro do usuário:', userError);
-      
-      if (!user) {
+      if (!session?.session?.access_token) {
         toast({
-          title: "❌ Usuário não autenticado",
-          description: "Faça login primeiro",
+          title: "Erro",
+          description: "Usuário não autenticado",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      console.log('📡 Chamando extract-property-data com URL teste...');
+      const response = await supabase.functions.invoke('extract-property-data', {
+        body: { 
+          url: 'https://teste-url-nova-' + Date.now() + '.com.br/imovel/teste-123'
+        },
+        headers: {
+          Authorization: `Bearer ${session.session.access_token}`,
+        }
+      });
+
+      console.log('📋 Resposta completa:', response);
+      
+      if (response.error) {
+        toast({
+          title: "Erro na função",
+          description: response.error.message || 'Erro desconhecido',
           variant: "destructive"
         });
         return;
       }
       
-      // Teste 4: Buscar critérios diretamente
-      console.log('🎯 Buscando critérios do usuário:', user.id);
-      const { data: criteria, error: criteriaError } = await supabase
-        .from('user_criteria_preferences')
-        .select('*')
-        .eq('user_id', user.id);
-      
-      console.log('🎯 Critérios encontrados:', criteria);
-      console.log('❌ Erro critérios:', criteriaError);
-      
       toast({
         title: "✅ Teste concluído",
-        description: `Usuário: ${user.email}, Critérios: ${criteria?.length || 0}`,
+        description: `Dados: ${JSON.stringify(response.data?.data?.title || 'sem título').substring(0, 50)}...`,
       });
       
     } catch (error) {
       console.error('💥 Erro no teste:', error);
       toast({
-        title: "❌ Erro no teste",
+        title: "Erro no teste",
         description: error.message || 'Erro desconhecido',
         variant: "destructive"
       });
