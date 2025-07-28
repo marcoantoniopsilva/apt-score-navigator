@@ -169,7 +169,7 @@ const Index = () => {
     <SessionManager>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <AppHeader 
-          title="Nestly"
+          title="Imobly"
           subtitle="Seu novo jeito de escolher imóveis"
           onAddProperty={handleAddPropertyWithLimits}
           onRefresh={loadProperties}

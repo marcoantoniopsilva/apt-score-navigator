@@ -1,10 +1,11 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Home, LogOut, RefreshCw, Plus } from 'lucide-react';
+import { LogOut, RefreshCw, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { SubscriptionStatus } from './SubscriptionStatus';
+import imoblyLogo from '@/assets/imobly-logo.png';
 
 interface AppHeaderProps {
   title: string;
@@ -45,13 +46,10 @@ const AppHeader: React.FC<AppHeaderProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-3 min-w-0 flex-1">
-            <div className="bg-blue-600 p-2 rounded-lg flex-shrink-0">
-              <Home className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+            <div className="flex-shrink-0">
+              <img src={imoblyLogo} alt="Imobly" className="h-8 w-auto sm:h-10" />
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
-                {title}
-              </h1>
               <p className="text-sm sm:text-base text-gray-600 truncate">
                 {subtitle}
               </p>
