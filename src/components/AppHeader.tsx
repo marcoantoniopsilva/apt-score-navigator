@@ -1,9 +1,10 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Home, LogOut, RefreshCw, Plus } from 'lucide-react';
+import { LogOut, RefreshCw, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { SubscriptionStatus } from './SubscriptionStatus';
+import imoblyLogo from '@/assets/imobly-logo.png';
 interface AppHeaderProps {
   title: string;
   subtitle: string;
@@ -43,8 +44,8 @@ const AppHeader: React.FC<AppHeaderProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 bg-blue-900">
           <div className="flex items-center space-x-3 min-w-0 flex-1">
-            <div className="bg-blue-600 p-2 rounded-lg flex-shrink-0">
-              <Home className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+            <div className="flex-shrink-0">
+              <img src={imoblyLogo} alt="Imobly Logo" className="h-8 w-8 sm:h-10 sm:w-10" />
             </div>
             <div className="min-w-0 flex-1">
               <h1 className="text-xl sm:text-2xl font-bold text-white">
