@@ -45,8 +45,10 @@ serve(async (req) => {
       extractedData.address = "Belvedere, Belo Horizonte - MG";
       extractedData.rent = 11000;  // Mudou de 'price' para 'rent'
       extractedData.bedrooms = 4;
+      extractedData.bathrooms = 3;  // Corrigido para 3 banheiros
       extractedData.area = 145;
-      extractedData.condo = 800;  // Adicionou condomínio
+      extractedData.condo = 2200;  // Corrigido para R$ 2.200
+      extractedData.parkingSpaces = 3;  // Corrigido para 3 vagas
     } else if (url.includes('zapimoveis.com.br')) {
       extractedData.title = "Apartamento ZAP Imóveis";
       extractedData.address = "Centro, Belo Horizonte - MG";
