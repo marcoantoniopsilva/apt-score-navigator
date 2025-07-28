@@ -13,6 +13,7 @@ import { usePropertyExtraction } from '@/hooks/usePropertyExtraction';
 import { useDirectExtraction } from '@/hooks/useDirectExtraction';
 import { useTestExtraction } from '@/hooks/useTestExtraction';
 import { usePing } from '@/hooks/usePing';
+import { useDirectFetch } from '@/hooks/useDirectFetch';
 
 interface ManualPropertySearchProps {
   onAddProperty?: (propertyData: any) => void;
@@ -127,6 +128,7 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
   const { extractDirectly } = useDirectExtraction();
   const { testExtract } = useTestExtraction();
   const { ping } = usePing();
+  const { directFetch } = useDirectFetch();
 
   useEffect(() => {
     if (user?.id) {
@@ -323,6 +325,16 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
 
   const [isExtracting, setIsExtracting] = useState(false);
 
+  const handleDirectFetch = async () => {
+    if (isExtracting) return;
+    setIsExtracting(true);
+    try {
+      await directFetch();
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
   const handlePing = async () => {
     if (isExtracting) return;
     setIsExtracting(true);
@@ -458,6 +470,14 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
+            <Button 
+              onClick={handleDirectFetch}
+              disabled={isExtracting}
+              variant="outline"
+              size="sm"
+            >
+              🚀 HTTP
+            </Button>
             <Button 
               onClick={handlePing}
               disabled={isExtracting}
