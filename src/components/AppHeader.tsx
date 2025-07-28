@@ -5,7 +5,7 @@ import { LogOut, RefreshCw, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { SubscriptionStatus } from './SubscriptionStatus';
-import imoblyLogo from '/lovable-uploads/8a45a4d6-744a-4eff-b355-80e1f97ce622.png';
+import imoblyLogo from '/lovable-uploads/eba11e85-5438-4e92-a0b6-3406499da928.png';
 
 interface AppHeaderProps {
   title: string;
@@ -42,17 +42,20 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   };
 
   return (
-    <div className="bg-white shadow-sm border-b">
+    <div className="bg-blue-600 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-3 min-w-0 flex-1">
             <div className="flex-shrink-0">
               <img src={imoblyLogo} alt="Imobly" className="h-8 w-auto sm:h-10" />
             </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm sm:text-base text-gray-600 truncate">
-                {subtitle}
-              </p>
+            <div className="flex items-center space-x-3 min-w-0 flex-1">
+              <h1 className="text-lg sm:text-xl font-bold text-white">Imobly</h1>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm sm:text-base text-white/90 truncate">
+                  {subtitle}
+                </p>
+              </div>
             </div>
           </div>
           
@@ -62,14 +65,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               variant="outline"
               disabled={isLoading}
               size="sm"
-              className="flex-1 sm:flex-none"
+              className="flex-1 sm:flex-none border-white/20 text-white hover:bg-white/10 hover:text-white"
             >
               <RefreshCw className={`h-4 w-4 mr-1 sm:mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Atualizar</span>
             </Button>
             <Button 
               onClick={onAddProperty}
-              className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
+              className="bg-white text-blue-600 hover:bg-white/90 flex-1 sm:flex-none"
               size="sm"
             >
               <Plus className="h-4 w-4 mr-1 sm:mr-2" />
@@ -80,7 +83,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               onClick={handleSignOut}
               variant="outline"
               size="sm"
-              className="px-2 sm:px-3"
+              className="px-2 sm:px-3 border-white/20 text-white hover:bg-white/10 hover:text-white"
             >
               <LogOut className="h-4 w-4" />
             </Button>
