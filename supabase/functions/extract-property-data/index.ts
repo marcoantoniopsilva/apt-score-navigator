@@ -347,14 +347,15 @@ function evaluateSimulated(propertyData: any, userCriteria: any[]): any {
     return scores;
   }
 
-  // Senão, usar critérios padrão
+  // Senão, usar critérios padrão baseados no perfil do usuário
   return {
     "Localização": calculateLocationScore(propertyData),
-    "Espaço Interno": calculateSpaceScore(propertyData),
-    "Mobilidade": calculateMobilityScore(propertyData),
+    "Espaço Interno": calculateSpaceScore(propertyData), 
+    "Mobília": calculateMobilityScore(propertyData), // Adaptado
     "Acessibilidade": Math.floor(Math.random() * 4) + 5,
-    "Segurança": Math.floor(Math.random() * 3) + 7,
-    "Custo-Benefício": calculateCostBenefitScore(propertyData)
+    "Acabamento": Math.floor(Math.random() * 3) + 6, // 6-8
+    "Preço": calculateCostBenefitScore(propertyData),
+    "Condomínio": calculateCondoScore(propertyData)
   };
 }
 
@@ -366,8 +367,19 @@ function calculateScore(criteriaName: string, property: any): number {
     case 'espaço interno':
     case 'espaco interno':
       return calculateSpaceScore(property);
-    case 'mobilidade':
-      return calculateMobilityScore(property);
+    case 'mobília':
+    case 'mobilia':
+      return calculateMobilityScore(property); // Reutilizando lógica
+    case 'acessibilidade':
+      return Math.floor(Math.random() * 4) + 5; // 5-8
+    case 'acabamento':
+      return Math.floor(Math.random() * 3) + 6; // 6-8
+    case 'preço':
+    case 'preco':
+      return calculateCostBenefitScore(property);
+    case 'condomínio':
+    case 'condominio':
+      return calculateCondoScore(property);
     case 'custo-benefício':
     case 'custo-beneficio':
       return calculateCostBenefitScore(property);
@@ -411,4 +423,17 @@ function calculateCostBenefitScore(property: any): number {
   if (pricePerSqm < 50) return 8;
   if (pricePerSqm < 80) return 6;
   return 4;
+}
+
+function calculateCondoScore(property: any): number {
+  const condo = property.condo || 0;
+  const area = property.area || 1;
+  const condoPerSqm = condo / area;
+  
+  // Avaliação baseada no condomínio por m²
+  if (condoPerSqm < 10) return 9;  // Muito baixo
+  if (condoPerSqm < 15) return 8;  // Baixo
+  if (condoPerSqm < 20) return 6;  // Médio
+  if (condoPerSqm < 30) return 4;  // Alto
+  return 2; // Muito alto
 }
