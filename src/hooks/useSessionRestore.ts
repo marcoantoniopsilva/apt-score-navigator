@@ -9,6 +9,7 @@ export const useSessionRestore = () => {
   const { session, user } = useAuth();
   const lastSessionState = useRef<string>('');
   const refreshCallbacks = useRef<Array<() => void>>([]);
+  const lastRefreshTime = useRef<number>(0);
 
   // Register callback for data refresh
   const registerRefreshCallback = useCallback((callback: () => void) => {
@@ -18,8 +19,15 @@ export const useSessionRestore = () => {
     };
   }, []);
 
-  // Execute all registered refresh callbacks
+  // Execute all registered refresh callbacks with rate limiting
   const triggerDataRefresh = useCallback(() => {
+    const now = Date.now();
+    if (now - lastRefreshTime.current < 2000) {
+      console.log('Data refresh skipped - too frequent');
+      return;
+    }
+    
+    lastRefreshTime.current = now;
     console.log('Session restored, triggering data refresh for', refreshCallbacks.current.length, 'callbacks');
     refreshCallbacks.current.forEach(callback => {
       try {

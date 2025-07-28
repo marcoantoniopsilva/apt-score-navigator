@@ -16,20 +16,26 @@ export const useSessionMonitor = () => {
     isMonitoring: false
   });
 
-  const monitoringRef = useRef(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const lastCheckTime = useRef<number>(0);
+  const checkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const checkSession = useCallback(async () => {
-    // Prevent concurrent checks and basic rate limiting
+    // Basic rate limiting - prevent too frequent checks
     const now = Date.now();
-    if (monitoringRef.current || !session || (now - lastCheckTime.current) < 2000) {
+    if (!session || (now - lastCheckTime.current) < 1000) {
       return;
     }
 
-    monitoringRef.current = true;
     lastCheckTime.current = now;
     setState(prev => ({ ...prev, isMonitoring: true }));
+
+    // Set timeout to reset monitoring state if check takes too long
+    if (checkTimeoutRef.current) {
+      clearTimeout(checkTimeoutRef.current);
+    }
+    checkTimeoutRef.current = setTimeout(() => {
+      setState(prev => ({ ...prev, isMonitoring: false }));
+    }, 10000); // 10 second timeout
 
     try {
       console.log('useSessionMonitor: Checking session validity...');
@@ -57,11 +63,14 @@ export const useSessionMonitor = () => {
         isMonitoring: false
       }));
     } finally {
-      monitoringRef.current = false;
+      if (checkTimeoutRef.current) {
+        clearTimeout(checkTimeoutRef.current);
+        checkTimeoutRef.current = null;
+      }
     }
   }, [session]);
 
-  // Simplified session monitoring - only check on user/session changes
+  // Monitor session changes
   useEffect(() => {
     if (!session || !user) {
       setState({
@@ -72,22 +81,15 @@ export const useSessionMonitor = () => {
       return;
     }
 
-    // Initial check only
+    // Initial check
     checkSession();
-
-    // Clear any existing interval
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-
   }, [session, user, checkSession]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
+      if (checkTimeoutRef.current) {
+        clearTimeout(checkTimeoutRef.current);
       }
     };
   }, []);

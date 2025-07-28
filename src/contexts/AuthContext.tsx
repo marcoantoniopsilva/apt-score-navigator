@@ -73,19 +73,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Page Visibility API implementation
+  // Enhanced visibility change handling with force refresh
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && session) {
+        console.log('AuthContext: Tab became visible, force checking session');
+        
         // Clear any existing timeout
         if (refreshTimeoutRef.current) {
           clearTimeout(refreshTimeoutRef.current);
         }
         
-        // Debounce session check when tab becomes visible
-        refreshTimeoutRef.current = setTimeout(() => {
-          debouncedRefreshSession();
-        }, 1000); // 1 second delay after tab becomes visible
+        // Force session refresh when tab becomes visible
+        refreshTimeoutRef.current = setTimeout(async () => {
+          try {
+            const { data: { session: currentSession }, error } = await supabase.auth.getSession();
+            
+            if (!mountedRef.current) return;
+            
+            if (error) {
+              console.error('Visibility session check error:', error);
+              return;
+            }
+
+            if (currentSession) {
+              console.log('AuthContext: Session validated on visibility');
+              // Force update session and user even if they appear the same
+              setSession(currentSession);
+              setUser(currentSession.user);
+            } else {
+              console.log('AuthContext: No session found on visibility check');
+              setSession(null);
+              setUser(null);
+            }
+          } catch (error) {
+            console.error('AuthContext: Visibility session check failed:', error);
+          }
+        }, 500); // Shorter delay for more responsive feel
       }
     };
 
@@ -97,7 +121,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearTimeout(refreshTimeoutRef.current);
       }
     };
-  }, [session, debouncedRefreshSession]);
+  }, [session]);
 
   // Session validation every 5 minutes for active sessions
   useEffect(() => {

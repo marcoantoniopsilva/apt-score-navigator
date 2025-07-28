@@ -11,15 +11,17 @@ import { SessionExpiredMessage } from './SessionExpiredMessage';
 export const SessionManager: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isSessionValid, sessionError } = useSessionMonitor();
   const { isSessionValid: sessionRestoreValid } = useSessionRestore();
-  const { registerFocusCallback } = useTabFocusManager();
+  const { registerVisibilityCallback } = useTabFocusManager();
 
-  // Register focus callback for session validation
+  // Register visibility callback for session validation
   useEffect(() => {
-    return registerFocusCallback(() => {
-      console.log('SessionManager: Tab focus detected, checking session...');
-      // Session will be checked automatically by the monitor
+    return registerVisibilityCallback((isVisible) => {
+      if (isVisible) {
+        console.log('SessionManager: Tab became visible, session will be checked automatically');
+        // Session will be checked automatically by the monitor
+      }
     });
-  }, [registerFocusCallback]);
+  }, [registerVisibilityCallback]);
 
   // Log session status for debugging
   useEffect(() => {

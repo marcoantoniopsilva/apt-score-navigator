@@ -13,11 +13,15 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
-    flowType: 'pkce'
+    flowType: 'pkce',
+    // Enhanced session handling for tab switching
+    debug: false,
+    storageKey: 'supabase.auth.token'
   },
   global: {
     headers: {
-      'X-Client-Info': 'supabase-js-web'
+      'X-Client-Info': 'supabase-js-web',
+      'X-Tab-Handling': 'enabled'
     }
   },
   db: {
