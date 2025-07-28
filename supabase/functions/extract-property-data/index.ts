@@ -42,20 +42,26 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 1. Buscar preferências do usuário (se autenticado)
-    let userPreferences = null;
+    // 1. Buscar critérios do usuário (se autenticado)
+    let userCriteria = [];
     if (userId && userId !== 'anonymous') {
-      console.log('Buscando preferências do usuário...');
-      try {
-        userPreferences = await getUserPreferences(userId, supabaseUrl, supabaseServiceKey);
-        console.log('Preferências do usuário encontradas:', userPreferences);
-      } catch (error) {
-        console.error('Erro ao buscar preferências:', error);
-        userPreferences = { criteriosAtivos: [] };
+      console.log('Buscando critérios do usuário:', userId);
+      
+      // Usar a mesma lógica simples que funcionou no teste
+      const { data: criteria, error: criteriaError } = await supabase
+        .from('user_criteria_preferences')
+        .select('criterio_nome, peso, ativo')
+        .eq('user_id', userId)
+        .eq('ativo', true);
+      
+      if (criteriaError) {
+        console.error('Erro ao buscar critérios:', criteriaError);
+      } else {
+        userCriteria = criteria || [];
+        console.log('Critérios encontrados:', userCriteria.length, userCriteria);
       }
     } else {
       console.log('Usuário não autenticado, usando critérios padrão');
-      userPreferences = { criteriosAtivos: [] };
     }
 
     // 2. Extrair dados reais com Firecrawl
@@ -63,9 +69,9 @@ serve(async (req) => {
     const extractedData = await extractWithFirecrawl(url);
     console.log('Dados extraídos:', extractedData);
 
-    // 3. Avaliar com IA baseado nas preferências do usuário
+    // 3. Avaliar com IA baseado nos critérios do usuário
     console.log('Avaliando com IA...');
-    const scores = await evaluateWithAI(extractedData, userPreferences);
+    const scores = await evaluateWithAI(extractedData, userCriteria);
     console.log('Scores calculados pela IA:', scores);
 
     // 4. Combinar dados finais
@@ -248,16 +254,16 @@ function processExtractedData(extracted: any): any {
   };
 }
 
-async function evaluateWithAI(propertyData: any, userPreferences: any): Promise<any> {
+async function evaluateWithAI(propertyData: any, userCriteria: any[]): Promise<any> {
   const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
   
   if (!openaiApiKey) {
     console.log('OpenAI não configurado, usando avaliação simulada');
-    return evaluateSimulated(propertyData, userPreferences);
+    return evaluateSimulated(propertyData, userCriteria);
   }
 
   try {
-    const prompt = buildEvaluationPrompt(propertyData, userPreferences.criteriosAtivos || []);
+    const prompt = buildEvaluationPrompt(propertyData, userCriteria || []);
     
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -292,14 +298,14 @@ async function evaluateWithAI(propertyData: any, userPreferences: any): Promise<
         return scores;
       } catch (error) {
         console.error('Erro ao parsear resposta da IA:', error);
-        return evaluateSimulated(propertyData, userPreferences);
+        return evaluateSimulated(propertyData, userCriteria);
       }
     } else {
-        return evaluateSimulated(propertyData, userPreferences);
+        return evaluateSimulated(propertyData, userCriteria);
     }
   } catch (error) {
     console.error('Erro na avaliação OpenAI:', error);
-    return evaluateSimulated(propertyData, userPreferences);
+    return evaluateSimulated(propertyData, userCriteria);
   }
 }
 
@@ -334,11 +340,11 @@ Se não houver critérios específicos, use: Localização, Espaço Interno, Mob
 `;
 }
 
-function evaluateSimulated(propertyData: any, userPreferences: any): any {
+function evaluateSimulated(propertyData: any, userCriteria: any[]): any {
   // Se há critérios do usuário, usar eles
-  if (userPreferences?.criteriosAtivos && userPreferences.criteriosAtivos.length > 0) {
+  if (userCriteria && userCriteria.length > 0) {
     const scores: any = {};
-    userPreferences.criteriosAtivos.forEach((criteria: any) => {
+    userCriteria.forEach((criteria: any) => {
       scores[criteria.criterio_nome] = calculateScore(criteria.criterio_nome, propertyData);
     });
     return scores;
