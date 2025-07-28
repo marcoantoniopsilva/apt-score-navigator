@@ -210,9 +210,40 @@ async function evaluateWithAI(propertyData: any, userCriteria: any[]): Promise<a
     
     console.log('🤖 Resposta da IA:', aiResponse);
 
-    const scores = JSON.parse(aiResponse);
-    console.log('✅ IA avaliou:', Object.keys(scores));
-    return scores;
+    try {
+      // Extrair JSON da resposta usando a lógica que funcionou
+      let cleanContent = aiResponse.trim();
+      
+      // Remover formatação markdown se presente
+      if (cleanContent.startsWith('```json')) {
+        cleanContent = cleanContent.replace(/```json\n?/, '').replace(/\n?```$/, '');
+      } else if (cleanContent.startsWith('```')) {
+        cleanContent = cleanContent.replace(/```\n?/, '').replace(/\n?```$/, '');
+      }
+      
+      // Procurar por JSON válido
+      const jsonMatch = cleanContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const scores = JSON.parse(jsonMatch[0]);
+        
+        // Validar e limitar scores entre 0 e 10
+        const validatedScores: Record<string, number> = {};
+        for (const [key, value] of Object.entries(scores)) {
+          if (typeof value === 'number' && !isNaN(value)) {
+            validatedScores[key] = Math.max(0, Math.min(10, value));
+          }
+        }
+        
+        console.log('✅ IA avaliou e validou:', Object.keys(validatedScores));
+        return validatedScores;
+      } else {
+        console.error('Não foi possível extrair JSON dos scores');
+        throw new Error('JSON inválido');
+      }
+    } catch (parseError) {
+      console.error('Erro ao fazer parse dos scores:', parseError);
+      throw parseError;
+    }
 
   } catch (error) {
     console.error('💥 Erro na IA:', error);
@@ -222,9 +253,13 @@ async function evaluateWithAI(propertyData: any, userCriteria: any[]): Promise<a
 }
 
 function buildPrompt(propertyData: any, userCriteria: any[]): string {
-  const criteriaList = userCriteria.map(c => c.criterio_nome).join(', ');
-  
-  return `Avalie este imóvel usando APENAS os critérios: ${criteriaList}
+  const criteriosList = userCriteria
+    .map(c => `${c.criterio_nome} (peso: ${c.peso})`)
+    .join('\n- ');
+
+  const custoTotal = (propertyData.rent || 0) + (propertyData.condo || 0) + (propertyData.iptu || 0);
+
+  return `Analise este imóvel e atribua notas de 0 a 10 para cada critério solicitado.
 
 DADOS DO IMÓVEL:
 - Título: ${propertyData.title}
@@ -232,19 +267,29 @@ DADOS DO IMÓVEL:
 - Aluguel: R$ ${propertyData.rent}
 - Condomínio: R$ ${propertyData.condo}
 - IPTU: R$ ${propertyData.iptu}
+- Custo Total Mensal: R$ ${custoTotal}
 - Quartos: ${propertyData.bedrooms}
 - Banheiros: ${propertyData.bathrooms}
 - Área: ${propertyData.area}m²
 - Vagas: ${propertyData.parkingSpaces}
 
-CRITÉRIOS PARA AVALIAR:
-${userCriteria.map(c => `- ${c.criterio_nome}: peso ${c.peso}`).join('\n')}
+CRITÉRIOS PARA AVALIAR (notas de 0 a 10):
+- ${criteriosList}
 
-Retorne APENAS um JSON válido com score de 0 a 10 para cada critério:
-{
-  "${userCriteria[0]?.criterio_nome || 'criterio1'}": 8,
-  "${userCriteria[1]?.criterio_nome || 'criterio2'}": 7
-}`;
+INSTRUÇÕES ESPECÍFICAS:
+1. Para "localizacao" ou "proximidade_metro": Analise a qualidade da localização baseada no endereço
+2. Para "preco_total" ou "preco_por_m2": Compare o custo total mensal (R$ ${custoTotal}) com valores de mercado
+   - Se custo muito alto para a região: nota baixa (2-4)
+   - Se custo justo para a região: nota alta (7-9)
+   - Se custo abaixo do mercado: nota muito alta (8-10)
+3. Para "tamanho": Avalie se a área (${propertyData.area}m²) é adequada para ${propertyData.bedrooms} quartos
+4. Para outros critérios: Analise com base na descrição e características do imóvel
+
+DESCRIÇÃO DO IMÓVEL:
+${propertyData.description || 'Descrição não disponível'}
+
+Retorne APENAS um objeto JSON com os critérios e suas notas (use o nome exato dos critérios):
+{"criterio1": nota, "criterio2": nota, ...}`;
 }
 
 function evaluateWithUserCriteria(propertyData: any, userCriteria: any[]): any {
