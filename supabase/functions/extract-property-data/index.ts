@@ -361,30 +361,32 @@ function evaluateSimulated(propertyData: any, userCriteria: any[]): any {
 
 function calculateScore(criteriaName: string, property: any): number {
   switch (criteriaName.toLowerCase()) {
-    case 'localização':
     case 'localizacao':
       return calculateLocationScore(property);
-    case 'espaço interno':
-    case 'espaco interno':
+    case 'tamanho':
       return calculateSpaceScore(property);
-    case 'mobília':
-    case 'mobilia':
-      return calculateMobilityScore(property); // Reutilizando lógica
-    case 'acessibilidade':
-      return Math.floor(Math.random() * 4) + 5; // 5-8
     case 'acabamento':
       return Math.floor(Math.random() * 3) + 6; // 6-8
-    case 'preço':
-    case 'preco':
+    case 'preco_total':
       return calculateCostBenefitScore(property);
-    case 'condomínio':
-    case 'condominio':
-      return calculateCondoScore(property);
-    case 'custo-benefício':
-    case 'custo-beneficio':
-      return calculateCostBenefitScore(property);
-    default:
+    case 'preco_por_m2':
+      return calculatePricePerSqmScore(property);
+    case 'proximidade_metro':
+      return Math.floor(Math.random() * 4) + 5; // 5-8
+    case 'seguranca':
+      return Math.floor(Math.random() * 3) + 7; // 7-9
+    case 'proximidade_servicos':
       return Math.floor(Math.random() * 4) + 6; // 6-9
+    case 'facilidade_entorno':
+      return Math.floor(Math.random() * 3) + 6; // 6-8
+    case 'potencial_valorizacao':
+      return calculateValorizationScore(property);
+    case 'silencio':
+      return Math.floor(Math.random() * 4) + 5; // 5-8
+    case 'estilo_design':
+      return Math.floor(Math.random() * 3) + 6; // 6-8
+    default:
+      return Math.floor(Math.random() * 5) + 5; // 5-9
   }
 }
 
@@ -436,4 +438,26 @@ function calculateCondoScore(property: any): number {
   if (condoPerSqm < 20) return 6;  // Médio
   if (condoPerSqm < 30) return 4;  // Alto
   return 2; // Muito alto
+}
+
+function calculatePricePerSqmScore(property: any): number {
+  const rent = property.rent || 0;
+  const area = property.area || 1;
+  const pricePerSqm = rent / area;
+  
+  // Avaliação baseada no preço por m²
+  if (pricePerSqm < 25) return 9;  // Muito bom
+  if (pricePerSqm < 40) return 8;  // Bom
+  if (pricePerSqm < 60) return 6;  // Médio
+  if (pricePerSqm < 80) return 4;  // Alto
+  return 2; // Muito alto
+}
+
+function calculateValorizationScore(property: any): number {
+  // Critério baseado na região e características
+  if (property.address?.includes('Belvedere') || property.address?.includes('Lourdes')) return 9;
+  if (property.address?.includes('Savassi') || property.address?.includes('Funcionários')) return 8;
+  if (property.address?.includes('Centro') || property.address?.includes('Santo Agostinho')) return 7;
+  if (property.area > 100) return 7; // Imóveis maiores tendem a valorizar mais
+  return Math.floor(Math.random() * 3) + 5; // 5-7
 }
