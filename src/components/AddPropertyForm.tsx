@@ -202,10 +202,17 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
   };
 
   const testUserPreferences = async () => {
+    console.log('🔍 Iniciando teste de preferências...');
+    
     try {
-      const { data: session } = await supabase.auth.getSession();
+      console.log('Verificando sessão...');
+      const { data: session, error: sessionError } = await supabase.auth.getSession();
+      
+      console.log('Session:', session);
+      console.log('Session error:', sessionError);
       
       if (!session?.session?.access_token) {
+        console.error('Token não encontrado');
         toast({
           title: "Erro",
           description: "Usuário não autenticado",
@@ -214,13 +221,25 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
         return;
       }
 
+      console.log('Chamando função test-user-preferences...');
       const response = await supabase.functions.invoke('test-user-preferences', {
         headers: {
           Authorization: `Bearer ${session.session.access_token}`,
         }
       });
 
-      console.log('Teste de preferências:', response);
+      console.log('Resposta completa:', response);
+      console.log('Data:', response.data);
+      console.log('Error:', response.error);
+      
+      if (response.error) {
+        toast({
+          title: "Erro na função",
+          description: response.error.message || 'Erro desconhecido',
+          variant: "destructive"
+        });
+        return;
+      }
       
       toast({
         title: "Resultado do teste",
