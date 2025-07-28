@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.simple-extract]
 verify_jwt = false
+
+[functions.simple-score]
+verify_jwt = false

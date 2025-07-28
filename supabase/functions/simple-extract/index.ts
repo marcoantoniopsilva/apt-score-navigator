@@ -24,12 +24,14 @@ serve(async (req) => {
     let extractedData = {
       title: "Apartamento Extraído",
       description: "Dados extraídos automaticamente",
-      price: 2500,
+      rent: 2500,  // Mudou de 'price' para 'rent'
       address: "Endereço extraído da URL",
       bedrooms: 3,
       bathrooms: 2,
       area: 85,
       parkingSpaces: 1,
+      condo: 0,
+      iptu: 0,
       fireInsurance: 50,
       otherFees: 0,
       images: [
@@ -41,13 +43,14 @@ serve(async (req) => {
     if (url.includes('vivareal.com.br')) {
       extractedData.title = "Apartamento Viva Real";
       extractedData.address = "Belvedere, Belo Horizonte - MG";
-      extractedData.price = 11000;
+      extractedData.rent = 11000;  // Mudou de 'price' para 'rent'
       extractedData.bedrooms = 4;
       extractedData.area = 145;
+      extractedData.condo = 800;  // Adicionou condomínio
     } else if (url.includes('zapimoveis.com.br')) {
       extractedData.title = "Apartamento ZAP Imóveis";
       extractedData.address = "Centro, Belo Horizonte - MG";
-      extractedData.price = 3500;
+      extractedData.rent = 3500;  // Mudou de 'price' para 'rent'
     }
 
     console.log('Dados extraídos (simulados):', extractedData);

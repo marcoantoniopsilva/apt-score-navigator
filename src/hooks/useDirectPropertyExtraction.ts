@@ -29,12 +29,22 @@ export const useDirectPropertyExtraction = () => {
       console.log('🚀 EXTRAÇÃO DIRETA: Resposta:', JSON.stringify(data, null, 2));
       
       if (response.ok && data?.success) {
-        console.log('🚀 EXTRAÇÃO DIRETA: Sucesso!');
+        console.log('🚀 EXTRAÇÃO DIRETA: Sucesso! Iniciando avaliação IA...');
+        
+        // Chamar avaliação IA
+        const scoreResult = await callScoreEvaluation(data.data);
+        
+        // Combinar dados extraídos com scores
+        const finalData = {
+          ...data.data,
+          scores: scoreResult?.scores || {}
+        };
+        
         toast({
-          title: "✅ Propriedade extraída!",
-          description: "Dados extraídos com sucesso via HTTP direto",
+          title: "✅ Propriedade extraída e avaliada!",
+          description: "Dados extraídos e avaliados com IA com sucesso",
         });
-        return data.data;
+        return finalData;
       } else {
         console.error('🚀 EXTRAÇÃO DIRETA: Falha:', { status: response.status, data });
         toast({
@@ -55,6 +65,32 @@ export const useDirectPropertyExtraction = () => {
       return null;
     }
   }, [toast]);
+
+  const callScoreEvaluation = async (propertyData: any) => {
+    try {
+      console.log('🧠 Chamando avaliação IA...');
+      const response = await fetch('https://eepkixxqvelppxzfwoin.supabase.co/functions/v1/simple-score', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ propertyData })
+      });
+      
+      const result = await response.json();
+      console.log('🧠 Resultado da avaliação IA:', result);
+      
+      if (response.ok && result?.success) {
+        return result;
+      } else {
+        console.error('🧠 Falha na avaliação IA:', result);
+        return null;
+      }
+    } catch (error) {
+      console.error('🧠 Erro na avaliação IA:', error);
+      return null;
+    }
+  };
 
   return { extractWithDirectFetch };
 };
