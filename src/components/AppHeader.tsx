@@ -5,7 +5,7 @@ import { LogOut, RefreshCw, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { SubscriptionStatus } from './SubscriptionStatus';
-import imoblyLogo from '/lovable-uploads/8a45a4d6-744a-4eff-b355-80e1f97ce622.png';
+import imoblyLogo from '/lovable-uploads/5287c8ac-05cf-49ed-936f-a944939a01f4.png';
 
 interface AppHeaderProps {
   title: string;
@@ -42,7 +42,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   };
 
   return (
-    <div className="bg-white shadow-sm border-b">
+    <div className="bg-blue-600 shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center space-x-3 min-w-0 flex-1">
@@ -50,7 +50,10 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               <img src={imoblyLogo} alt="Imobly" className="h-8 w-auto sm:h-10" />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-sm sm:text-base text-gray-600 truncate">
+              <h1 className="text-xl sm:text-2xl font-bold text-white truncate">
+                Imobly
+              </h1>
+              <p className="text-sm sm:text-base text-blue-100 truncate">
                 {subtitle}
               </p>
             </div>
@@ -62,14 +65,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               variant="outline"
               disabled={isLoading}
               size="sm"
-              className="flex-1 sm:flex-none"
+              className="flex-1 sm:flex-none border-blue-400 text-white hover:bg-blue-500"
             >
               <RefreshCw className={`h-4 w-4 mr-1 sm:mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Atualizar</span>
             </Button>
             <Button 
               onClick={onAddProperty}
-              className="bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none"
+              className="bg-white text-blue-600 hover:bg-blue-50 flex-1 sm:flex-none"
               size="sm"
             >
               <Plus className="h-4 w-4 mr-1 sm:mr-2" />
@@ -80,7 +83,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               onClick={handleSignOut}
               variant="outline"
               size="sm"
-              className="px-2 sm:px-3"
+              className="px-2 sm:px-3 border-blue-400 text-white hover:bg-blue-500"
             >
               <LogOut className="h-4 w-4" />
             </Button>
