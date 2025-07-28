@@ -14,6 +14,7 @@ export const useDirectExtraction = () => {
     
     try {
       const startTime = Date.now();
+      console.log('🚨 TESTE DIRETO: Fazendo chamada para Supabase...');
       
       const { data, error } = await supabase.functions.invoke('extract-property-data', {
         body: { url }
@@ -21,10 +22,10 @@ export const useDirectExtraction = () => {
       
       const endTime = Date.now();
       console.log(`🚨 TESTE DIRETO: Tempo de resposta: ${endTime - startTime}ms`);
-      console.log('🚨 TESTE DIRETO: Resposta:', { data, error });
+      console.log('🚨 TESTE DIRETO: Resposta raw:', JSON.stringify({ data, error }, null, 2));
       
       if (error) {
-        console.error('🚨 TESTE DIRETO: Erro do Supabase:', error);
+        console.error('🚨 TESTE DIRETO: Erro do Supabase:', JSON.stringify(error, null, 2));
         toast({
           title: "Erro na comunicação",
           description: `Erro do Supabase: ${error.message}`,
@@ -43,8 +44,11 @@ export const useDirectExtraction = () => {
         return null;
       }
       
+      console.log('🚨 TESTE DIRETO: Tipo do data:', typeof data);
+      console.log('🚨 TESTE DIRETO: Propriedades do data:', Object.keys(data || {}));
+      
       if (!data.success) {
-        console.error('🚨 TESTE DIRETO: Extração falhou:', data.error);
+        console.error('🚨 TESTE DIRETO: Extração falhou:', data.error || 'Erro desconhecido');
         toast({
           title: "Falha na extração",
           description: data.error || "Erro desconhecido na extração",
@@ -53,7 +57,7 @@ export const useDirectExtraction = () => {
         return null;
       }
       
-      console.log('🚨 TESTE DIRETO: Sucesso! Dados extraídos:', data.data);
+      console.log('🚨 TESTE DIRETO: Sucesso! Dados extraídos:', JSON.stringify(data.data, null, 2));
       toast({
         title: "Sucesso na extração!",
         description: "Dados extraídos com sucesso via teste direto",
@@ -63,6 +67,7 @@ export const useDirectExtraction = () => {
       
     } catch (error) {
       console.error('🚨 TESTE DIRETO: Erro capturado:', error);
+      console.error('🚨 TESTE DIRETO: Stack trace:', error.stack);
       toast({
         title: "Erro no teste direto",
         description: error instanceof Error ? error.message : "Erro desconhecido",
