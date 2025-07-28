@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.test-extract]
 verify_jwt = false
+
+[functions.simple-extract]
+verify_jwt = false

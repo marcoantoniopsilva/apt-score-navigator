@@ -11,8 +11,8 @@ export const useDirectPropertyExtraction = () => {
     try {
       const startTime = Date.now();
       
-      // Chamar a edge function original via HTTP direto
-      const response = await fetch('https://eepkixxqvelppxzfwoin.supabase.co/functions/v1/extract-property-data', {
+      // Chamar a função simplificada (sem autenticação)
+      const response = await fetch('https://eepkixxqvelppxzfwoin.supabase.co/functions/v1/simple-extract', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
