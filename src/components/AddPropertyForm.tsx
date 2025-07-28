@@ -9,6 +9,8 @@ import { PropertyDetailsForm } from './forms/PropertyDetailsForm';
 import { PropertyFinancialForm } from './forms/PropertyFinancialForm';
 import { PropertyScoresForm } from './forms/PropertyScoresForm';
 import { useCriteria } from '@/hooks/useCriteria';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/components/ui/use-toast';
 
 interface AddPropertyFormProps {
   onSubmit: (property: Property) => void;
@@ -21,6 +23,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
   const [urlExtractedData, setUrlExtractedData] = useState<any>(null);
   const { activeCriteria, getCriteriaLabel } = useCriteria();
   const [suggestedScores, setSuggestedScores] = useState<Record<string, number>>({});
+  const { toast } = useToast();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -198,6 +201,42 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
     onSubmit(newProperty);
   };
 
+  const testUserPreferences = async () => {
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      
+      if (!session?.session?.access_token) {
+        toast({
+          title: "Erro",
+          description: "Usuário não autenticado",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const response = await supabase.functions.invoke('test-user-preferences', {
+        headers: {
+          Authorization: `Bearer ${session.session.access_token}`,
+        }
+      });
+
+      console.log('Teste de preferências:', response);
+      
+      toast({
+        title: "Resultado do teste",
+        description: `Critérios encontrados: ${response.data?.criteriaCount || 0}`,
+      });
+      
+    } catch (error) {
+      console.error('Erro no teste:', error);
+      toast({
+        title: "Erro no teste",
+        description: error.message,
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -241,6 +280,13 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
 
             {/* Action Buttons */}
             <div className="flex justify-end space-x-4 pt-4 border-t">
+              <Button 
+                type="button" 
+                variant="secondary" 
+                onClick={testUserPreferences}
+              >
+                🔍 Testar Critérios
+              </Button>
               <Button type="button" variant="outline" onClick={onCancel}>
                 Cancelar
               </Button>
