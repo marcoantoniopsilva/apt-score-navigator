@@ -5,7 +5,7 @@ import { LogOut, RefreshCw, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { SubscriptionStatus } from './SubscriptionStatus';
-import imoblyLogo from '@/assets/imobly-logo.png';
+import imoblyLogo from '/lovable-uploads/8a45a4d6-744a-4eff-b355-80e1f97ce622.png';
 
 interface AppHeaderProps {
   title: string;
