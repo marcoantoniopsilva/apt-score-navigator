@@ -41,7 +41,7 @@ export const useSubscription = () => {
     // Prevent concurrent subscription checks
     if (isCheckingRef.current && !isRetry) {
       console.log('useSubscription: Already checking subscription, skipping...');
-      return;
+      return subscriptionData; // Return current data instead of undefined
     }
 
     isCheckingRef.current = true;
