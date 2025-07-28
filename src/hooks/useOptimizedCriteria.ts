@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { CriteriaWeights, DEFAULT_CRITERIA_KEYS, DEFAULT_WEIGHTS } from '@/types/property';
 import { CRITERIOS_DISPONÍVEIS, PERFIL_PESOS_SUGERIDOS } from '@/types/onboarding';
 import { useOnboarding } from './useOnboarding';
+import { useTabVisibility } from '@/hooks/useTabVisibility';
 
 export interface ActiveCriterion {
   key: string;
@@ -16,6 +17,7 @@ export interface ActiveCriterion {
  */
 export const useOptimizedCriteria = () => {
   const { userPreferences, hasCompletedOnboarding, userProfile } = useOnboarding();
+  const { onTabReactivated } = useTabVisibility();
 
   // Memoized label mapper
   const getCriteriaLabel = useMemo(() => {
@@ -36,7 +38,7 @@ export const useOptimizedCriteria = () => {
   }, []);
 
   // Query for computed criteria with intelligent caching
-  const { data: criteriaData, isLoading } = useQuery({
+  const { data: criteriaData, isLoading, refetch } = useQuery({
     queryKey: ['criteria', hasCompletedOnboarding, userPreferences, userProfile?.profile_type],
     queryFn: () => {
       console.log('useOptimizedCriteria: Computing criteria...');
@@ -87,14 +89,25 @@ export const useOptimizedCriteria = () => {
 
       return { criteria: defaultCriteria, weights: DEFAULT_WEIGHTS, hasCustomCriteria: false };
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes (React Query v5 uses gcTime instead of cacheTime)
-    enabled: true
+    staleTime: 1 * 60 * 1000, // 1 minuto - evita cache infinito após tab switch
+    gcTime: 3 * 60 * 1000, // 3 minutos
+    enabled: true,
+    retry: 2
   });
 
   const activeCriteria = criteriaData?.criteria || [];
   const criteriaWeights = criteriaData?.weights || DEFAULT_WEIGHTS;
   const hasCustomCriteria = criteriaData?.hasCustomCriteria || false;
+
+  // Reagir à reativação da aba
+  useEffect(() => {
+    const cleanup = onTabReactivated(() => {
+      console.log('useOptimizedCriteria: Aba reativada - refazendo query de critérios');
+      refetch();
+    });
+
+    return cleanup;
+  }, [onTabReactivated, refetch]);
 
   // Utility functions
   const updateCriteriaWeight = (criteriaKey: string, newWeight: number) => {

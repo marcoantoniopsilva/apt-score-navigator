@@ -18,6 +18,7 @@ import { usePropertySorting } from '@/hooks/usePropertySorting';
 import { usePropertyComparison } from '@/hooks/usePropertyComparison';
 import { useSubscription } from '@/hooks/useSubscription';
 import { useOnboarding } from '@/hooks/useOnboarding';
+import { useTabVisibility } from '@/hooks/useTabVisibility';
 import { EnhancedOnboardingModal } from '@/components/EnhancedOnboardingModal';
 import { SubscriptionStatus } from '@/components/SubscriptionStatus';
 import { UpgradeModal } from '@/components/UpgradeModal';
@@ -36,6 +37,9 @@ const OptimizedIndex = () => {
 
   // Simplified session management
   const { isAuthenticated, isReady } = useSimpleSession();
+  
+  // Tab visibility hook - ativa automaticamente nas mudanças de aba
+  useTabVisibility();
   
   // Optimized hooks with caching
   const { properties, isLoading, refreshProperties, updateProperty, removeProperty } = useOptimizedProperties();

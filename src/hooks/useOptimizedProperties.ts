@@ -4,6 +4,7 @@ import { Property } from '@/types/property';
 import { loadSavedProperties } from '@/services/propertyDatabaseService';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTabVisibility } from '@/hooks/useTabVisibility';
 
 /**
  * Optimized property loader using React Query
@@ -13,6 +14,7 @@ export const useOptimizedProperties = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { onTabReactivated } = useTabVisibility();
 
   const { data: properties = [], isLoading, error, refetch } = useQuery({
     queryKey: ['properties', user?.id],
@@ -75,9 +77,13 @@ export const useOptimizedProperties = () => {
       return uniqueProperties;
     },
     enabled: !!user?.id,
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    gcTime: 5 * 60 * 1000, // 5 minutes (React Query v5 uses gcTime instead of cacheTime)
-    retry: 2
+    staleTime: 30 * 1000, // 30 segundos - evita cache infinito após tab switch
+    gcTime: 2 * 60 * 1000, // 2 minutos
+    retry: (failureCount, error) => {
+      console.log(`useOptimizedProperties: Retry ${failureCount} para propriedades`);
+      return failureCount < 3;
+    },
+    retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000)
   });
 
   // Handle errors with useEffect instead of onError callback
@@ -86,11 +92,27 @@ export const useOptimizedProperties = () => {
       console.error('useOptimizedProperties: Error loading properties:', error);
       toast({
         title: "Erro ao carregar propriedades",
-        description: "Não foi possível carregar as propriedades salvas.",
+        description: "Não foi possível carregar as propriedades salvas. Tentando novamente...",
         variant: "destructive"
       });
+      
+      // Fallback automático: tentar refetch após erro
+      setTimeout(() => {
+        console.log('useOptimizedProperties: Tentando refetch automático após erro...');
+        refetch();
+      }, 3000);
     }
-  }, [error, toast]);
+  }, [error, toast, refetch]);
+
+  // Reagir à reativação da aba
+  useEffect(() => {
+    const cleanup = onTabReactivated(() => {
+      console.log('useOptimizedProperties: Aba reativada - refazendo query de propriedades');
+      refetch();
+    });
+
+    return cleanup;
+  }, [onTabReactivated, refetch]);
 
   // Manual refresh function
   const refreshProperties = () => {

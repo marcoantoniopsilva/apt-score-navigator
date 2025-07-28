@@ -3,6 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { retryWithBackoff, isAuthError } from '@/utils/sessionUtils';
+import { useTabVisibility } from '@/hooks/useTabVisibility';
 // Session restore removed for optimization
 
 interface SubscriptionData {
@@ -13,6 +14,7 @@ interface SubscriptionData {
 
 export const useSubscription = () => {
   const { user, session } = useAuth();
+  const { onTabReactivated } = useTabVisibility();
   // Session restore removed for optimization
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionData>({
     subscribed: false,
@@ -94,6 +96,15 @@ export const useSubscription = () => {
         subscription_tier: null,
         subscription_end: null,
       });
+
+      // Implementar fallback automático em caso de falha
+      if (!isRetry) {
+        console.log('useSubscription: Agendando retry automático em 5 segundos...');
+        setTimeout(() => {
+          console.log('useSubscription: Executando retry automático...');
+          checkSubscription(true);
+        }, 5000);
+      }
       
     } finally {
       setLoading(false);
@@ -175,6 +186,16 @@ export const useSubscription = () => {
       setLoading(false);
     }
   }, [user, session, checkSubscription]);
+
+  // Reagir à reativação da aba
+  useEffect(() => {
+    const cleanup = onTabReactivated(() => {
+      console.log('useSubscription: Aba reativada - revalidando subscription');
+      checkSubscription();
+    });
+
+    return cleanup;
+  }, [onTabReactivated, checkSubscription]);
 
   const isPro = subscriptionData.subscribed;
 
