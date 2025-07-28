@@ -391,44 +391,16 @@ export const ManualPropertySearch = ({ onAddProperty, onPropertySubmit }: Manual
 
       console.log('✅ Dados extraídos com sucesso:', data.data);
       
-      // Se temos a função de submit que funciona, usar ela
-      if (onPropertySubmit && data.data) {
-        // Converter os dados extraídos para o formato de Property
-        const property = {
-          id: crypto.randomUUID(),
-          title: data.data.title || '',
-          address: data.data.address || '',
-          bedrooms: data.data.bedrooms || 0,
-          bathrooms: data.data.bathrooms || 0,
-          parkingSpaces: data.data.parkingSpaces || 0,
-          area: data.data.area || 0,
-          floor: data.data.floor || '',
-          rent: data.data.rent || 0,
-          condo: data.data.condo || 0,
-          iptu: data.data.iptu || 0,
-          fireInsurance: data.data.fireInsurance || 50,
-          otherFees: data.data.otherFees || 0,
-          totalMonthlyCost: (data.data.rent || 0) + (data.data.condo || 0) + (data.data.iptu || 0) + (data.data.fireInsurance || 50) + (data.data.otherFees || 0),
-          images: data.data.images || [],
-          sourceUrl: urlInput,
-          scores: data.data.scores || {},
-          finalScore: 0, // Será calculado pelo sistema
-          locationSummary: data.data.locationSummary
-        };
-
-        console.log('✅ Usando função de submit que funciona');
-        await onPropertySubmit(property);
+      // Sempre usar onAddProperty para abrir o formulário
+      if (onAddProperty && data.data) {
+        console.log('✅ Passando dados extraídos para o formulário');
+        onAddProperty(data.data);
         setUrlInput('');
         
         toast({
-          title: "Propriedade extraída e salva!",
-          description: "Os dados foram extraídos automaticamente e a propriedade foi salva.",
+          title: "Dados extraídos!",
+          description: "Os dados foram extraídos. Complete o formulário e clique em 'Adicionar Propriedade'.",
         });
-      } else if (onAddProperty && data.data) {
-        // Fallback para a função antiga
-        console.log('⚠️ Usando fallback para função antiga');
-        onAddProperty(data.data);
-        setUrlInput('');
       } else {
         console.log('❌ Nenhuma função de callback disponível');
       }
