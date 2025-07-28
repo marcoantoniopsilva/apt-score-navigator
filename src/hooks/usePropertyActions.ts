@@ -37,10 +37,12 @@ export const usePropertyActions = (
       console.log('PropertyActions: Usando scores da IA:', hasAIScores ? 'SIM' : 'NÃO');
       console.log('PropertyActions: Scores finais:', propertyWithScore.scores);
       console.log('PropertyActions: Salvando no banco de dados...');
-      const savedProperty = await savePropertyToDatabase(propertyWithScore);
-      console.log('PropertyActions: Propriedade salva, resposta do banco:', savedProperty);
+      const result = await savePropertyToDatabase(propertyWithScore) as any;
+      console.log('PropertyActions: Resultado completo:', result);
       
-      // Usar a propriedade retornada do banco (com ID correto) em vez da local
+      // O savePropertyToDatabase pode retornar diretamente os dados ou { data, error }
+      const savedProperty = result.data || result;
+      console.log('PropertyActions: Propriedade salva:', savedProperty);
       const propertyFromDb: Property = {
         id: savedProperty.id,
         title: savedProperty.title,
