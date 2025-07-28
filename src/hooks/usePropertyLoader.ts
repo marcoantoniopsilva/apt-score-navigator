@@ -1,13 +1,15 @@
 
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Property } from '@/types/property';
 import { loadSavedProperties } from '@/services/propertyDatabaseService';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSessionRestore } from './useSessionRestore';
 
 export const usePropertyLoader = () => {
   const { toast } = useToast();
   const { user } = useAuth();
+  const { registerRefreshCallback } = useSessionRestore();
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const isLoadingRef = useRef(false);
@@ -104,6 +106,14 @@ export const usePropertyLoader = () => {
       isLoadingRef.current = false;
     }
   }, [toast]);
+
+  // Register for session refresh callbacks
+  useEffect(() => {
+    return registerRefreshCallback(() => {
+      console.log('PropertyLoader: Session restored, reloading properties');
+      loadProperties();
+    });
+  }, [registerRefreshCallback, loadProperties]);
 
   useEffect(() => {
     // Verificar se o usuário mudou

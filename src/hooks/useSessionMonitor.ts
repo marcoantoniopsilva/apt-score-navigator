@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { sessionValidator, isAuthError } from '@/utils/sessionUtils';
-import { supabase } from '@/integrations/supabase/client';
 
 interface SessionMonitorState {
   isSessionValid: boolean;
@@ -19,11 +18,17 @@ export const useSessionMonitor = () => {
 
   const monitoringRef = useRef(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastCheckTime = useRef<number>(0);
 
-  const checkSession = async () => {
-    if (monitoringRef.current || !session) return;
+  const checkSession = useCallback(async () => {
+    // Prevent concurrent checks and rate limiting
+    const now = Date.now();
+    if (monitoringRef.current || !session || (now - lastCheckTime.current) < 5000) {
+      return;
+    }
 
     monitoringRef.current = true;
+    lastCheckTime.current = now;
     setState(prev => ({ ...prev, isMonitoring: true }));
 
     try {
@@ -38,29 +43,6 @@ export const useSessionMonitor = () => {
 
       if (!sessionState.isValid && sessionState.error) {
         console.warn('Session validation failed:', sessionState.error);
-        
-        // Attempt automatic refresh if session needs refresh
-        if (sessionState.needsRefresh) {
-          console.log('Attempting automatic session refresh...');
-          try {
-            const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
-            
-            if (!refreshError && refreshedSession) {
-              console.log('Session refreshed successfully');
-              setState(prev => ({
-                ...prev,
-                isSessionValid: true,
-                sessionError: null,
-                isMonitoring: false
-              }));
-              
-              // Notify other components about session refresh
-              window.dispatchEvent(new CustomEvent('session-refreshed'));
-            }
-          } catch (refreshError) {
-            console.error('Session refresh failed:', refreshError);
-          }
-        }
       }
 
     } catch (error) {
@@ -74,9 +56,9 @@ export const useSessionMonitor = () => {
     } finally {
       monitoringRef.current = false;
     }
-  };
+  }, [session]);
 
-  // Monitor session every 2 minutes when user is active
+  // Simplified session monitoring - only check on user/session changes
   useEffect(() => {
     if (!session || !user) {
       setState({
@@ -87,30 +69,25 @@ export const useSessionMonitor = () => {
       return;
     }
 
-    // Initial check
+    // Initial check only
     checkSession();
 
-    // Set up periodic monitoring
-    intervalRef.current = setInterval(checkSession, 2 * 60 * 1000); // 2 minutes
+    // Clear any existing interval
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
 
+  }, [session, user, checkSession]);
+
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }
     };
-  }, [session, user]);
-
-  // Check session on window focus
-  useEffect(() => {
-    const handleFocus = () => {
-      if (session && !document.hidden) {
-        checkSession();
-      }
-    };
-
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
-  }, [session]);
+  }, []);
 
   return {
     ...state,

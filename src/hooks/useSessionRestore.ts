@@ -1,57 +1,56 @@
-import { useEffect } from 'react';
+import { useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSessionMonitor } from './useSessionMonitor';
 
 /**
- * Hook para restaurar dados quando a sessão é recuperada
- * Monitora eventos de sessão e dispara recarregamento de dados
+ * Simplified session restore hook - no recursive events
+ * Only handles data refresh when session becomes valid
  */
 export const useSessionRestore = () => {
   const { session, user } = useAuth();
-  const { isSessionValid } = useSessionMonitor();
+  const lastSessionState = useRef<string>('');
+  const refreshCallbacks = useRef<Array<() => void>>([]);
 
-  useEffect(() => {
-    const handleSessionRestored = () => {
-      console.log('Session restored, triggering data reload...');
-      
-      // Dispara eventos para recarregar dados críticos
-      window.dispatchEvent(new CustomEvent('criteria-updated'));
-      window.dispatchEvent(new CustomEvent('reload-properties'));
-    };
-
-    const handleSessionExpired = () => {
-      console.log('Session expired, clearing local data...');
-      
-      // Limpa dados locais quando a sessão expira
-      localStorage.removeItem('cached-criteria');
-      localStorage.removeItem('cached-properties');
-    };
-
-    // Escuta eventos de sessão
-    window.addEventListener('session-refreshed', handleSessionRestored);
-    window.addEventListener('session-expired', handleSessionExpired);
-
+  // Register callback for data refresh
+  const registerRefreshCallback = useCallback((callback: () => void) => {
+    refreshCallbacks.current.push(callback);
     return () => {
-      window.removeEventListener('session-refreshed', handleSessionRestored);
-      window.removeEventListener('session-expired', handleSessionExpired);
+      refreshCallbacks.current = refreshCallbacks.current.filter(cb => cb !== callback);
     };
   }, []);
 
-  // Verifica se a sessão foi restaurada após estar inválida
+  // Execute all registered refresh callbacks
+  const triggerDataRefresh = useCallback(() => {
+    console.log('Session restored, triggering data refresh for', refreshCallbacks.current.length, 'callbacks');
+    refreshCallbacks.current.forEach(callback => {
+      try {
+        callback();
+      } catch (error) {
+        console.error('Error in refresh callback:', error);
+      }
+    });
+  }, []);
+
+  // Monitor session state changes
   useEffect(() => {
-    if (session && user && isSessionValid) {
-      console.log('Session is now valid, checking if data needs refresh...');
-      
-      // Se não há dados em cache, dispara recarregamento
-      const hasCachedCriteria = localStorage.getItem('cached-criteria');
-      if (!hasCachedCriteria) {
-        window.dispatchEvent(new CustomEvent('criteria-updated'));
+    const currentState = `${!!session}-${!!user}-${session?.access_token?.slice(-10) || ''}`;
+    
+    if (lastSessionState.current && lastSessionState.current !== currentState) {
+      if (session && user) {
+        console.log('Session state changed - session restored');
+        triggerDataRefresh();
+      } else {
+        console.log('Session state changed - session lost, clearing cache');
+        localStorage.removeItem('cached-criteria');
+        localStorage.removeItem('cached-properties');
       }
     }
-  }, [session, user, isSessionValid]);
+    
+    lastSessionState.current = currentState;
+  }, [session, user, triggerDataRefresh]);
 
   return {
-    isSessionValid,
-    hasActiveSession: !!(session && user)
+    isSessionValid: !!(session && user),
+    hasActiveSession: !!(session && user),
+    registerRefreshCallback
   };
 };
