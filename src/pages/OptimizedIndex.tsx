@@ -188,7 +188,7 @@ const OptimizedIndex = () => {
 
         {hasCompletedOnboarding && (
           <div className="mb-8">
-            <ManualPropertySearch onAddProperty={handleExtractedProperty} />
+            <ManualPropertySearch onAddProperty={handleExtractedProperty} onPropertySubmit={handleAddPropertySubmit} />
           </div>
         )}
         

@@ -15,9 +15,11 @@ import { useTestExtraction } from '@/hooks/useTestExtraction';
 import { usePing } from '@/hooks/usePing';
 import { useDirectFetch } from '@/hooks/useDirectFetch';
 import { useDirectPropertyExtraction } from '@/hooks/useDirectPropertyExtraction';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ManualPropertySearchProps {
   onAddProperty?: (propertyData: any) => void;
+  onPropertySubmit?: (property: any) => void; // Nova prop para usar a lógica que funciona
 }
 
 interface ExternalPortal {
@@ -120,7 +122,7 @@ const parseRegion = (region: string) => {
   return { estado, municipio, bairro };
 };
 
-export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProps) => {
+export const ManualPropertySearch = ({ onAddProperty, onPropertySubmit }: ManualPropertySearchProps) => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [urlInput, setUrlInput] = useState('');
   const { toast } = useToast();
@@ -363,29 +365,78 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
   };
 
   const handleExtractProperty = async () => {
-    if (isExtracting) {
-      console.log('⚠️ Extração já em andamento, ignorando clique');
+    if (isExtracting || !urlInput.trim()) {
+      console.log('⚠️ Extração já em andamento ou URL vazia, ignorando clique');
       return;
     }
 
     setIsExtracting(true);
-    console.log('🚀 Iniciando extração de propriedade (HTTP direto)');
+    console.log('🚀 Iniciando extração de propriedade usando lógica que funciona');
     
     try {
-      const result = await extractWithDirectFetch(urlInput);
+      // Usar a edge function extract-property-data que funciona
+      const { data, error } = await supabase.functions.invoke('extract-property-data', {
+        body: { url: urlInput }
+      });
+
+      if (error) {
+        console.error('❌ Erro do Supabase:', error);
+        throw new Error(`Erro na comunicação: ${error.message}`);
+      }
+
+      if (!data || !data.success) {
+        console.error('❌ Extração falhou:', data?.error || 'Resposta inválida');
+        throw new Error(data?.error || 'Falha na extração dos dados');
+      }
+
+      console.log('✅ Dados extraídos com sucesso:', data.data);
       
-      if (result && onAddProperty) {
-        console.log('✅ Dados extraídos com sucesso, adicionando propriedade');
-        onAddProperty(result);
+      // Se temos a função de submit que funciona, usar ela
+      if (onPropertySubmit && data.data) {
+        // Converter os dados extraídos para o formato de Property
+        const property = {
+          id: crypto.randomUUID(),
+          title: data.data.title || '',
+          address: data.data.address || '',
+          bedrooms: data.data.bedrooms || 0,
+          bathrooms: data.data.bathrooms || 0,
+          parkingSpaces: data.data.parkingSpaces || 0,
+          area: data.data.area || 0,
+          floor: data.data.floor || '',
+          rent: data.data.rent || 0,
+          condo: data.data.condo || 0,
+          iptu: data.data.iptu || 0,
+          fireInsurance: data.data.fireInsurance || 50,
+          otherFees: data.data.otherFees || 0,
+          totalMonthlyCost: (data.data.rent || 0) + (data.data.condo || 0) + (data.data.iptu || 0) + (data.data.fireInsurance || 50) + (data.data.otherFees || 0),
+          images: data.data.images || [],
+          sourceUrl: urlInput,
+          scores: data.data.scores || {},
+          finalScore: 0, // Será calculado pelo sistema
+          locationSummary: data.data.locationSummary
+        };
+
+        console.log('✅ Usando função de submit que funciona');
+        await onPropertySubmit(property);
+        setUrlInput('');
+        
+        toast({
+          title: "Propriedade extraída e salva!",
+          description: "Os dados foram extraídos automaticamente e a propriedade foi salva.",
+        });
+      } else if (onAddProperty && data.data) {
+        // Fallback para a função antiga
+        console.log('⚠️ Usando fallback para função antiga');
+        onAddProperty(data.data);
         setUrlInput('');
       } else {
-        console.log('❌ Falha na extração de dados');
+        console.log('❌ Nenhuma função de callback disponível');
       }
     } catch (error) {
       console.error('❌ Erro durante extração:', error);
       toast({
         title: "Erro na extração",
-        description: "Não foi possível extrair os dados da propriedade.",
+        description: error instanceof Error ? error.message : "Não foi possível extrair os dados da propriedade.",
         variant: "destructive"
       });
     } finally {
@@ -467,52 +518,19 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Button 
-              onClick={handleDirectFetch}
-              disabled={isExtracting}
-              variant="outline"
-              size="sm"
-            >
-              🚀 HTTP
-            </Button>
-            <Button 
-              onClick={handlePing}
-              disabled={isExtracting}
-              variant="outline"
-              size="sm"
-            >
-              🏓 Ping
-            </Button>
-            <Button 
-              onClick={handleTestFunction}
-              disabled={isExtracting}
-              variant="outline"
-              size="sm"
-            >
-              🧪 Teste
-            </Button>
+          <div className="space-y-4">
             <Input
-              placeholder="https://www.zapimoveis.com.br/imovel/..."
+              placeholder="Cole a URL do anúncio aqui..."
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
-              disabled={isExtracting}
             />
             <Button 
               onClick={handleExtractProperty}
               disabled={isExtracting || !urlInput.trim()}
+              className="w-full"
+              size="lg"
             >
-              {isExtracting ? (
-                <>
-                  <Search className="h-4 w-4 mr-2 animate-spin" />
-                  Extraindo...
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Extrair
-                </>
-              )}
+              {isExtracting ? '⏳ Extraindo...' : '✨ Extrair e Adicionar Propriedade'}
             </Button>
           </div>
           
