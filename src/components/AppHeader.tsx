@@ -47,11 +47,11 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               <Home className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
             </div>
             <div className="min-w-0 flex-1">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
-                {title}
+              <h1 className="text-xl sm:text-2xl font-bold text-white">
+                Imobly
               </h1>
-              <p className="text-sm sm:text-base text-gray-600 truncate">
-                {subtitle}
+              <p className="text-sm sm:text-base text-blue-100">
+                Seu novo jeito de escolher imóveis
               </p>
             </div>
           </div>
