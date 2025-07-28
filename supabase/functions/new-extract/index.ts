@@ -62,8 +62,8 @@ serve(async (req) => {
     const propertyData = extractDifferentData(url);
     console.log('🏠 NEW-EXTRACT Dados:', propertyData.title);
 
-    // Avaliar com critérios do usuário
-    const scores = evaluateWithUserCriteria(propertyData, userCriteria);
+    // Avaliar com IA ou simulação
+    const scores = await evaluateWithAI(propertyData, userCriteria);
     console.log('⭐ NEW-EXTRACT Scores:', Object.keys(scores));
 
     const result = {
@@ -158,6 +158,94 @@ function extractDifferentData(url: string): any {
       images: ["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400"]
     };
   }
+}
+
+async function evaluateWithAI(propertyData: any, userCriteria: any[]): Promise<any> {
+  const openaiApiKey = Deno.env.get('OPENAI_API_KEY');
+  
+  if (!openaiApiKey) {
+    console.log('🤖 NEW-EXTRACT OpenAI não configurado, usando simulação');
+    return evaluateWithUserCriteria(propertyData, userCriteria);
+  }
+
+  if (userCriteria.length === 0) {
+    console.log('🤖 NEW-EXTRACT Sem critérios do usuário, usando simulação');
+    return evaluateWithUserCriteria(propertyData, userCriteria);
+  }
+
+  try {
+    console.log('🤖 NEW-EXTRACT Chamando OpenAI para avaliação...');
+    
+    const prompt = buildPrompt(propertyData, userCriteria);
+    console.log('📝 NEW-EXTRACT Prompt criado');
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${openaiApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4.1-2025-04-14',
+        messages: [
+          {
+            role: 'system',
+            content: 'Você é um especialista em avaliação de imóveis. Analise propriedades e retorne APENAS um JSON válido com scores de 0 a 10 para cada critério.'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        temperature: 0.3,
+        max_tokens: 500
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`OpenAI API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const aiResponse = data.choices[0]?.message?.content || '{}';
+    
+    console.log('🤖 NEW-EXTRACT Resposta da IA:', aiResponse);
+
+    const scores = JSON.parse(aiResponse);
+    console.log('✅ NEW-EXTRACT IA avaliou:', Object.keys(scores));
+    return scores;
+
+  } catch (error) {
+    console.error('💥 NEW-EXTRACT Erro na IA:', error);
+    console.log('🔄 NEW-EXTRACT Fallback para simulação');
+    return evaluateWithUserCriteria(propertyData, userCriteria);
+  }
+}
+
+function buildPrompt(propertyData: any, userCriteria: any[]): string {
+  const criteriaList = userCriteria.map(c => c.criterio_nome).join(', ');
+  
+  return `Avalie este imóvel usando APENAS os critérios: ${criteriaList}
+
+DADOS DO IMÓVEL:
+- Título: ${propertyData.title}
+- Endereço: ${propertyData.address}
+- Aluguel: R$ ${propertyData.rent}
+- Condomínio: R$ ${propertyData.condo}
+- IPTU: R$ ${propertyData.iptu}
+- Quartos: ${propertyData.bedrooms}
+- Banheiros: ${propertyData.bathrooms}
+- Área: ${propertyData.area}m²
+- Vagas: ${propertyData.parkingSpaces}
+
+CRITÉRIOS PARA AVALIAR:
+${userCriteria.map(c => `- ${c.criterio_nome}: peso ${c.peso}`).join('\n')}
+
+Retorne APENAS um JSON válido com score de 0 a 10 para cada critério:
+{
+  "${userCriteria[0]?.criterio_nome || 'criterio1'}": 8,
+  "${userCriteria[1]?.criterio_nome || 'criterio2'}": 7
+}`;
 }
 
 function evaluateWithUserCriteria(propertyData: any, userCriteria: any[]): any {
