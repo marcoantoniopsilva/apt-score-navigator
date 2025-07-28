@@ -14,6 +14,7 @@ import { useDirectExtraction } from '@/hooks/useDirectExtraction';
 import { useTestExtraction } from '@/hooks/useTestExtraction';
 import { usePing } from '@/hooks/usePing';
 import { useDirectFetch } from '@/hooks/useDirectFetch';
+import { useDirectPropertyExtraction } from '@/hooks/useDirectPropertyExtraction';
 
 interface ManualPropertySearchProps {
   onAddProperty?: (propertyData: any) => void;
@@ -129,6 +130,7 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
   const { testExtract } = useTestExtraction();
   const { ping } = usePing();
   const { directFetch } = useDirectFetch();
+  const { extractWithDirectFetch } = useDirectPropertyExtraction();
 
   useEffect(() => {
     if (user?.id) {
@@ -367,19 +369,15 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
     }
 
     setIsExtracting(true);
-    console.log('🚀 Iniciando extração de propriedade');
+    console.log('🚀 Iniciando extração de propriedade (HTTP direto)');
     
     try {
-      const directResult = await extractDirectly(urlInput);
+      const result = await extractWithDirectFetch(urlInput);
       
-      if (directResult && onAddProperty) {
+      if (result && onAddProperty) {
         console.log('✅ Dados extraídos com sucesso, adicionando propriedade');
-        onAddProperty(directResult);
+        onAddProperty(result);
         setUrlInput('');
-        toast({
-          title: "Propriedade adicionada!",
-          description: "Os dados foram extraídos e a propriedade foi adicionada com sucesso.",
-        });
       } else {
         console.log('❌ Falha na extração de dados');
       }
