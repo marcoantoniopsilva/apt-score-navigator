@@ -65,7 +65,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               variant="outline"
               disabled={isLoading}
               size="sm"
-              className="flex-1 sm:flex-none border-white/20 text-white hover:bg-white/10 hover:text-white"
+              className="flex-1 sm:flex-none border-white bg-white/10 text-white hover:bg-white/20 hover:text-white"
             >
               <RefreshCw className={`h-4 w-4 mr-1 sm:mr-2 ${isLoading ? 'animate-spin' : ''}`} />
               <span className="hidden sm:inline">Atualizar</span>
@@ -83,7 +83,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               onClick={handleSignOut}
               variant="outline"
               size="sm"
-              className="px-2 sm:px-3 border-white/20 text-white hover:bg-white/10 hover:text-white"
+              className="px-2 sm:px-3 border-white bg-white/10 text-white hover:bg-white/20 hover:text-white"
             >
               <LogOut className="h-4 w-4" />
             </Button>
