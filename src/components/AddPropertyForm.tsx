@@ -106,10 +106,13 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
       
       // Se os critérios já estão carregados, aplicar imediatamente
       if (activeCriteria.length > 0) {
+        console.log('AddPropertyForm: Critérios disponíveis:', activeCriteria.map(c => `${c.key} (${c.label})`));
+        console.log('AddPropertyForm: Scores recebidos keys:', Object.keys(data.scores));
+        
         const newScores: Record<string, number> = {};
         activeCriteria.forEach(criterio => {
           const scoreValue = data.scores[criterio.key];
-          console.log(`AddPropertyForm: Mapeando ${criterio.key} -> ${scoreValue}`);
+          console.log(`AddPropertyForm: Mapeando ${criterio.key} (${criterio.label}) -> ${scoreValue}`);
           // Usar a sugestão da IA se disponível, senão usar 5 como padrão
           newScores[criterio.key] = typeof scoreValue === 'number' ? scoreValue : 5;
         });
@@ -117,6 +120,8 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
         setScores(newScores);
       } else {
         console.log('AddPropertyForm: Critérios ainda não carregados, aguardando...');
+        console.log('AddPropertyForm: activeCriteria length:', activeCriteria.length);
+        console.log('AddPropertyForm: hasCompletedOnboarding:', !!activeCriteria);
       }
     } else {
       console.log('AddPropertyForm: Não há scores nos dados extraídos');
