@@ -42,9 +42,12 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // 1. Buscar critérios do usuário (se autenticado)
+    console.log('=== BUSCANDO CRITÉRIOS DO USUÁRIO ===');
+    console.log('User ID validado:', userId);
+    
     let userCriteria = [];
     if (userId && userId !== 'anonymous') {
-      console.log('Buscando critérios do usuário:', userId);
+      console.log('🔍 Buscando critérios para usuário:', userId);
       
       // Usar a mesma lógica simples que funcionou no teste
       const { data: criteria, error: criteriaError } = await supabase
@@ -53,14 +56,17 @@ serve(async (req) => {
         .eq('user_id', userId)
         .eq('ativo', true);
       
+      console.log('📊 Resultado da busca:', { criteria, criteriaError });
+      
       if (criteriaError) {
-        console.error('Erro ao buscar critérios:', criteriaError);
+        console.error('❌ Erro ao buscar critérios:', criteriaError);
       } else {
         userCriteria = criteria || [];
-        console.log('Critérios encontrados:', userCriteria.length, userCriteria);
+        console.log('✅ Critérios encontrados:', userCriteria.length);
+        console.log('📋 Lista de critérios:', userCriteria);
       }
     } else {
-      console.log('Usuário não autenticado, usando critérios padrão');
+      console.log('⚠️ Usuário não autenticado, usando critérios padrão');
     }
 
     // 2. Extrair dados reais com Firecrawl
@@ -69,9 +75,10 @@ serve(async (req) => {
     console.log('Dados extraídos:', extractedData);
 
     // 3. Avaliar com IA baseado nos critérios do usuário
-    console.log('Avaliando com IA...');
+    console.log('=== AVALIANDO COM IA ===');
+    console.log('Critérios para avaliação:', userCriteria);
     const scores = await evaluateWithAI(extractedData, userCriteria);
-    console.log('Scores calculados pela IA:', scores);
+    console.log('✅ Scores calculados:', scores);
 
     // 4. Combinar dados finais
     const finalData = {
