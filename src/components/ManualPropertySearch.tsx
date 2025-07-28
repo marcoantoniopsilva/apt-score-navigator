@@ -121,7 +121,7 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
   const [urlInput, setUrlInput] = useState('');
   const { toast } = useToast();
   const { user } = useAuth();
-  const { extractPropertyData, isExtracting } = usePropertyExtraction();
+  const { extractPropertyData } = usePropertyExtraction();
   const { extractDirectly } = useDirectExtraction();
 
   useEffect(() => {
@@ -317,14 +317,40 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
     }
   ];
 
+  const [isExtracting, setIsExtracting] = useState(false);
+
   const handleExtractProperty = async () => {
-    // Teste direto primeiro
-    console.log('🚨 INICIANDO TESTE DIRETO DA EDGE FUNCTION');
-    const directResult = await extractDirectly(urlInput);
+    if (isExtracting) {
+      console.log('⚠️ Extração já em andamento, ignorando clique');
+      return;
+    }
+
+    setIsExtracting(true);
+    console.log('🚀 Iniciando extração de propriedade');
     
-    if (directResult && onAddProperty) {
-      onAddProperty(directResult);
-      setUrlInput('');
+    try {
+      const directResult = await extractDirectly(urlInput);
+      
+      if (directResult && onAddProperty) {
+        console.log('✅ Dados extraídos com sucesso, adicionando propriedade');
+        onAddProperty(directResult);
+        setUrlInput('');
+        toast({
+          title: "Propriedade adicionada!",
+          description: "Os dados foram extraídos e a propriedade foi adicionada com sucesso.",
+        });
+      } else {
+        console.log('❌ Falha na extração de dados');
+      }
+    } catch (error) {
+      console.error('❌ Erro durante extração:', error);
+      toast({
+        title: "Erro na extração",
+        description: "Não foi possível extrair os dados da propriedade.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsExtracting(false);
     }
   };
 
