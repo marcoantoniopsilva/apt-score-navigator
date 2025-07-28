@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { usePropertyExtraction } from '@/hooks/usePropertyExtraction';
 import { useDirectExtraction } from '@/hooks/useDirectExtraction';
 import { useTestExtraction } from '@/hooks/useTestExtraction';
+import { usePing } from '@/hooks/usePing';
 
 interface ManualPropertySearchProps {
   onAddProperty?: (propertyData: any) => void;
@@ -125,6 +126,7 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
   const { extractPropertyData } = usePropertyExtraction();
   const { extractDirectly } = useDirectExtraction();
   const { testExtract } = useTestExtraction();
+  const { ping } = usePing();
 
   useEffect(() => {
     if (user?.id) {
@@ -321,6 +323,16 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
 
   const [isExtracting, setIsExtracting] = useState(false);
 
+  const handlePing = async () => {
+    if (isExtracting) return;
+    setIsExtracting(true);
+    try {
+      await ping();
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
   const handleTestFunction = async () => {
     if (isExtracting) return;
     
@@ -446,6 +458,14 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
+            <Button 
+              onClick={handlePing}
+              disabled={isExtracting}
+              variant="outline"
+              size="sm"
+            >
+              🏓 Ping
+            </Button>
             <Button 
               onClick={handleTestFunction}
               disabled={isExtracting}
