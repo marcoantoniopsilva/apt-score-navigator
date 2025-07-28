@@ -217,7 +217,7 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
       }
 
       console.log('📡 Chamando extract-property-data com URL teste...');
-      const response = await supabase.functions.invoke('extract-property-data', {
+      const response = await supabase.functions.invoke('new-extract', {
         body: { 
           url: 'https://teste-url-nova-' + Date.now() + '.com.br/imovel/teste-123'
         },
