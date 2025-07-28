@@ -10,7 +10,7 @@ import { UserPreferencesDisplay } from '@/components/UserPreferencesDisplay';
 import { MobileWeightsEditor } from '@/components/MobileWeightsEditor';
 import { PropertyComparison } from '@/components/PropertyComparison';
 import { ManualPropertySearch } from '@/components/ManualPropertySearch';
-import { SessionManager } from '@/components/SessionManager';
+// SessionManager removed - using optimized approach
 
 import { calculateFinalScore } from '@/utils/scoreCalculator';
 import { usePropertyLoader } from '@/hooks/usePropertyLoader';
@@ -166,7 +166,7 @@ const Index = () => {
   }, []);
 
   return (
-    <SessionManager>
+    <div>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <AppHeader 
           title="Imobly"
@@ -286,7 +286,7 @@ const Index = () => {
           onOpenChange={setShowOnboarding}
         />
       </div>
-    </SessionManager>
+    </div>
   );
 };
 

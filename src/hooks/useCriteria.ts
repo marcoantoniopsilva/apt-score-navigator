@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { CriteriaWeights, DEFAULT_CRITERIA_KEYS, DEFAULT_WEIGHTS } from '@/types/property';
 import { CRITERIOS_DISPONÍVEIS, PERFIL_PESOS_SUGERIDOS } from '@/types/onboarding';
 import { useOnboarding } from './useOnboarding';
-import { useSessionRestore } from './useSessionRestore';
+// Session restore removed for optimization
 
 export interface ActiveCriterion {
   key: string;
@@ -12,7 +12,7 @@ export interface ActiveCriterion {
 
 export const useCriteria = () => {
   const { userPreferences, hasCompletedOnboarding, userProfile } = useOnboarding();
-  const { registerRefreshCallback } = useSessionRestore();
+  // Session restore removed for optimization
   const [activeCriteria, setActiveCriteria] = useState<ActiveCriterion[]>([]);
   const [criteriaWeights, setCriteriaWeights] = useState<CriteriaWeights>(DEFAULT_WEIGHTS);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -105,13 +105,7 @@ export const useCriteria = () => {
     setCriteriaWeights(computedCriteria.weights);
   }, [computedCriteria]);
 
-  // Register for session refresh callbacks - no recursive events
-  useEffect(() => {
-    return registerRefreshCallback(() => {
-      console.log('useCriteria: Session restored, triggering refresh');
-      setRefreshTrigger(prev => prev + 1);
-    });
-  }, [registerRefreshCallback]);
+  // Session refresh removed for optimization
 
   // Função para atualizar peso de um critério
   const updateCriteriaWeight = useCallback((criteriaKey: string, newWeight: number) => {

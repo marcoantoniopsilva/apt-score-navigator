@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { retryWithBackoff, isAuthError } from '@/utils/sessionUtils';
-import { useSessionRestore } from './useSessionRestore';
+// Session restore removed for optimization
 
 interface SubscriptionData {
   subscribed: boolean;
@@ -13,7 +13,7 @@ interface SubscriptionData {
 
 export const useSubscription = () => {
   const { user, session } = useAuth();
-  const { registerRefreshCallback } = useSessionRestore();
+  // Session restore removed for optimization
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionData>({
     subscribed: false,
     subscription_tier: null,
@@ -152,13 +152,7 @@ export const useSubscription = () => {
     }
   };
 
-  // Register session restore callback
-  useEffect(() => {
-    return registerRefreshCallback(() => {
-      console.log('useSubscription: Session restored, refreshing subscription data');
-      checkSubscription(true); // Mark as retry to avoid toast spam
-    });
-  }, [registerRefreshCallback, checkSubscription]);
+  // Session restore callback removed for optimization
 
   // Initialize subscription check when user becomes available
   useEffect(() => {

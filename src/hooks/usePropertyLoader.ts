@@ -4,14 +4,12 @@ import { Property } from '@/types/property';
 import { loadSavedProperties } from '@/services/propertyDatabaseService';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-import { useSessionRestore } from './useSessionRestore';
-import { useTabFocusManager } from './useTabFocusManager';
+// Session restore and tab focus removed for optimization
 
 export const usePropertyLoader = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  const { registerRefreshCallback } = useSessionRestore();
-  const { registerVisibilityCallback } = useTabFocusManager();
+  // Session restore and tab focus removed for optimization
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const isLoadingRef = useRef(false);
@@ -109,26 +107,7 @@ export const usePropertyLoader = () => {
     }
   }, [toast]);
 
-  // Register for session refresh callbacks
-  useEffect(() => {
-    return registerRefreshCallback(() => {
-      console.log('PropertyLoader: Session restored, reloading properties');
-      loadProperties();
-    });
-  }, [registerRefreshCallback, loadProperties]);
-
-  // Register for tab visibility changes
-  useEffect(() => {
-    return registerVisibilityCallback((isVisible) => {
-      if (isVisible && user) {
-        console.log('PropertyLoader: Tab became visible, refreshing properties if needed');
-        // Only reload if we have properties loaded but user exists (potential data staleness)
-        if (properties.length === 0) {
-          loadProperties();
-        }
-      }
-    });
-  }, [registerVisibilityCallback, user, properties.length, loadProperties]);
+  // Session refresh and tab visibility callbacks removed for optimization
 
   useEffect(() => {
     // Verificar se o usuário mudou
