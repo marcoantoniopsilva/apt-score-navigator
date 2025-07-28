@@ -21,7 +21,7 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
     
     // Chamada direta para debug
     console.log('propertyExtractionService: Fazendo chamada direta para edge function...');
-    const { data, error } = await supabase.functions.invoke('new-extract', {
+    const { data, error } = await supabase.functions.invoke('extract-property-data', {
       body: { url }
     });
 
