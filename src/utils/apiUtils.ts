@@ -12,7 +12,7 @@ export const apiCall = async <T>(
   apiFunction: () => Promise<T>,
   options: ApiCallOptions = {}
 ): Promise<T> => {
-  const { retries = 2, timeout = 10000, refreshOnAuth = true } = options;
+  const { retries = 2, timeout = 60000, refreshOnAuth = true } = options;
 
   const executeWithTimeout = async (): Promise<T> => {
     const timeoutPromise = new Promise<never>((_, reject) => {
