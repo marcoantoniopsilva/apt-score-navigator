@@ -8,7 +8,7 @@ export const AppExplanation = () => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Info className="h-5 w-5 text-gray-700" />
-          <h3 className="text-lg font-semibold text-gray-900">Como funciona o Nestly</h3>
+          <h3 className="text-lg font-semibold text-gray-900">Como funciona o Imobly</h3>
         </div>
         <Button variant="ghost" size="sm" onClick={() => setIsExpanded(!isExpanded)} className="text-gray-600 hover:text-gray-800 hover:bg-gray-100">
           {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
