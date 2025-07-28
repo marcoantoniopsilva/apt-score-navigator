@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import LoadingState from '@/components/LoadingState';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { usePropertyExtraction } from '@/hooks/usePropertyExtraction';
+import { useDirectExtraction } from '@/hooks/useDirectExtraction';
 
 interface ManualPropertySearchProps {
   onAddProperty?: (propertyData: any) => void;
@@ -121,6 +122,7 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
   const { toast } = useToast();
   const { user } = useAuth();
   const { extractPropertyData, isExtracting } = usePropertyExtraction();
+  const { extractDirectly } = useDirectExtraction();
 
   useEffect(() => {
     if (user?.id) {
@@ -316,11 +318,13 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
   ];
 
   const handleExtractProperty = async () => {
-    const result = await extractPropertyData(urlInput);
+    // Teste direto primeiro
+    console.log('🚨 INICIANDO TESTE DIRETO DA EDGE FUNCTION');
+    const directResult = await extractDirectly(urlInput);
     
-    if (result && onAddProperty) {
-      onAddProperty(result);
-      setUrlInput(''); // Limpar URL após sucesso
+    if (directResult && onAddProperty) {
+      onAddProperty(directResult);
+      setUrlInput('');
     }
   };
 

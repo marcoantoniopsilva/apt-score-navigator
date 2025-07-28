@@ -19,31 +19,36 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
     console.log('propertyExtractionService: Iniciando processo de extração');
     console.log('propertyExtractionService: URL para extração:', url);
     
-    // Usar o wrapper com gestão automática de sessão
-    console.log('propertyExtractionService: Chamando edge function...');
-    const data = await supabaseFunction<any>('extract-property-data', { url }, {
-      retries: 2,
-      timeout: 180000, // 3 minutos para permitir processamento da IA
-      refreshOnAuth: true
+    // Chamada direta para debug
+    console.log('propertyExtractionService: Fazendo chamada direta para edge function...');
+    const { data, error } = await supabase.functions.invoke('extract-property-data', {
+      body: { url }
     });
 
-    console.log('propertyExtractionService: Resposta da edge function recebida:', { 
+    console.log('propertyExtractionService: Resposta direta da edge function:', { 
+      data, 
+      error,
       success: data?.success, 
       hasData: !!data?.data,
-      error: data?.error 
+      errorDetails: data?.error 
     });
 
-    if (!data.success) {
-      console.error('propertyExtractionService: Extração falhou:', data.error);
+    if (error) {
+      console.error('propertyExtractionService: Erro do Supabase:', error);
+      throw new Error(`Erro na comunicação: ${error.message}`);
+    }
+
+    if (!data || !data.success) {
+      console.error('propertyExtractionService: Extração falhou:', data?.error || 'Resposta inválida');
       
       // Se é erro de validação, propagar os detalhes
-      if (data.details) {
+      if (data?.details) {
         const error = new Error(data.error || 'Falha na extração dos dados');
         (error as any).details = data.details;
         throw error;
       }
       
-      throw new Error(data.error || 'Falha na extração dos dados');
+      throw new Error(data?.error || 'Falha na extração dos dados - resposta inválida');
     }
 
     console.log('propertyExtractionService: Dados extraídos com sucesso (apenas para preenchimento):', data.data);

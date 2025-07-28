@@ -78,8 +78,10 @@ export const useOptimizedProperties = () => {
       return uniqueProperties;
     },
     enabled: !!user?.id,
-    staleTime: 10 * 1000, // 10 segundos - cache mais agressivo para reativação de aba
-    gcTime: 5 * 60 * 1000, // 5 minutos
+    staleTime: 5 * 60 * 1000, // 5 minutos - evitar refetch excessivo
+    gcTime: 10 * 60 * 1000, // 10 minutos
+    refetchOnWindowFocus: false, // Não refazer ao focar janela
+    refetchOnReconnect: false,   // Não refazer ao reconectar
     retry: (failureCount, error) => {
       console.log(`useOptimizedProperties: Retry ${failureCount} para propriedades`);
       return failureCount < 3;
