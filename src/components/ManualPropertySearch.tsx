@@ -11,6 +11,7 @@ import LoadingState from '@/components/LoadingState';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { usePropertyExtraction } from '@/hooks/usePropertyExtraction';
 import { useDirectExtraction } from '@/hooks/useDirectExtraction';
+import { useTestExtraction } from '@/hooks/useTestExtraction';
 
 interface ManualPropertySearchProps {
   onAddProperty?: (propertyData: any) => void;
@@ -123,6 +124,7 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
   const { user } = useAuth();
   const { extractPropertyData } = usePropertyExtraction();
   const { extractDirectly } = useDirectExtraction();
+  const { testExtract } = useTestExtraction();
 
   useEffect(() => {
     if (user?.id) {
@@ -319,6 +321,21 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
 
   const [isExtracting, setIsExtracting] = useState(false);
 
+  const handleTestFunction = async () => {
+    if (isExtracting) return;
+    
+    setIsExtracting(true);
+    try {
+      const result = await testExtract(urlInput || 'https://test.com');
+      if (result && onAddProperty) {
+        onAddProperty(result);
+        setUrlInput('');
+      }
+    } finally {
+      setIsExtracting(false);
+    }
+  };
+
   const handleExtractProperty = async () => {
     if (isExtracting) {
       console.log('⚠️ Extração já em andamento, ignorando clique');
@@ -429,6 +446,14 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
+            <Button 
+              onClick={handleTestFunction}
+              disabled={isExtracting}
+              variant="outline"
+              size="sm"
+            >
+              🧪 Teste
+            </Button>
             <Input
               placeholder="https://www.zapimoveis.com.br/imovel/..."
               value={urlInput}
