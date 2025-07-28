@@ -28,7 +28,6 @@ import { toast } from 'sonner';
  */
 const OptimizedIndex = () => {
   const [comparisonMode, setComparisonMode] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
   const [extractedPropertyData, setExtractedPropertyData] = useState<any>(null);
 
   // Simplified session management
@@ -106,38 +105,6 @@ const OptimizedIndex = () => {
     }
   };
 
-  // Property actions
-  const handleAddProperty = () => {
-    setShowAddForm(true);
-  };
-
-  const handleToggleComparison = () => {
-    setComparisonMode(!comparisonMode);
-  };
-
-  const handleAddPropertySubmit = async (propertyData: any) => {
-    // This would normally trigger a mutation and refresh the cache
-    console.log('Adding property:', propertyData);
-    setShowAddForm(false);
-    setExtractedPropertyData(null);
-    refreshProperties();
-  };
-
-  const handleUpdateProperty = async (updatedProperty: any) => {
-    console.log('Updating property:', updatedProperty);
-    updateProperty(updatedProperty);
-  };
-
-  const handleDeleteProperty = async (propertyId: string) => {
-    console.log('Deleting property:', propertyId);
-    removeProperty(propertyId);
-  };
-
-  const handleExtractedProperty = (propertyData: any) => {
-    setExtractedPropertyData(propertyData);
-    setShowAddForm(true);
-  };
-
   // Memoized properties with recalculated scores
   const displayedProperties = useMemo(() => {
     if (criteriaLoading) return properties;
@@ -147,6 +114,31 @@ const OptimizedIndex = () => {
       finalScore: calculateFinalScore(property.scores, criteriaWeights)
     }));
   }, [properties, criteriaWeights, criteriaLoading]);
+
+  // Property actions
+  const {
+    showAddForm,
+    setShowAddForm,
+    handleAddProperty: handleAddPropertySubmit,
+    handleUpdateProperty,
+    handleDeleteProperty
+  } = usePropertyActions(displayedProperties, () => {}, criteriaWeights, async () => {
+    await refreshProperties();
+  });
+
+  const handleAddProperty = () => {
+    setShowAddForm(true);
+  };
+
+  const handleToggleComparison = () => {
+    setComparisonMode(!comparisonMode);
+  };
+
+  const handleExtractedProperty = (propertyData: any) => {
+    setExtractedPropertyData(propertyData);
+    setShowAddForm(true);
+  };
+
 
   // Handle weights change
   const handleWeightsChange = (newWeights: Record<string, number>) => {
