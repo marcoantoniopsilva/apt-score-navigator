@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { extractPropertyFromUrl } from '@/utils/propertyExtractor';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UrlExtractionFormProps {
   url: string;
@@ -22,21 +23,49 @@ export const UrlExtractionForm: React.FC<UrlExtractionFormProps> = ({
   const [extractedData, setExtractedData] = useState<any>(null);
 
   const handleExtractFromUrl = async () => {
-    console.log('UrlExtractionForm: Iniciando extração apenas para preenchimento do formulário');
+    console.log('UrlExtractionForm: Iniciando extração com avaliação da IA');
     console.log('UrlExtractionForm: URL:', url);
     
     setIsExtracting(true);
     try {
-      console.log('UrlExtractionForm: Chamando extractPropertyFromUrl para extração apenas...');
+      console.log('UrlExtractionForm: Chamando extractPropertyFromUrl...');
       const data = await extractPropertyFromUrl(url);
       
       if (data) {
-        console.log('UrlExtractionForm: Dados extraídos para preenchimento:', data);
-        setExtractedData(data);
-        onDataExtracted(data);
+        console.log('UrlExtractionForm: Dados extraídos:', data);
+        
+        // Avaliar o imóvel com IA (mesmo que ManualPropertySearch faz)
+        let evaluationData = null;
+        try {
+          console.log('UrlExtractionForm: Avaliando imóvel com IA...');
+          const { data: aiEvaluation, error: evaluationError } = await supabase.functions.invoke('evaluate-property-scores', {
+            body: { propertyData: data }
+          });
+
+          if (!evaluationError && aiEvaluation) {
+            evaluationData = aiEvaluation;
+            console.log('UrlExtractionForm: Avaliação da IA recebida:', aiEvaluation);
+          } else {
+            console.warn('UrlExtractionForm: Erro na avaliação IA:', evaluationError);
+          }
+        } catch (error) {
+          console.warn('UrlExtractionForm: Erro na avaliação IA:', error);
+        }
+
+        // Combinar dados extraídos com avaliação da IA
+        const enrichedData = {
+          ...data,
+          scores: evaluationData?.scores || {},
+          finalScore: evaluationData?.finalScore || 0
+        };
+
+        console.log('UrlExtractionForm: Dados finais com IA:', enrichedData);
+        setExtractedData(enrichedData);
+        onDataExtracted(enrichedData);
+        
         toast({
           title: "Dados extraídos",
-          description: "Os dados do anúncio foram extraídos e preenchidos no formulário. Clique em 'Adicionar Propriedade' para salvar.",
+          description: "Os dados do anúncio foram extraídos e as sugestões da IA foram aplicadas automaticamente.",
         });
       } else {
         toast({
@@ -79,7 +108,7 @@ export const UrlExtractionForm: React.FC<UrlExtractionFormProps> = ({
       </div>
       {extractedData && (
         <p className="text-sm text-green-600 mt-2">
-          ✅ Dados extraídos e preenchidos no formulário! Revise os dados e clique em "Adicionar Propriedade" para salvar.
+          ✅ Dados extraídos e sugestões da IA aplicadas automaticamente! Revise os dados e clique em "Adicionar Propriedade" para salvar.
         </p>
       )}
     </div>
