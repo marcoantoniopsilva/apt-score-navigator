@@ -16,9 +16,16 @@ export const useDirectExtraction = () => {
       const startTime = Date.now();
       console.log('🚨 TESTE DIRETO: Fazendo chamada para Supabase...');
       
-      const { data, error } = await supabase.functions.invoke('extract-property-data', {
+      // Adicionar timeout de 30 segundos
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Timeout na edge function (30s)')), 30000);
+      });
+      
+      const callPromise = supabase.functions.invoke('extract-property-data', {
         body: { url }
       });
+      
+      const { data, error } = await Promise.race([callPromise, timeoutPromise]) as any;
       
       const endTime = Date.now();
       console.log(`🚨 TESTE DIRETO: Tempo de resposta: ${endTime - startTime}ms`);
