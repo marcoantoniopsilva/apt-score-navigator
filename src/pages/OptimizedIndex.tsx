@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { AddPropertyForm } from '@/components/AddPropertyForm';
 import PropertyControls from '@/components/PropertyControls';
 import { OptimizedPropertyList } from '@/components/OptimizedPropertyList';
@@ -12,6 +13,7 @@ import { ManualPropertySearch } from '@/components/ManualPropertySearch';
 import { calculateFinalScore } from '@/utils/scoreCalculator';
 import { useOptimizedProperties } from '@/hooks/useOptimizedProperties';
 import { useOptimizedCriteria } from '@/hooks/useOptimizedCriteria';
+import { useAuth } from '@/contexts/AuthContext';
 import { useSimpleSession } from '@/hooks/useSimpleSession';
 import { usePropertyActions } from '@/hooks/usePropertyActions';
 import { usePropertySorting } from '@/hooks/usePropertySorting';
@@ -29,6 +31,8 @@ import { toast } from 'sonner';
 const OptimizedIndex = () => {
   const [comparisonMode, setComparisonMode] = useState(false);
   const [extractedPropertyData, setExtractedPropertyData] = useState<any>(null);
+  const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   // Simplified session management
   const { isAuthenticated, isReady } = useSimpleSession();
@@ -115,14 +119,17 @@ const OptimizedIndex = () => {
     }));
   }, [properties, criteriaWeights, criteriaLoading]);
 
-  // Property actions
+  // Property actions with proper state management
   const {
     showAddForm,
     setShowAddForm,
     handleAddProperty: handleAddPropertySubmit,
     handleUpdateProperty,
     handleDeleteProperty
-  } = usePropertyActions(displayedProperties, () => {}, criteriaWeights, async () => {
+  } = usePropertyActions(properties, (newProperties) => {
+    // Atualizar o cache do React Query com as novas propriedades
+    queryClient.setQueryData(['properties', user?.id], newProperties);
+  }, criteriaWeights, async () => {
     await refreshProperties();
   });
 

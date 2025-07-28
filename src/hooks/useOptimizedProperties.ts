@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { Property } from '@/types/property';
 import { loadSavedProperties } from '@/services/propertyDatabaseService';
+import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTabVisibility } from '@/hooks/useTabVisibility';
@@ -113,6 +114,46 @@ export const useOptimizedProperties = () => {
 
     return cleanup;
   }, [onTabReactivated, refetch]);
+
+  // Real-time updates
+  useEffect(() => {
+    if (!user?.id) return;
+
+    console.log('useOptimizedProperties: Setting up real-time updates for user', user.id);
+
+    const channel = supabase
+      .channel('properties-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'properties',
+          filter: `user_id=eq.${user.id}`
+        },
+        (payload) => {
+          console.log('useOptimizedProperties: Real-time update received:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            console.log('useOptimizedProperties: New property inserted, refreshing...');
+            refetch();
+          } else if (payload.eventType === 'UPDATE') {
+            console.log('useOptimizedProperties: Property updated, refreshing...');
+            refetch();
+          } else if (payload.eventType === 'DELETE') {
+            console.log('useOptimizedProperties: Property deleted, refreshing...');
+            refetch();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      console.log('useOptimizedProperties: Cleaning up real-time subscription');
+      supabase.removeChannel(channel);
+    };
+
+  }, [user?.id, refetch]);
 
   // Manual refresh function
   const refreshProperties = () => {
