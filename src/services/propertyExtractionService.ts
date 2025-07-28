@@ -17,15 +17,21 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
 
   try {
     console.log('propertyExtractionService: Iniciando processo de extração');
+    console.log('propertyExtractionService: URL para extração:', url);
     
     // Usar o wrapper com gestão automática de sessão
+    console.log('propertyExtractionService: Chamando edge function...');
     const data = await supabaseFunction<any>('extract-property-data', { url }, {
       retries: 2,
       timeout: 180000, // 3 minutos para permitir processamento da IA
       refreshOnAuth: true
     });
 
-    console.log('propertyExtractionService: Resposta da edge function:', { data });
+    console.log('propertyExtractionService: Resposta da edge function recebida:', { 
+      success: data?.success, 
+      hasData: !!data?.data,
+      error: data?.error 
+    });
 
     if (!data.success) {
       console.error('propertyExtractionService: Extração falhou:', data.error);

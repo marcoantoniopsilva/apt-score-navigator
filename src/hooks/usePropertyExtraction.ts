@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { extractPropertyFromUrl } from '@/services/propertyExtractionService';
 import { useToast } from '@/hooks/use-toast';
 import { useTabVisibility } from '@/hooks/useTabVisibility';
@@ -12,6 +12,7 @@ export const usePropertyExtraction = () => {
   const [lastExtractionUrl, setLastExtractionUrl] = useState<string>('');
   const { toast } = useToast();
   const { onTabReactivated } = useTabVisibility();
+  const extractionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Reset extraction state when tab is reactivated
   useEffect(() => {
@@ -31,6 +32,12 @@ export const usePropertyExtraction = () => {
   }, [onTabReactivated, isExtracting, toast]);
 
   const extractPropertyData = useCallback(async (url: string) => {
+    // Debounce: cancelar extração anterior se uma nova for iniciada rapidamente
+    if (extractionTimeoutRef.current) {
+      clearTimeout(extractionTimeoutRef.current);
+      extractionTimeoutRef.current = null;
+    }
+
     if (!url.trim()) {
       toast({
         title: "URL obrigatória",
@@ -41,12 +48,28 @@ export const usePropertyExtraction = () => {
     }
 
     if (isExtracting) {
-      console.log('⚠️ Extração já em andamento, ignorando nova tentativa');
-      return null;
+      console.log('⚠️ Extração já em andamento, cancelando tentativa anterior');
+      setIsExtracting(false);
+      
+      // Aguardar um pouco antes de iniciar nova extração
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
 
     setIsExtracting(true);
     setLastExtractionUrl(url);
+    
+    // Timeout de segurança para evitar que a extração trave
+    extractionTimeoutRef.current = setTimeout(() => {
+      if (isExtracting) {
+        console.error('⏰ Timeout na extração - forçando reset');
+        setIsExtracting(false);
+        toast({
+          title: "Timeout na extração",
+          description: "A extração demorou muito. Tente novamente.",
+          variant: "destructive"
+        });
+      }
+    }, 180000); // 3 minutos de timeout
     
     try {
       console.log('🔄 Iniciando extração de propriedade:', url);
@@ -58,7 +81,9 @@ export const usePropertyExtraction = () => {
         throw new Error('Sessão expirada. Por favor, atualize a página e tente novamente.');
       }
 
+      console.log('📡 Chamando edge function extract-property-data...');
       const propertyData = await extractPropertyFromUrl(url);
+      console.log('✅ Dados extraídos da edge function:', propertyData);
       
       if (!propertyData) {
         throw new Error('Não foi possível extrair dados da propriedade');
@@ -114,7 +139,12 @@ export const usePropertyExtraction = () => {
     } catch (error) {
       console.error('❌ Erro na extração:', error);
       
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido na extração';
+      let errorMessage = 'Erro desconhecido na extração';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      }
       
       toast({
         title: "Erro na extração",
@@ -124,9 +154,23 @@ export const usePropertyExtraction = () => {
       
       return null;
     } finally {
+      // Limpar timeout
+      if (extractionTimeoutRef.current) {
+        clearTimeout(extractionTimeoutRef.current);
+        extractionTimeoutRef.current = null;
+      }
       setIsExtracting(false);
     }
   }, [isExtracting, toast]);
+
+  // Cleanup do timeout quando o componente for desmontado
+  useEffect(() => {
+    return () => {
+      if (extractionTimeoutRef.current) {
+        clearTimeout(extractionTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const retryLastExtraction = useCallback(() => {
     if (lastExtractionUrl && !isExtracting) {
