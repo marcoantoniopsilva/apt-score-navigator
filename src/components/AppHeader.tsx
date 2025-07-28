@@ -45,7 +45,7 @@ const AppHeader: React.FC<AppHeaderProps> = ({
     <div className="bg-blue-900 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center space-x-3 min-w-0 flex-1">
+          <div className="flex items-center space-x-1 min-w-0 flex-1">
             <div className="flex-shrink-0">
               <img src={imoblyLogo} alt="Imobly" className="h-8 w-auto sm:h-10" />
             </div>
