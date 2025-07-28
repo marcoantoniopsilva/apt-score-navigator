@@ -35,11 +35,13 @@ export const useSessionRestore = () => {
     const currentState = `${!!session}-${!!user}-${session?.access_token?.slice(-10) || ''}`;
     
     if (lastSessionState.current && lastSessionState.current !== currentState) {
-      if (session && user) {
-        console.log('Session state changed - session restored');
+      if (session && user && lastSessionState.current.startsWith('false-false')) {
+        // Session was restored (went from no session to having session)
+        console.log('useSessionRestore: Session restored - triggering data refresh');
         triggerDataRefresh();
-      } else {
-        console.log('Session state changed - session lost, clearing cache');
+      } else if (!session && !user) {
+        // Session was lost
+        console.log('useSessionRestore: Session lost - clearing cache');
         localStorage.removeItem('cached-criteria');
         localStorage.removeItem('cached-properties');
       }

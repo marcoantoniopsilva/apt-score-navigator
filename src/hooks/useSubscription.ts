@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { retryWithBackoff, isAuthError } from '@/utils/sessionUtils';
+import { useSessionRestore } from './useSessionRestore';
 
 interface SubscriptionData {
   subscribed: boolean;
@@ -11,6 +13,7 @@ interface SubscriptionData {
 
 export const useSubscription = () => {
   const { user, session } = useAuth();
+  const { registerRefreshCallback } = useSessionRestore();
   const [subscriptionData, setSubscriptionData] = useState<SubscriptionData>({
     subscribed: false,
     subscription_tier: null,
@@ -18,66 +21,83 @@ export const useSubscription = () => {
   });
   const [loading, setLoading] = useState(true);
   const hasInitialized = useRef(false);
+  const isCheckingRef = useRef(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
 
-  const checkSubscription = useCallback(async () => {
+  const checkSubscription = useCallback(async (isRetry = false) => {
     if (!user || !session) {
+      console.log('useSubscription: No user or session, setting defaults');
+      setSubscriptionData({
+        subscribed: false,
+        subscription_tier: null,
+        subscription_end: null,
+      });
       setLoading(false);
       return;
     }
 
+    // Prevent concurrent subscription checks
+    if (isCheckingRef.current && !isRetry) {
+      console.log('useSubscription: Already checking subscription, skipping...');
+      return;
+    }
+
+    isCheckingRef.current = true;
+    setLoading(true);
+    setSessionError(null);
+
     try {
-      setLoading(true);
+      console.log('useSubscription: Checking subscription status...');
       
-      const { data, error } = await supabase.functions.invoke('check-subscription', {
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
-      });
-
-      if (error) {
-        console.error('Error checking subscription:', error);
-        // Set fallback data instead of leaving in loading state
-        setSubscriptionData({
-          subscribed: false,
-          subscription_tier: null,
-          subscription_end: null,
+      const result = await retryWithBackoff(async () => {
+        const { data, error } = await supabase.functions.invoke('check-subscription', {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
         });
-        return;
-      }
 
-      if (data) {
-        setSubscriptionData({
-          subscribed: data.subscribed || false,
-          subscription_tier: data.subscription_tier || null,
-          subscription_end: data.subscription_end || null,
-        });
-      }
-    } catch (error: any) {
-      console.error('Error checking subscription:', error);
-      
-      // Check if it's a session expiry error
-      if (error.message?.includes('JWT') || error.message?.includes('expired') || error.message?.includes('invalid_token')) {
-        console.warn('Session appears to be expired - user needs to login again');
-        setSessionError('Sessão expirada. Faça login novamente para continuar.');
-        toast.error('Sessão expirada. Faça login novamente.');
+        if (error) {
+          throw new Error(error.message || 'Failed to check subscription');
+        }
+
+        return data;
+      }, 2, 1000);
+
+      if (result) {
+        const newSubscriptionData = {
+          subscribed: result.subscribed || false,
+          subscription_tier: result.subscription_tier || null,
+          subscription_end: result.subscription_end || null,
+        };
         
-        // Set fallback data for expired session
-        setSubscriptionData({
-          subscribed: false,
-          subscription_tier: null,
-          subscription_end: null,
-        });
-      } else {
-        // Set fallback data for other errors
-        setSubscriptionData({
-          subscribed: false,
-          subscription_tier: null,
-          subscription_end: null,
-        });
+        console.log('useSubscription: Subscription data updated:', newSubscriptionData);
+        setSubscriptionData(newSubscriptionData);
       }
+
+    } catch (error: any) {
+      console.error('useSubscription: Failed to check subscription:', error);
+      
+      // Check if it's an authentication error
+      if (isAuthError(error)) {
+        console.warn('useSubscription: Authentication error detected');
+        setSessionError('Sessão expirada. Faça login novamente para continuar.');
+        
+        // Don't show toast on retry attempts to avoid spam
+        if (!isRetry) {
+          toast.error('Sessão expirada. Faça login novamente.');
+        }
+      }
+      
+      // Set fallback data for any error
+      setSubscriptionData({
+        subscribed: false,
+        subscription_tier: null,
+        subscription_end: null,
+      });
+      
     } finally {
       setLoading(false);
+      isCheckingRef.current = false;
     }
   }, [user, session]);
 
@@ -132,16 +152,27 @@ export const useSubscription = () => {
     }
   };
 
-  // Initialize subscription check only once when user is available
+  // Register session restore callback
+  useEffect(() => {
+    return registerRefreshCallback(() => {
+      console.log('useSubscription: Session restored, refreshing subscription data');
+      checkSubscription(true); // Mark as retry to avoid toast spam
+    });
+  }, [registerRefreshCallback, checkSubscription]);
+
+  // Initialize subscription check when user becomes available
   useEffect(() => {
     if (user && session && !hasInitialized.current) {
       hasInitialized.current = true;
-      setSessionError(null); // Clear any previous session errors
+      setSessionError(null);
+      console.log('useSubscription: User authenticated, checking subscription');
       checkSubscription();
     } else if (!user && !session) {
       // Reset when user logs out
       hasInitialized.current = false;
+      isCheckingRef.current = false;
       setSessionError(null);
+      console.log('useSubscription: User logged out, resetting subscription data');
       setSubscriptionData({
         subscribed: false,
         subscription_tier: null,

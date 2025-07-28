@@ -21,9 +21,9 @@ export const useSessionMonitor = () => {
   const lastCheckTime = useRef<number>(0);
 
   const checkSession = useCallback(async () => {
-    // Prevent concurrent checks and rate limiting
+    // Prevent concurrent checks and basic rate limiting
     const now = Date.now();
-    if (monitoringRef.current || !session || (now - lastCheckTime.current) < 5000) {
+    if (monitoringRef.current || !session || (now - lastCheckTime.current) < 2000) {
       return;
     }
 
@@ -32,6 +32,7 @@ export const useSessionMonitor = () => {
     setState(prev => ({ ...prev, isMonitoring: true }));
 
     try {
+      console.log('useSessionMonitor: Checking session validity...');
       const sessionState = await sessionValidator.validateSession();
       
       setState(prev => ({
@@ -41,12 +42,14 @@ export const useSessionMonitor = () => {
         isMonitoring: false
       }));
 
-      if (!sessionState.isValid && sessionState.error) {
-        console.warn('Session validation failed:', sessionState.error);
-      }
+      console.log('useSessionMonitor: Session state updated:', {
+        isValid: sessionState.isValid,
+        hasError: !!sessionState.error
+      });
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Session check failed';
+      console.error('useSessionMonitor: Session check error:', errorMessage);
       setState(prev => ({
         ...prev,
         isSessionValid: false,

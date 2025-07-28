@@ -30,8 +30,8 @@ export const SessionManager: React.FC<{ children: React.ReactNode }> = ({ childr
     });
   }, [isSessionValid, sessionRestoreValid, sessionError]);
 
-  // Show session expired message if there are session issues
-  if (sessionError && !isSessionValid) {
+  // Show session expired message only for critical errors
+  if (sessionError && !isSessionValid && !sessionRestoreValid) {
     return <SessionExpiredMessage error={sessionError} />;
   }
 
