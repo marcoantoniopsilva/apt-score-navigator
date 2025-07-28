@@ -206,51 +206,57 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
     
     try {
       console.log('Verificando sessão...');
-      const { data: session, error: sessionError } = await supabase.auth.getSession();
       
-      console.log('Session:', session);
-      console.log('Session error:', sessionError);
+      // Tentar obter a sessão de forma mais direta
+      const sessionResponse = await supabase.auth.getSession();
+      console.log('SessionResponse completo:', sessionResponse);
       
-      if (!session?.session?.access_token) {
-        console.error('Token não encontrado');
+      const session = sessionResponse.data?.session;
+      console.log('Session extraída:', session);
+      
+      if (!session) {
+        console.error('❌ Nenhuma sessão encontrada');
         toast({
           title: "Erro",
-          description: "Usuário não autenticado",
+          description: "Nenhuma sessão ativa encontrada",
           variant: "destructive"
         });
         return;
       }
+      
+      console.log('✅ Sessão encontrada, token presente:', !!session.access_token);
+      console.log('Token (primeiros 20 chars):', session.access_token?.substring(0, 20));
 
-      console.log('Chamando função test-user-preferences...');
-      const response = await supabase.functions.invoke('test-user-preferences', {
+      console.log('📡 Chamando função test-user-preferences...');
+      const functionResponse = await supabase.functions.invoke('test-user-preferences', {
         headers: {
-          Authorization: `Bearer ${session.session.access_token}`,
+          Authorization: `Bearer ${session.access_token}`,
         }
       });
 
-      console.log('Resposta completa:', response);
-      console.log('Data:', response.data);
-      console.log('Error:', response.error);
+      console.log('📋 Resposta da função completa:', functionResponse);
       
-      if (response.error) {
+      if (functionResponse.error) {
+        console.error('❌ Erro na função:', functionResponse.error);
         toast({
           title: "Erro na função",
-          description: response.error.message || 'Erro desconhecido',
+          description: functionResponse.error.message || 'Erro desconhecido',
           variant: "destructive"
         });
         return;
       }
       
+      console.log('✅ Sucesso! Data:', functionResponse.data);
       toast({
-        title: "Resultado do teste",
-        description: `Critérios encontrados: ${response.data?.criteriaCount || 0}`,
+        title: "✅ Teste concluído",
+        description: `Critérios encontrados: ${functionResponse.data?.criteriaCount || 0}`,
       });
       
     } catch (error) {
-      console.error('Erro no teste:', error);
+      console.error('💥 Erro no teste:', error);
       toast({
         title: "Erro no teste",
-        description: error.message,
+        description: error.message || 'Erro desconhecido',
         variant: "destructive"
       });
     }
