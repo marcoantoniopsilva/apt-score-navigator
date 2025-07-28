@@ -148,7 +148,7 @@ export const loadSavedProperties = async () => {
         .select('*')
         .eq('user_id', session.user.id)
         .order('created_at', { ascending: false });
-    }, { retries: 2, refreshOnAuth: true });
+    }, { retries: 3, timeout: 180000, refreshOnAuth: true });
 
     return data || [];
   } catch (error) {

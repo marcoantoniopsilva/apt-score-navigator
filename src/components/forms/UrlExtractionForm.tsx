@@ -1,11 +1,8 @@
-
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { extractPropertyFromUrl } from '@/utils/propertyExtractor';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { usePropertyExtraction } from '@/hooks/usePropertyExtraction';
 
 interface UrlExtractionFormProps {
   url: string;
@@ -18,71 +15,13 @@ export const UrlExtractionForm: React.FC<UrlExtractionFormProps> = ({
   setUrl,
   onDataExtracted
 }) => {
-  const { toast } = useToast();
-  const [isExtracting, setIsExtracting] = useState(false);
-  const [extractedData, setExtractedData] = useState<any>(null);
+  const { extractPropertyData, isExtracting } = usePropertyExtraction();
 
   const handleExtractFromUrl = async () => {
-    console.log('UrlExtractionForm: Iniciando extração com avaliação da IA');
-    console.log('UrlExtractionForm: URL:', url);
+    const result = await extractPropertyData(url);
     
-    setIsExtracting(true);
-    try {
-      console.log('UrlExtractionForm: Chamando extractPropertyFromUrl...');
-      const data = await extractPropertyFromUrl(url);
-      
-      if (data) {
-        console.log('UrlExtractionForm: Dados extraídos:', data);
-        
-        // Avaliar o imóvel com IA (mesmo que ManualPropertySearch faz)
-        let evaluationData = null;
-        try {
-          console.log('UrlExtractionForm: Avaliando imóvel com IA...');
-          const { data: aiEvaluation, error: evaluationError } = await supabase.functions.invoke('evaluate-property-scores', {
-            body: { propertyData: data }
-          });
-
-          if (!evaluationError && aiEvaluation) {
-            evaluationData = aiEvaluation;
-            console.log('UrlExtractionForm: Avaliação da IA recebida:', aiEvaluation);
-          } else {
-            console.warn('UrlExtractionForm: Erro na avaliação IA:', evaluationError);
-          }
-        } catch (error) {
-          console.warn('UrlExtractionForm: Erro na avaliação IA:', error);
-        }
-
-        // Combinar dados extraídos com avaliação da IA
-        const enrichedData = {
-          ...data,
-          scores: evaluationData?.scores || {},
-          finalScore: evaluationData?.finalScore || 0
-        };
-
-        console.log('UrlExtractionForm: Dados finais com IA:', enrichedData);
-        setExtractedData(enrichedData);
-        onDataExtracted(enrichedData);
-        
-        toast({
-          title: "Dados extraídos",
-          description: "Os dados do anúncio foram extraídos e as sugestões da IA foram aplicadas automaticamente.",
-        });
-      } else {
-        toast({
-          title: "Erro na extração",
-          description: "Não foi possível extrair os dados do anúncio.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error("UrlExtractionForm: Erro ao extrair dados da URL:", error);
-      toast({
-        title: "Erro na extração",
-        description: "Ocorreu um erro ao tentar extrair os dados do anúncio.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsExtracting(false);
+    if (result) {
+      onDataExtracted(result);
     }
   };
 
@@ -106,11 +45,6 @@ export const UrlExtractionForm: React.FC<UrlExtractionFormProps> = ({
           {isExtracting ? 'Extraindo...' : 'Extrair'}
         </Button>
       </div>
-      {extractedData && (
-        <p className="text-sm text-green-600 mt-2">
-          ✅ Dados extraídos e sugestões da IA aplicadas automaticamente! Revise os dados e clique em "Adicionar Propriedade" para salvar.
-        </p>
-      )}
     </div>
   );
 };

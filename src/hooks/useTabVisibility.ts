@@ -57,16 +57,30 @@ export const useTabVisibility = () => {
       
       // Invalida queries específicas baseadas no usuário
       if (user?.id) {
+        // Invalidar todas as queries do usuário
+        await queryClient.invalidateQueries({
+          predicate: (query) => {
+            const queryKey = query.queryKey;
+            return Array.isArray(queryKey) && queryKey.includes(user.id);
+          }
+        });
+        
+        // Invalidar queries específicas
         await queryClient.invalidateQueries({
           queryKey: ['properties', user.id]
         });
         
         await queryClient.invalidateQueries({
-          queryKey: ['criteria', true, user.id] // ou o padrão usado no useOptimizedCriteria
+          queryKey: ['criteria', true, user.id]
         });
 
         await queryClient.invalidateQueries({
           queryKey: ['subscription', user.id]
+        });
+
+        // Invalidar cache de edge functions que podem ter falhado
+        await queryClient.invalidateQueries({
+          queryKey: ['extract-property-data']
         });
       }
 

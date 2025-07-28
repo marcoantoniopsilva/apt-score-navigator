@@ -5,12 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, Search, Globe, Plus, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { UserProfileService } from '@/services/userProfileService';
-import { extractPropertyFromUrl } from '@/services/propertyExtractionService';
 import { useAuth } from '@/contexts/AuthContext';
 import LoadingState from '@/components/LoadingState';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { usePropertyExtraction } from '@/hooks/usePropertyExtraction';
 
 interface ManualPropertySearchProps {
   onAddProperty?: (propertyData: any) => void;
@@ -119,9 +118,9 @@ const parseRegion = (region: string) => {
 export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProps) => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [urlInput, setUrlInput] = useState('');
-  const [isExtracting, setIsExtracting] = useState(false);
-  const { user } = useAuth();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const { extractPropertyData, isExtracting } = usePropertyExtraction();
 
   useEffect(() => {
     if (user?.id) {
@@ -317,86 +316,11 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
   ];
 
   const handleExtractProperty = async () => {
-    if (!urlInput.trim()) {
-      toast({
-        title: "URL necessária",
-        description: "Por favor, insira uma URL válida de imóvel",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsExtracting(true);
+    const result = await extractPropertyData(urlInput);
     
-    try {
-      console.log('Extraindo dados da URL:', urlInput);
-      const propertyData = await extractPropertyFromUrl(urlInput);
-      
-      // Avaliar o imóvel com IA
-      let evaluationData = null;
-      try {
-        const { data: aiEvaluation, error: evaluationError } = await supabase.functions.invoke('evaluate-property-scores', {
-          body: { propertyData }
-        });
-
-        if (!evaluationError && aiEvaluation) {
-          evaluationData = aiEvaluation;
-        }
-      } catch (error) {
-        console.warn('Erro na avaliação IA:', error);
-      }
-
-      const formattedProperty = {
-        id: `manual-${Date.now()}`,
-        title: propertyData.title || 'Imóvel Extraído',
-        address: propertyData.address || 'Endereço não informado',
-        bedrooms: propertyData.bedrooms || 1,
-        bathrooms: propertyData.bathrooms || 1,
-        parkingSpaces: propertyData.parkingSpaces || 0,
-        area: propertyData.area || 50,
-        floor: propertyData.floor || '',
-        rent: propertyData.rent || 0,
-        condo: propertyData.condo || 0,
-        iptu: propertyData.iptu || 0,
-        fireInsurance: 50,
-        otherFees: 0,
-        totalMonthlyCost: (propertyData.rent || 0) + (propertyData.condo || 0) + (propertyData.iptu || 0) + 50,
-        images: propertyData.images || [],
-        sourceUrl: urlInput,
-        scores: evaluationData?.scores || {},
-        finalScore: evaluationData?.finalScore || 0
-      };
-
-      if (onAddProperty) {
-        // Em vez de salvar diretamente, passa os dados para abrir o formulário
-        onAddProperty(formattedProperty);
-      }
-
-      setUrlInput('');
-      
-      toast({
-        title: "Dados extraídos com sucesso",
-        description: "O formulário foi aberto para você revisar e editar os dados antes de salvar",
-        duration: 5000
-      });
-
-    } catch (error: any) {
-      console.error('Erro na extração:', error);
-      
-      let errorMessage = "Erro ao extrair dados do imóvel";
-      if (error?.message?.includes('não atende aos critérios')) {
-        errorMessage = "Imóvel não atende aos seus critérios de busca";
-      } else if (error?.message?.includes('extrair dados')) {
-        errorMessage = "Não foi possível extrair dados desta URL";
-      }
-      
-      toast({
-        title: "Erro na extração",
-        description: errorMessage,
-        variant: "destructive"
-      });
-    } finally {
-      setIsExtracting(false);
+    if (result && onAddProperty) {
+      onAddProperty(result);
+      setUrlInput(''); // Limpar URL após sucesso
     }
   };
 

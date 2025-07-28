@@ -78,8 +78,8 @@ export const useOptimizedProperties = () => {
       return uniqueProperties;
     },
     enabled: !!user?.id,
-    staleTime: 30 * 1000, // 30 segundos - evita cache infinito após tab switch
-    gcTime: 2 * 60 * 1000, // 2 minutos
+    staleTime: 10 * 1000, // 10 segundos - cache mais agressivo para reativação de aba
+    gcTime: 5 * 60 * 1000, // 5 minutos
     retry: (failureCount, error) => {
       console.log(`useOptimizedProperties: Retry ${failureCount} para propriedades`);
       return failureCount < 3;

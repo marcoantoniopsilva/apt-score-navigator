@@ -20,8 +20,8 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
     
     // Usar o wrapper com gestão automática de sessão
     const data = await supabaseFunction<any>('extract-property-data', { url }, {
-      retries: 1,
-      timeout: 120000, // 2 minutos para permitir processamento da IA
+      retries: 2,
+      timeout: 180000, // 3 minutos para permitir processamento da IA
       refreshOnAuth: true
     });
 
