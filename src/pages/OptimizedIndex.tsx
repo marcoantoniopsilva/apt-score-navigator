@@ -20,6 +20,8 @@ import { usePropertySorting } from '@/hooks/usePropertySorting';
 import { usePropertyComparison } from '@/hooks/usePropertyComparison';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { useTabVisibility } from '@/hooks/useTabVisibility';
+import { useAutoRecovery } from '@/hooks/useAutoRecovery';
+import { SessionStatus } from '@/components/SessionStatus';
 import { EnhancedOnboardingModal } from '@/components/EnhancedOnboardingModal';
 import { UserProfileType } from '@/types/onboarding';
 import { supabase } from '@/integrations/supabase/client';
@@ -34,11 +36,14 @@ const OptimizedIndex = () => {
   const queryClient = useQueryClient();
   const { user } = useAuth();
 
-  // Simplified session management
+  // Enhanced session management with auto-recovery
   const { isAuthenticated, isReady } = useSimpleSession();
   
   // Tab visibility hook - ativa automaticamente nas mudanças de aba
   useTabVisibility();
+  
+  // Auto-recovery for session issues
+  useAutoRecovery();
   
   // Optimized hooks with caching
   const { properties, isLoading, refreshProperties, updateProperty, removeProperty } = useOptimizedProperties();
@@ -177,6 +182,9 @@ const OptimizedIndex = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         <AppExplanation />
+        
+        {/* Status da sessão - só mostra quando há problemas */}
+        <SessionStatus />
         
         {userProfile && (
           <UserPreferencesDisplay

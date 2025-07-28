@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { extractPropertyFromUrl } from '@/services/propertyExtractionService';
 import { useToast } from '@/hooks/use-toast';
 import { useTabVisibility } from '@/hooks/useTabVisibility';
+import { useSessionMonitor } from '@/hooks/useSessionMonitor';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -12,6 +13,7 @@ export const usePropertyExtraction = () => {
   const [lastExtractionUrl, setLastExtractionUrl] = useState<string>('');
   const { toast } = useToast();
   const { onTabReactivated } = useTabVisibility();
+  const { validateSession } = useSessionMonitor();
   const extractionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Reset extraction state when tab is reactivated
@@ -74,12 +76,15 @@ export const usePropertyExtraction = () => {
     try {
       console.log('🔄 Iniciando extração de propriedade:', url);
       
-      // Verificar se a sessão ainda é válida antes de extrair
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      // Validação robusta de sessão com o monitor
+      console.log('🔐 Validando sessão com monitor...');
+      const sessionValid = await validateSession();
       
-      if (sessionError || !session) {
-        throw new Error('Sessão expirada. Por favor, atualize a página e tente novamente.');
+      if (!sessionValid) {
+        throw new Error('Sessão inválida ou expirada. Por favor, atualize a página e faça login novamente.');
       }
+      
+      console.log('✅ Sessão validada pelo monitor');
 
       console.log('📡 Chamando edge function extract-property-data...');
       const propertyData = await extractPropertyFromUrl(url);
