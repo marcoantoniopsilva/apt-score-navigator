@@ -175,11 +175,9 @@ const Index = () => {
           
 
           {/* Teste de Extração HTTP Direta - temporário */}
-          {hasCompletedOnboarding && (
-            <div className="mb-8">
-              <HttpExtractionTest />
-            </div>
-          )}
+          <div className="mb-8">
+            <HttpExtractionTest />
+          </div>
 
           {/* Busca Manual - movido para o topo após o card de plano */}
           {hasCompletedOnboarding && (

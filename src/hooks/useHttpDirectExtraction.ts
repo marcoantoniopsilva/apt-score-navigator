@@ -47,15 +47,11 @@ export const useHttpDirectExtraction = () => {
       console.log('📍 URL:', url);
       console.log('🔑 Session token presente:', !!session.access_token);
 
-      // Get Supabase URL and API key from environment
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      // Construir URL da função usando o project ID
+      const projectId = 'eepkixxqvelppxzfwoin';
+      const functionUrl = `https://${projectId}.supabase.co/functions/v1/extract-property-data`;
+      const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcGtpeHhxdmVscHB4emZ3b2luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzNTQ3MDIsImV4cCI6MjA2MDkzMDcwMn0.fPkjY979Pr2fKjVds0Byq3UAQ6Z5w0bBGaS48_LTBA4';
       
-      if (!supabaseUrl || !supabaseAnonKey) {
-        throw new Error('Configuração do Supabase não encontrada');
-      }
-
-      const functionUrl = `${supabaseUrl}/functions/v1/extract-property-data`;
       console.log('🌐 Function URL:', functionUrl);
 
       const response = await fetch(functionUrl, {
