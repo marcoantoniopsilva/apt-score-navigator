@@ -170,36 +170,53 @@ function extractFromVivaRealUrl(url: string): any {
       bedrooms = parseInt(bedroomMatch[1]);
     }
     
-    // Extrair bairro/localização
+    // Extrair bairro/localização de forma mais precisa
     let neighborhood = '';
     let city = '';
     
-    // Procurar por padrões comuns de localização
-    const locationPatterns = [
-      /(?:bairros?-|-)([a-z-]+)(?:-com-|-\d)/i,
-      /([a-z-]+)-bairros?/i,
-      /-([a-z-]+)-com-/i
-    ];
+    // Método 1: Procurar padrão específico do VivaReal
+    // Exemplo: "apartamento-2-quartos-vila-da-serra-bairros-nova-lima"
+    const vivaRealPattern = /quartos-([^-]+-[^-]+(?:-[^-]+)*)-bairros?-([^-]+(?:-[^-]+)*)/i;
+    const vivaRealMatch = urlInfo.match(vivaRealPattern);
     
-    for (const pattern of locationPatterns) {
-      const match = urlInfo.match(pattern);
-      if (match && match[1]) {
-        neighborhood = match[1].replace(/-/g, ' ').split(' ')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-          .join(' ');
-        break;
+    if (vivaRealMatch) {
+      neighborhood = vivaRealMatch[1].replace(/-/g, ' ').split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      city = vivaRealMatch[2].replace(/-/g, ' ').split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(' ');
+      console.log('🏘️ Extraído via padrão VivaReal:', { neighborhood, city });
+    } else {
+      // Método 2: Fallback para outros padrões
+      const locationPatterns = [
+        /-([a-z-]+)-com-(?:garagem|elevador|area)/i,
+        /-([a-z-]+)-bairros?/i,
+        /bairros?-([a-z-]+)(?:-com-|-\d)/i
+      ];
+      
+      for (const pattern of locationPatterns) {
+        const match = urlInfo.match(pattern);
+        if (match && match[1]) {
+          neighborhood = match[1].replace(/-/g, ' ').split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+          break;
+        }
       }
     }
     
-    // Detectar cidade comum
-    if (urlInfo.includes('nova-lima')) {
-      city = 'Nova Lima';
-    } else if (urlInfo.includes('belo-horizonte')) {
-      city = 'Belo Horizonte';
-    } else if (urlInfo.includes('-bh-') || urlInfo.includes('-mg')) {
-      city = 'Belo Horizonte';
-    } else {
-      city = 'MG';
+    // Detectar cidade se não foi extraída no padrão VivaReal
+    if (!city) {
+      if (urlInfo.includes('nova-lima')) {
+        city = 'Nova Lima';
+      } else if (urlInfo.includes('belo-horizonte')) {
+        city = 'Belo Horizonte';
+      } else if (urlInfo.includes('-bh-') || urlInfo.includes('-mg')) {
+        city = 'Belo Horizonte';
+      } else {
+        city = 'MG';
+      }
     }
     
     // Extrair área se presente
@@ -216,13 +233,13 @@ function extractFromVivaRealUrl(url: string): any {
       rent = parseInt(rentMatch[1]);
     }
     
-    // Montar título descritivo
-    const title = `${propertyType} ${bedrooms} quarto${bedrooms > 1 ? 's' : ''} - ${neighborhood || 'Centro'}`;
+    // Montar título descritivo mais limpo
+    const title = `${propertyType} ${bedrooms} quarto${bedrooms > 1 ? 's' : ''} - ${neighborhood || city}`;
     
-    // Montar endereço
-    const address = neighborhood && city 
+    // Montar endereço mais limpo
+    const address = neighborhood && city && neighborhood !== city
       ? `${neighborhood}, ${city}` 
-      : `Localização em ${city}`;
+      : city || 'Localização não especificada';
     
     const result = {
       title: title,
