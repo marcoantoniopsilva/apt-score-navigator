@@ -24,6 +24,7 @@ export const useSessionRefetchOnVisibility = () => {
       const recovered = await attemptRecovery();
       if (recovered) {
         console.log('✅ Sessão OK - refetching todas as queries ativas...');
+        console.log('🚀 Tentando refetch das queries após validação da sessão');
         await queryClient.refetchQueries({ type: 'active' });
       } else {
         console.warn('❌ Sessão inválida - talvez redirecionar para login');
