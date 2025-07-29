@@ -10,8 +10,6 @@ import { Home, Mail, Lock, UserPlus, LogIn, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { UserProfileService } from '@/services/userProfileService';
-import { ImoblyHeader } from '@/components/ImoblyHeader';
-import imoblyLogo from '@/assets/imobly-logo.png';
 
 const Auth = () => {
   const { signIn, signUp, user } = useAuth();
@@ -199,29 +197,33 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
-      {/* Header com logo e título */}
-      <div className="bg-blue-600 px-6 py-4 shadow-lg">
-        <ImoblyHeader />
-      </div>
-      
-      {/* Conteúdo da autenticação */}
-      <div className="bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 min-h-[calc(100vh-80px)] flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="mb-4">
-            <Button
-              variant="ghost"
-              asChild
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <Link to="/" className="flex items-center gap-2">
-                <ArrowLeft className="h-4 w-4" />
-                Voltar para início
-              </Link>
-            </Button>
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="mb-4">
+          <Button
+            variant="ghost"
+            asChild
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Link to="/" className="flex items-center gap-2">
+              <ArrowLeft className="h-4 w-4" />
+              Voltar para início
+            </Link>
+          </Button>
+        </div>
+        <div className="text-center mb-8">
+          <div className="bg-blue-600 p-3 rounded-lg inline-block mb-4">
+            <Home className="h-8 w-8 text-white" />
           </div>
+           <h1 className="text-3xl font-bold text-gray-900 mb-2">
+             Imobly
+           </h1>
+          <p className="text-gray-600">
+            Entre para comparar e encontrar o melhor apartamento
+          </p>
+        </div>
 
-          <Card>
+        <Card>
           <CardHeader>
             <CardTitle>Acesse sua conta</CardTitle>
             <CardDescription>
@@ -346,8 +348,7 @@ const Auth = () => {
               </TabsContent>
             </Tabs>
           </CardContent>
-          </Card>
-        </div>
+        </Card>
       </div>
     </div>
   );

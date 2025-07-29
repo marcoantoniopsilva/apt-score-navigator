@@ -4,7 +4,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { motion } from 'framer-motion';
 import { Rocket, Target, BarChart3, Settings, CheckCircle, LogIn } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
-import { ImoblyHeader } from '@/components/ImoblyHeader';
 import apartmentJourneyImage from '@/assets/apartment-choice-journey.jpg';
 
 const Landing = () => {
@@ -44,19 +43,19 @@ const Landing = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5">
       {/* Header Navigation */}
-      <header className="bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex justify-between items-center">
-            <ImoblyHeader variant="light" />
-            <Button 
-              variant="outline" 
-              onClick={handleLogin}
-              className="flex items-center gap-2 border-white/30 bg-white/10 text-white hover:bg-white/20 hover:text-white hover:border-white/50"
-            >
-              <LogIn className="w-4 h-4" />
-              Entrar
-            </Button>
-          </div>
+      <header className="container mx-auto px-4 py-6">
+        <div className="flex justify-between items-center">
+           <div className="text-xl font-bold text-foreground">
+             Imobly
+           </div>
+          <Button 
+            variant="outline" 
+            onClick={handleLogin}
+            className="flex items-center gap-2"
+          >
+            <LogIn className="w-4 h-4" />
+            Entrar
+          </Button>
         </div>
       </header>
 

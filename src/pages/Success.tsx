@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { CheckCircle, Crown } from 'lucide-react';
 import { useSubscription } from '@/hooks/useSubscription';
 import { toast } from 'sonner';
-import { ImoblyHeader } from '@/components/ImoblyHeader';
 
 export default function Success() {
   const navigate = useNavigate();
@@ -30,14 +29,8 @@ export default function Success() {
   }, [sessionId, checkSubscription]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
-      {/* Header */}
-      <div className="bg-blue-600 px-6 py-4 shadow-lg">
-        <ImoblyHeader />
-      </div>
-      
-      <div className="bg-gradient-to-br from-green-50 to-emerald-100 min-h-[calc(100vh-80px)] flex items-center justify-center p-4">
-        <Card className="w-full max-w-md text-center">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 to-emerald-100 flex items-center justify-center p-4">
+      <Card className="w-full max-w-md text-center">
         <CardHeader>
           <div className="flex justify-center mb-4">
             <div className="rounded-full bg-green-100 p-3">
@@ -76,7 +69,6 @@ export default function Success() {
           </Button>
         </CardContent>
       </Card>
-    </div>
     </div>
   );
 }

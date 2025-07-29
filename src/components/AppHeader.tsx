@@ -5,7 +5,7 @@ import { LogOut, RefreshCw, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { SubscriptionStatus } from './SubscriptionStatus';
-import { ImoblyHeader } from './ImoblyHeader';
+import imoblyLogo from '/lovable-uploads/eba11e85-5438-4e92-a0b6-3406499da928.png';
 
 interface AppHeaderProps {
   title: string;
@@ -42,15 +42,20 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   };
 
   return (
-    <div className="bg-gradient-to-r from-blue-600 to-blue-700 shadow-lg">
+    <div className="bg-blue-900 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4 min-w-0 flex-1">
-            <ImoblyHeader variant="light" showSubtitle={false} />
-            <div className="min-w-0 flex-1">
-              <p className="text-sm sm:text-base text-white/90 truncate">
-                {subtitle}
-              </p>
+          <div className="flex items-center gap-1 min-w-0 flex-1">
+            <div className="flex-shrink-0">
+              <img src={imoblyLogo} alt="Imobly" className="h-8 w-auto sm:h-10" />
+            </div>
+            <div className="flex items-center space-x-4 min-w-0 flex-1">
+              <h1 className="text-lg sm:text-xl font-bold text-white">Imobly</h1>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm sm:text-base text-white/90 truncate">
+                  {subtitle}
+                </p>
+              </div>
             </div>
           </div>
           
