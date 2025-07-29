@@ -10,7 +10,7 @@ import beforeAfterComparison from '@/assets/before-after-comparison.jpg';
 const Marketing = () => {
   const navigate = useNavigate();
   const handleGetStarted = () => {
-    navigate('/onboarding');
+    navigate('/');
   };
   const handleLogin = () => {
     navigate('/auth');
@@ -102,7 +102,7 @@ const Marketing = () => {
                   Começar agora
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
-                <Button size="lg" variant="outline" className="border-white hover:bg-white transition-colors px-8 py-4 text-lg text-sky-900">
+                <Button size="lg" variant="outline" onClick={handleGetStarted} className="border-white hover:bg-white transition-colors px-8 py-4 text-lg text-sky-900">
                   Ver como funciona
                 </Button>
               </div>
