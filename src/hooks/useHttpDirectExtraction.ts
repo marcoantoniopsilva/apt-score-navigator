@@ -20,33 +20,40 @@ export const useHttpDirectExtraction = () => {
   const { session } = useAuth();
 
   const extractPropertyData = async (url: string): Promise<ExtractionResult> => {
-    if (!session?.access_token) {
-      const error = 'Usuário não autenticado';
-      toast({
-        title: "Erro de autenticação",
-        description: error,
-        variant: "destructive",
-      });
-      return { success: false, error };
-    }
-
-    if (!url || !url.trim()) {
-      const error = 'URL é obrigatória';
-      toast({
-        title: "URL inválida",
-        description: error,
-        variant: "destructive",
-      });
-      return { success: false, error };
-    }
-
     setIsExtracting(true);
 
     try {
+      // Força refresh da sessão antes de fazer a chamada
+      console.log('🔄 Verificando e atualizando sessão antes da extração...');
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      if (!currentSession?.access_token) {
+        const error = 'Sessão expirada ou inválida. Faça login novamente.';
+        console.error('❌ Sessão inválida:', currentSession);
+        toast({
+          title: "Erro de autenticação",
+          description: error,
+          variant: "destructive",
+        });
+        return { success: false, error };
+      }
+
+      console.log('✅ Sessão válida confirmada');
+
+      if (!url || !url.trim()) {
+        const error = 'URL é obrigatória';
+        toast({
+          title: "URL inválida", 
+          description: error,
+          variant: "destructive",
+        });
+        return { success: false, error };
+      }
+
       console.log('🚀 useHttpDirectExtraction: Iniciando extração direta via HTTP');
       console.log('📍 URL:', url);
-      console.log('🔑 Session token presente:', !!session.access_token);
-      console.log('🔑 Session token (primeiros 50 chars):', session.access_token?.substring(0, 50) + '...');
+      console.log('🔑 Current session token presente:', !!currentSession.access_token);
+      console.log('🔑 Current session token (primeiros 50 chars):', currentSession.access_token?.substring(0, 50) + '...');
 
       // Construir URL da função usando o project ID
       const projectId = 'eepkixxqvelppxzfwoin';
@@ -59,20 +66,13 @@ export const useHttpDirectExtraction = () => {
       const requestPayload = { url };
       console.log('📦 Payload:', requestPayload);
 
-      const requestHeaders = {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session.access_token}`,
-        'apikey': supabaseAnonKey,
-      };
-      console.log('📋 Headers preparados (sem valores sensíveis)');
-
       console.log('⏳ Fazendo chamada HTTP...');
 
       const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session.access_token}`,
+          'Authorization': `Bearer ${currentSession.access_token}`, // Usa a sessão atualizada
           'apikey': supabaseAnonKey,
         },
         body: JSON.stringify({ url })
