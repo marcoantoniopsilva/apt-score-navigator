@@ -238,7 +238,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    console.log('🚪 AuthContext: Signing out and clearing all tokens');
+    
+    // Limpar localStorage primeiro
+    localStorage.removeItem('sb-eepkixxqvelppxzfwoin-auth-token');
+    
+    // Depois fazer logout no Supabase
     await supabase.auth.signOut();
+    
+    // Garantir que o estado local está limpo
+    setSession(null);
+    setUser(null);
   };
 
   const value = {

@@ -93,10 +93,27 @@ export const useSessionMonitor = () => {
   const refreshSession = useCallback(async () => {
     try {
       console.log('🔄 SessionMonitor: Refreshing session...');
-      const { data, error } = await supabase.auth.refreshSession();
+      
+      // Verificar se há uma sessão atual antes de tentar refresh
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      
+      if (!currentSession) {
+        console.log('❌ SessionMonitor: No current session to refresh');
+        return false;
+      }
+      
+      // Usar refreshSession do Supabase que gerencia tokens internamente
+      const { data, error } = await supabase.auth.refreshSession(currentSession);
       
       if (error) {
         console.error('❌ SessionMonitor: Refresh failed:', error);
+        
+        // Se o refresh token é inválido, fazer logout completo
+        if (error.message.includes('Invalid Refresh Token') || error.message.includes('refresh_token_not_found')) {
+          console.log('🚪 SessionMonitor: Invalid refresh token, signing out...');
+          await supabase.auth.signOut();
+        }
+        
         toast({
           title: "Erro de sessão",
           description: "Sua sessão expirou. Por favor, faça login novamente.",

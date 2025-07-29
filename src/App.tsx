@@ -13,6 +13,7 @@ import Landing from "./pages/Landing";
 import Onboarding from "./pages/Onboarding";
 import { useSessionRefetchOnVisibility } from "@/hooks/useSessionRefetchOnVisibility";
 import { TestSessionRenewal } from "@/components/TestSessionRenewal";
+import { useTokenCleanup } from "@/hooks/useTokenCleanup";
 
 const queryClient = new QueryClient();
 
@@ -32,11 +33,12 @@ const App = () => (
 
 const AppWithHooks = () => {
   useSessionRefetchOnVisibility();
+  useTokenCleanup();
 
   return (
     <>
       <TestSessionRenewal />
-    <Routes>
+      <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/auth" element={<Auth />} />
