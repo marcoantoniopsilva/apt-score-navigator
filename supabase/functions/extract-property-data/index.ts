@@ -846,38 +846,12 @@ function isValidImageUrl(url: string): boolean {
 function isPropertyImage(url: string): boolean {
   const urlLower = url.toLowerCase();
   
-  // URLs que provavelmente são de imóveis - com prioridade
-  const highPriorityIndicators = [
-    'resizedimgs.vivareal.com',
-    '/crop/614x', // Imagens grandes do VivaReal
-    '/crop/640x', // Imagens grandes
-    'apartamento-com-',
-    'casa-com-',
-    'imovel'
-  ];
+  console.log(`🔍 Analisando imagem: ${url.substring(0, 80)}`);
   
-  // Palavras que indicam cômodos e áreas do imóvel
-  const roomIndicators = [
-    'sala',
-    'quarto',
-    'banheiro',
-    'cozinha',
-    'varanda',
-    'area-gourmet',
-    'lavanderia',
-    'garagem',
-    'fachada',
-    'living',
-    'dormitorio',
-    'suite',
-    'escritorio',
-    'closet'
-  ];
-  
-  // URLs que provavelmente são logos/banners/objetos - filtrar
+  // URLs que devem ser EXCLUÍDAS (logos, etc)
   const excludeIndicators = [
     'logo',
-    'banner',
+    'banner', 
     'header',
     'footer',
     'nav',
@@ -898,7 +872,6 @@ function isPropertyImage(url: string): boolean {
     'watermark',
     'marca-dagua',
     'corretor',
-    'agente',
     'creci',
     'whatsapp',
     'telefone',
@@ -906,67 +879,42 @@ function isPropertyImage(url: string): boolean {
     'social',
     'facebook',
     'instagram',
-    'youtube',
-    'email',
-    'site',
-    'www.',
-    '.com.br',
-    'vendedor',
-    'consultor'
+    'youtube'
   ];
   
-  // Verificar se contém indicadores de exclusão
+  // Verificar exclusões primeiro
   for (const exclude of excludeIndicators) {
     if (urlLower.includes(exclude)) {
-      console.log(`❌ Imagem filtrada (${exclude}):`, url.substring(0, 60));
+      console.log(`❌ Excluída por ${exclude}`);
       return false;
     }
   }
   
-  // Verificar dimensões - filtrar imagens muito pequenas
+  // Se é do VivaReal, aceitar (já passou no filtro de exclusão)
+  if (urlLower.includes('vivareal') || urlLower.includes('resizedimgs')) {
+    console.log(`✅ VivaReal aceita`);
+    return true;
+  }
+  
+  // Verificar dimensões apenas para filtrar muito pequenas
   const dimensionMatch = url.match(/(\d+)x(\d+)/);
   if (dimensionMatch) {
     const width = parseInt(dimensionMatch[1]);
     const height = parseInt(dimensionMatch[2]);
     
-    // Filtrar imagens muito pequenas (thumbnails/logos)
-    if (width < 200 || height < 150) {
-      console.log(`❌ Imagem muito pequena (${width}x${height}):`, url.substring(0, 60));
+    // Filtrar apenas imagens muito pequenas (menor que 100x100)
+    if (width < 100 || height < 100) {
+      console.log(`❌ Muito pequena: ${width}x${height}`);
       return false;
     }
     
-    // Filtrar imagens com proporções estranhas (banners horizontais)
-    const aspectRatio = width / height;
-    if (aspectRatio > 4 || aspectRatio < 0.5) {
-      console.log(`❌ Proporção inadequada (${aspectRatio.toFixed(2)}):`, url.substring(0, 60));
-      return false;
-    }
-  }
-  
-  // Verificar se contém indicadores de alta prioridade
-  for (const indicator of highPriorityIndicators) {
-    if (urlLower.includes(indicator)) {
-      console.log(`✅ Imagem de alta prioridade (${indicator}):`, url.substring(0, 60));
-      return true;
-    }
-  }
-  
-  // Verificar se contém indicadores de cômodos
-  for (const room of roomIndicators) {
-    if (urlLower.includes(room)) {
-      console.log(`✅ Imagem de cômodo (${room}):`, url.substring(0, 60));
-      return true;
-    }
-  }
-  
-  // Se chegou até aqui, aceitar apenas se for uma URL do VivaReal
-  if (urlLower.includes('vivareal') || urlLower.includes('resizedimgs')) {
-    console.log(`✅ Imagem VivaReal aceita:`, url.substring(0, 60));
+    console.log(`✅ Dimensão adequada: ${width}x${height}`);
     return true;
   }
   
-  console.log(`❌ Imagem rejeitada (não passou nos filtros):`, url.substring(0, 60));
-  return false;
+  // Se chegou até aqui e não foi excluída, aceitar
+  console.log(`✅ Aceita por padrão`);
+  return true;
 }
 
 // Função para selecionar a melhor imagem de uma lista
