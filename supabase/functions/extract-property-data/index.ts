@@ -226,15 +226,21 @@ function parseVivaRealContent(content: string, url: string): any {
 
     // Extrair imagens do imóvel
     try {
-      console.log('🖼️ Extraindo imagens...');
+      console.log('🖼️ Iniciando extração de imagens...');
       const allImageUrls = extractImagesFromContent(content, cleanContent);
+      console.log(`📸 Imagens brutas extraídas: ${allImageUrls.length}`);
+      
       if (allImageUrls.length > 0) {
-        // Selecionar as melhores imagens representativas
+        // Para debug: mostrar todas as URLs encontradas
+        console.log('🔗 URLs encontradas:', allImageUrls.slice(0, 5)); // Mostrar apenas as 5 primeiras
+        
+        // Selecionar as melhores imagens
         const bestImages = selectBestPropertyImage(allImageUrls);
         data.images = bestImages;
         console.log('📸 Melhores imagens selecionadas:', bestImages.length);
+        console.log('🎯 URLs finais:', bestImages);
       } else {
-        console.log('📸 Nenhuma imagem extraída do conteúdo');
+        console.log('⚠️ NENHUMA imagem extraída - usando array vazio');
         data.images = [];
       }
     } catch (error) {
@@ -846,74 +852,20 @@ function isValidImageUrl(url: string): boolean {
 function isPropertyImage(url: string): boolean {
   const urlLower = url.toLowerCase();
   
-  console.log(`🔍 Analisando imagem: ${url.substring(0, 80)}`);
+  console.log(`🔍 Testando imagem: ${url}`);
   
-  // URLs que devem ser EXCLUÍDAS (logos, etc)
-  const excludeIndicators = [
-    'logo',
-    'banner', 
-    'header',
-    'footer',
-    'nav',
-    'menu',
-    'btn',
-    'button',
-    'icon',
-    'sprite',
-    'brand',
-    'empresa',
-    'imobiliaria',
-    'avatar',
-    'profile',
-    'user',
-    '/ui/',
-    '/assets/icons',
-    'placeholder',
-    'watermark',
-    'marca-dagua',
-    'corretor',
-    'creci',
-    'whatsapp',
-    'telefone',
-    'contato',
-    'social',
-    'facebook',
-    'instagram',
-    'youtube'
-  ];
+  // Lista simples de exclusões óbvias
+  const simpleExclusions = ['logo', 'icon', 'btn', 'button', 'banner'];
   
-  // Verificar exclusões primeiro
-  for (const exclude of excludeIndicators) {
-    if (urlLower.includes(exclude)) {
-      console.log(`❌ Excluída por ${exclude}`);
+  for (const exclusion of simpleExclusions) {
+    if (urlLower.includes(exclusion)) {
+      console.log(`❌ Excluída: ${exclusion}`);
       return false;
     }
   }
   
-  // Se é do VivaReal, aceitar (já passou no filtro de exclusão)
-  if (urlLower.includes('vivareal') || urlLower.includes('resizedimgs')) {
-    console.log(`✅ VivaReal aceita`);
-    return true;
-  }
-  
-  // Verificar dimensões apenas para filtrar muito pequenas
-  const dimensionMatch = url.match(/(\d+)x(\d+)/);
-  if (dimensionMatch) {
-    const width = parseInt(dimensionMatch[1]);
-    const height = parseInt(dimensionMatch[2]);
-    
-    // Filtrar apenas imagens muito pequenas (menor que 100x100)
-    if (width < 100 || height < 100) {
-      console.log(`❌ Muito pequena: ${width}x${height}`);
-      return false;
-    }
-    
-    console.log(`✅ Dimensão adequada: ${width}x${height}`);
-    return true;
-  }
-  
-  // Se chegou até aqui e não foi excluída, aceitar
-  console.log(`✅ Aceita por padrão`);
+  // Se chegou até aqui, aceitar
+  console.log(`✅ Imagem aceita`);
   return true;
 }
 
