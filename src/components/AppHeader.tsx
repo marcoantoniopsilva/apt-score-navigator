@@ -28,25 +28,31 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   const { extractPropertyData, isExtracting } = useHttpDirectExtraction();
 
   const handleAddProperty = async () => {
-    // Para teste, vamos usar uma URL de exemplo
-    // Em produção, isso viria do input do usuário ou outro componente
+    console.log('🏠 AppHeader: Botão Adicionar clicado');
+    
+    // SEMPRE abre o formulário primeiro
+    onAddProperty(); 
+    console.log('✅ AppHeader: Formulário aberto');
+    
+    // Tentativa opcional de extração em background  
+    // Se funcionar, os dados aparecerão no formulário
+    // Se não funcionar, o usuário pode inserir manualmente
     const testUrl = 'https://www.vivareal.com.br/imovel/apartamento-1-quartos-vila-da-serra-bairros-nova-lima-com-garagem-69m2-venda-RS1200000-id-2761362817/';
-    console.log('🏠 AppHeader: Extraindo propriedade via HTTP direto...');
     
-    const result = await extractPropertyData(testUrl);
-    
-    if (result.success && result.data) {
-      // Se a extração foi bem-sucedida, chama a função onAddProperty original
-      // passando os dados extraídos para serem usados no formulário
-      console.log('✅ AppHeader: Extração bem-sucedida, abrindo formulário');
-      onAddProperty(); // Abre o formulário
+    try {
+      console.log('🔍 AppHeader: Tentando extração em background...');
+      const result = await extractPropertyData(testUrl);
       
-      // Aqui seria ideal passar os dados extraídos, mas o onAddProperty atual não aceita parâmetros
-      // Vamos precisar modificar o fluxo de dados na próxima iteração
-    } else {
-      console.error('❌ AppHeader: Falha na extração');
-      // Se falhar, abre o formulário vazio mesmo assim
-      onAddProperty();
+      if (result.success && result.data) {
+        console.log('✅ AppHeader: Extração em background bem-sucedida');
+        // Os dados extraídos poderiam ser passados para o formulário aqui
+        // Por enquanto, apenas mostramos o resultado
+      } else {
+        console.log('⚠️ AppHeader: Extração em background falhou, mas formulário está aberto');
+      }
+    } catch (error) {
+      console.log('⚠️ AppHeader: Erro na extração em background:', error);
+      // Mesmo com erro, o formulário já está aberto
     }
   };
 
