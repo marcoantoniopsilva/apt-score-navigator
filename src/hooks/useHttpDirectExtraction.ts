@@ -25,11 +25,31 @@ export const useHttpDirectExtraction = () => {
     try {
       // Força refresh da sessão antes de fazer a chamada
       console.log('🔄 Verificando e atualizando sessão antes da extração...');
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
       
-      if (!currentSession?.access_token) {
-        const error = 'Sessão expirada ou inválida. Faça login novamente.';
-        console.error('❌ Sessão inválida:', currentSession);
+      const sessionResult = await supabase.auth.getSession();
+      console.log('📋 Resultado da getSession():', {
+        data: !!sessionResult.data,
+        session: !!sessionResult.data?.session,
+        error: sessionResult.error,
+        accessToken: !!sessionResult.data?.session?.access_token
+      });
+      
+      const currentSession = sessionResult.data?.session;
+      
+      if (!currentSession) {
+        const error = 'Nenhuma sessão encontrada após verificação.';
+        console.error('❌ Sessão não encontrada:', sessionResult);
+        toast({
+          title: "Erro de autenticação",
+          description: error,
+          variant: "destructive",
+        });
+        return { success: false, error };
+      }
+      
+      if (!currentSession.access_token) {
+        const error = 'Token de acesso não encontrado na sessão.';
+        console.error('❌ Token de acesso inválido:', currentSession);
         toast({
           title: "Erro de autenticação",
           description: error,
