@@ -257,15 +257,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signOut = async () => {
     console.log('🚪 AuthContext: Signing out and clearing all tokens');
     
-    // Limpar localStorage primeiro
-    localStorage.removeItem('sb-eepkixxqvelppxzfwoin-auth-token');
-    
-    // Depois fazer logout no Supabase
-    await supabase.auth.signOut();
-    
-    // Garantir que o estado local está limpo
-    setSession(null);
-    setUser(null);
+    try {
+      // Limpar estado local primeiro
+      setSession(null);
+      setUser(null);
+      
+      // Limpar localStorage
+      localStorage.removeItem('sb-eepkixxqvelppxzfwoin-auth-token');
+      localStorage.clear(); // Limpar tudo para garantir
+      
+      // Fazer logout no Supabase
+      const { error } = await supabase.auth.signOut();
+      
+      if (error) {
+        console.error('Erro no logout:', error);
+      } else {
+        console.log('✅ Logout realizado com sucesso');
+      }
+      
+      // Forçar reload da página para limpar qualquer estado residual
+      window.location.href = '/auth';
+      
+    } catch (error) {
+      console.error('💥 Erro durante logout:', error);
+      // Mesmo com erro, limpar estado e redirecionar
+      setSession(null);
+      setUser(null);
+      localStorage.clear();
+      window.location.href = '/auth';
+    }
   };
 
   const value = {

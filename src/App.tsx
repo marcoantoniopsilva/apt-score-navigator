@@ -16,6 +16,7 @@ import { TestSessionRenewal } from "@/components/TestSessionRenewal";
 import { useTokenCleanup } from "@/hooks/useTokenCleanup";
 import { SessionDebugPanel } from "@/components/SessionDebugPanel";
 import { SupabaseConnectionTest } from "@/components/SupabaseConnectionTest";
+import { EmergencyLogout } from "@/components/EmergencyLogout";
 
 const queryClient = new QueryClient();
 
@@ -34,11 +35,13 @@ const App = () => (
 );
 
 const AppWithHooks = () => {
-  useSessionRefetchOnVisibility();
+  // Usar apenas um hook de sessão para evitar conflitos
+  // useSessionRefetchOnVisibility();
   useTokenCleanup();
 
   return (
     <>
+      <EmergencyLogout />
       <TestSessionRenewal />
       <SessionDebugPanel />
       <SupabaseConnectionTest />
