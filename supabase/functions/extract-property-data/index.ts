@@ -58,9 +58,15 @@ serve(async (req) => {
       }
     }
 
-    // Extrair dados DIFERENTES baseados na URL
-    const propertyData = extractDifferentData(url);
-    console.log('🏠 Dados:', propertyData.title);
+    // Extrair dados da página usando Firecrawl
+    const propertyData = await extractFromPage(url);
+    console.log('🏠 Dados extraídos:', propertyData.title || 'Título não encontrado');
+
+    // Se não conseguiu extrair da página, usar dados da URL como fallback
+    if (!propertyData.title && !propertyData.address) {
+      const fallbackData = extractFromVivaRealUrl(url);
+      Object.assign(propertyData, fallbackData);
+    }
 
     // Avaliar com IA ou simulação
     const scores = await evaluateWithAI(propertyData, userCriteria);
@@ -92,6 +98,169 @@ serve(async (req) => {
     });
   }
 });
+
+async function extractFromPage(url: string): Promise<any> {
+  console.log('🔍 Fazendo scraping da página:', url);
+  
+  const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
+  
+  if (!firecrawlApiKey) {
+    console.log('⚠️ Firecrawl não configurado, usando extração da URL');
+    return extractFromVivaRealUrl(url);
+  }
+
+  try {
+    // Fazer scraping da página com Firecrawl
+    const response = await fetch('https://api.firecrawl.dev/v0/scrape', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${firecrawlApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url: url,
+        formats: ['markdown', 'html'],
+        onlyMainContent: true
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Firecrawl API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const content = data.data?.markdown || data.data?.html || '';
+    
+    console.log('📄 Conteúdo extraído, tamanho:', content.length);
+
+    // Extrair dados específicos do conteúdo
+    const extractedData = parseVivaRealContent(content, url);
+    
+    return extractedData;
+    
+  } catch (error) {
+    console.error('💥 Erro no scraping:', error);
+    console.log('🔄 Fallback para extração da URL');
+    return extractFromVivaRealUrl(url);
+  }
+}
+
+function parseVivaRealContent(content: string, url: string): any {
+  console.log('🔍 Analisando conteúdo da página...');
+  
+  const data: any = {
+    images: ["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400"]
+  };
+
+  try {
+    // Extrair endereço completo (padrão mais comum)
+    const addressPatterns = [
+      /(?:Endereço|Localização)[:\s]*([^,\n]+,\s*\d+[^,\n]*-[^,\n]+,\s*[^,\n]+(?:\s*-\s*[A-Z]{2})?)/i,
+      /Rua\s+([^,\n]+,\s*\d+[^,\n]*-[^,\n]+,\s*[^,\n]+)/i,
+      /Avenida\s+([^,\n]+,\s*\d+[^,\n]*-[^,\n]+,\s*[^,\n]+)/i,
+      /([A-ZÀÁÂÃÉÊÍÓÔÕÚÇ][^,\n]+,\s*\d+[^,\n]*-[^,\n]+,\s*[^,\n]+(?:\s*-\s*[A-Z]{2})?)/
+    ];
+
+    for (const pattern of addressPatterns) {
+      const match = content.match(pattern);
+      if (match && match[1]) {
+        data.address = match[1].trim();
+        console.log('📍 Endereço encontrado:', data.address);
+        break;
+      }
+    }
+
+    // Extrair título/descrição do imóvel
+    const titlePatterns = [
+      /(?:Apartamento|Casa|Cobertura|Studio)[^,\n]*(?:com\s+\d+\s+quarto[s]?|para\s+alugar|em\s+[^,\n]+)/i,
+      /\d+\s+quarto[s]?\s*(?:e\s*\d+\s*banheiro[s]?)?[^,\n]*/i,
+      /(Apartamento|Casa|Cobertura|Studio)[^,\n]{20,80}/i
+    ];
+
+    for (const pattern of titlePatterns) {
+      const match = content.match(pattern);
+      if (match && match[0]) {
+        data.title = match[0].trim();
+        console.log('🏠 Título encontrado:', data.title);
+        break;
+      }
+    }
+
+    // Extrair valores financeiros
+    const pricePatterns = [
+      /(?:Aluguel|Valor)[:\s]*R\$\s*([\d.,]+)/i,
+      /R\$\s*([\d.,]+)\/mês/i,
+      /Condomínio[:\s]*R\$\s*([\d.,]+)/i
+    ];
+
+    for (const pattern of pricePatterns) {
+      const match = content.match(pattern);
+      if (match && match[1]) {
+        const value = parseInt(match[1].replace(/[.,]/g, ''));
+        if (!data.rent && pattern.source.includes('Aluguel|Valor')) {
+          data.rent = value;
+        } else if (!data.condo && pattern.source.includes('Condomínio')) {
+          data.condo = value;
+        }
+      }
+    }
+
+    // Extrair características
+    const bedroomMatch = content.match(/(\d+)\s+quarto[s]?/i);
+    if (bedroomMatch) {
+      data.bedrooms = parseInt(bedroomMatch[1]);
+    }
+
+    const bathroomMatch = content.match(/(\d+)\s+banheiro[s]?/i);
+    if (bathroomMatch) {
+      data.bathrooms = parseInt(bathroomMatch[1]);
+    }
+
+    const areaMatch = content.match(/(\d+)\s*m[²2]/i);
+    if (areaMatch) {
+      data.area = parseInt(areaMatch[1]);
+    }
+
+    const parkingMatch = content.match(/(\d+)\s*vaga[s]?/i);
+    if (parkingMatch) {
+      data.parkingSpaces = parseInt(parkingMatch[1]);
+    }
+
+    console.log('✅ Dados extraídos do conteúdo:', {
+      hasTitle: !!data.title,
+      hasAddress: !!data.address,
+      hasRent: !!data.rent,
+      bedrooms: data.bedrooms
+    });
+
+  } catch (error) {
+    console.error('💥 Erro ao analisar conteúdo:', error);
+  }
+
+  // Se não conseguiu extrair dados essenciais, usar fallback da URL
+  if (!data.title || !data.address) {
+    console.log('🔄 Dados insuficientes, usando fallback da URL');
+    const fallback = extractFromVivaRealUrl(url);
+    return { ...fallback, ...data };
+  }
+
+  // Completar dados padrão
+  return {
+    title: data.title || 'Imóvel',
+    address: data.address || 'Endereço não encontrado',
+    rent: data.rent || 3000,
+    condo: data.condo || Math.floor((data.rent || 3000) * 0.15),
+    iptu: Math.floor((data.rent || 3000) * 0.05),
+    bedrooms: data.bedrooms || 2,
+    bathrooms: data.bathrooms || 1,
+    area: data.area || 70,
+    parkingSpaces: data.parkingSpaces || (data.bedrooms >= 2 ? 1 : 0),
+    fireInsurance: 50,
+    otherFees: 0,
+    description: data.title || 'Imóvel extraído do VivaReal',
+    images: data.images
+  };
+}
 
 function extractDifferentData(url: string): any {
   console.log('🔍 Processando URL:', url);
