@@ -27,6 +27,7 @@ import { SessionExpiredMessage } from '@/components/SessionExpiredMessage';
 import { UserProfileType } from '@/types/onboarding';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { usePageRefresh } from '@/hooks/usePageRefresh';
 
 const Index = () => {
   const [comparisonMode, setComparisonMode] = useState(false);
@@ -49,6 +50,9 @@ const Index = () => {
     userProfile,
     isLoading: onboardingLoading
   } = useOnboarding();
+
+  // Hook para refresh automático da página
+  usePageRefresh();
 
   // Mostrar onboarding para usuários autenticados que não completaram
   useEffect(() => {
