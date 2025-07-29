@@ -15,7 +15,8 @@ import {
   BarChart3,
   ArrowRight,
   Instagram,
-  Mail
+  Mail,
+  LogIn
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import personChoosingProperty from '@/assets/person-choosing-property.jpg';
@@ -111,8 +112,9 @@ const Marketing = () => {
           <Button 
             variant="outline" 
             onClick={handleLogin}
-            className="text-white border-white/30 hover:bg-white/10"
+            className="text-white border-white hover:bg-white hover:text-blue-900 transition-colors flex items-center gap-2"
           >
+            <LogIn className="w-4 h-4" />
             Entrar
           </Button>
         </div>
@@ -145,7 +147,7 @@ const Marketing = () => {
                 <Button 
                   size="lg" 
                   variant="outline"
-                  className="text-white border-white/30 hover:bg-white/10 px-8 py-4 text-lg"
+                  className="text-white border-white hover:bg-white hover:text-blue-900 transition-colors px-8 py-4 text-lg"
                 >
                   Ver como funciona
                 </Button>
