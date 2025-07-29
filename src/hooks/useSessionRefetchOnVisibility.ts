@@ -23,4 +23,34 @@ export const useSessionRefetchOnVisibility = () => {
     try {
       const recovered = await attemptRecovery();
       if (recovered) {
-        console.log('✅ Sessão OK - refetching todas as queries a
+        console.log('✅ Sessão OK - refetching todas as queries ativas...');
+        await queryClient.refetchQueries({ type: 'active' });
+      } else {
+        console.warn('❌ Sessão inválida - talvez redirecionar para login');
+      }
+    } catch (err) {
+      console.error('Erro no refetch após recuperação:', err);
+    } finally {
+      isHandlingRef.current = false;
+    }
+  }, [attemptRecovery, queryClient]);
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        handleVisibility();
+      }
+    };
+    const onFocus = () => {
+      handleVisibility();
+    };
+
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onFocus);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onFocus);
+    };
+  }, [handleVisibility]);
+};
