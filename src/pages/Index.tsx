@@ -10,6 +10,7 @@ import { UserPreferencesDisplay } from '@/components/UserPreferencesDisplay';
 import { MobileWeightsEditor } from '@/components/MobileWeightsEditor';
 import { PropertyComparison } from '@/components/PropertyComparison';
 import { ManualPropertySearch } from '@/components/ManualPropertySearch';
+import { HttpExtractionTest } from '@/components/HttpExtractionTest';
 // SessionManager removed - using optimized approach
 
 import { calculateFinalScore } from '@/utils/scoreCalculator';
@@ -172,6 +173,13 @@ const Index = () => {
           )}
           
           
+
+          {/* Teste de Extração HTTP Direta - temporário */}
+          {hasCompletedOnboarding && (
+            <div className="mb-8">
+              <HttpExtractionTest />
+            </div>
+          )}
 
           {/* Busca Manual - movido para o topo após o card de plano */}
           {hasCompletedOnboarding && (
