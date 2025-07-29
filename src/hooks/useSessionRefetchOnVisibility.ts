@@ -1,5 +1,4 @@
 import { useEffect, useCallback, useRef } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
 import { useSessionMonitor } from '@/hooks/useSessionMonitor';
 import { useQueryClient } from '@tanstack/react-query';
 
@@ -24,34 +23,4 @@ export const useSessionRefetchOnVisibility = () => {
     try {
       const recovered = await attemptRecovery();
       if (recovered) {
-        console.log('✅ Sessão OK - refetching queries...');
-        await queryClient.refetchQueries({ queryKey: ['getUserData'] }); // Troque pelo nome da query que quer atualizar
-      } else {
-        console.warn('❌ Sessão inválida - talvez redirecionar para login');
-      }
-    } catch (err) {
-      console.error('Erro no refetch após recuperação:', err);
-    } finally {
-      isHandlingRef.current = false;
-    }
-  }, [attemptRecovery, queryClient]);
-
-  useEffect(() => {
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') {
-        handleVisibility();
-      }
-    };
-    const onFocus = () => {
-      handleVisibility();
-    };
-
-    document.addEventListener('visibilitychange', onVisible);
-    window.addEventListener('focus', onFocus);
-
-    return () => {
-      document.removeEventListener('visibilitychange', onVisible);
-      window.removeEventListener('focus', onFocus);
-    };
-  }, [handleVisibility]);
-};
+        console.log('✅ Sessão OK - refetching todas as queries a
