@@ -136,23 +136,41 @@ export const deletePropertyFromDatabase = async (propertyId: string) => {
 // Função para carregar propriedades salvas do banco
 export const loadSavedProperties = async () => {
   try {
+    console.log('🔍 loadSavedProperties: Iniciando carregamento...');
+    
     const data = await supabaseQuery(async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError) {
+        console.error('❌ loadSavedProperties: Session error:', sessionError);
+        throw sessionError;
+      }
       
       if (!session) {
+        console.log('⚠️ loadSavedProperties: No session found');
         return { data: [], error: null };
       }
+      
+      console.log('🔑 loadSavedProperties: Session OK, user ID:', session.user.id);
 
-      return await supabase
+      const result = await supabase
         .from('properties')
         .select('*')
         .eq('user_id', session.user.id)
         .order('created_at', { ascending: false });
+        
+      console.log('📊 loadSavedProperties: Query result:', {
+        data: result.data?.length || 0,
+        error: result.error?.message || 'None'
+      });
+      
+      return result;
     }, { retries: 3, timeout: 180000, refreshOnAuth: true });
 
+    console.log('✅ loadSavedProperties: Final result:', data?.length || 0, 'properties');
     return data || [];
   } catch (error) {
-    console.error('Erro ao carregar propriedades:', error);
+    console.error('💥 loadSavedProperties: Erro ao carregar propriedades:', error);
     return [];
   }
 };

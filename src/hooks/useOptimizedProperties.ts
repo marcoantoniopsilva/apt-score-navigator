@@ -21,61 +21,76 @@ export const useOptimizedProperties = () => {
     queryKey: ['properties', user?.id],
     queryFn: async (): Promise<Property[]> => {
       if (!user?.id) {
+        console.log('🚨 useOptimizedProperties: No user ID available');
         return [];
       }
 
-      console.log('useOptimizedProperties: Loading properties for user', user.id);
+      console.log('🔍 useOptimizedProperties: Loading properties for user', user.id);
+      console.log('📊 useOptimizedProperties: User object:', { 
+        id: user.id, 
+        email: user.email,
+        authenticated: !!user
+      });
       
-      const savedProperties = await loadSavedProperties();
-      if (!savedProperties || savedProperties.length === 0) {
-        return [];
+      try {
+        const savedProperties = await loadSavedProperties();
+        console.log('📦 useOptimizedProperties: Raw properties from DB:', savedProperties?.length || 0);
+        
+        if (!savedProperties || savedProperties.length === 0) {
+          console.log('⚠️ useOptimizedProperties: No properties found in database');
+          return [];
+        }
+        
+        const convertedProperties: Property[] = savedProperties.map(prop => ({
+          id: prop.id,
+          title: prop.title,
+          address: prop.address,
+          bedrooms: prop.bedrooms,
+          bathrooms: prop.bathrooms,
+          parkingSpaces: prop.parking_spaces,
+          area: prop.area,
+          floor: prop.floor || '',
+          rent: prop.rent,
+          condo: prop.condo,
+          iptu: prop.iptu,
+          fireInsurance: prop.fire_insurance,
+          otherFees: prop.other_fees,
+          totalMonthlyCost: prop.total_monthly_cost,
+          images: prop.images || [],
+          sourceUrl: prop.source_url || undefined,
+          locationSummary: prop.location_summary || undefined,
+          scores: (prop.scores as any) || {
+            location: 5,
+            internalSpace: 5,
+            furniture: 5,
+            accessibility: 5,
+            finishing: 5,
+            price: 5,
+            condo: 5,
+          },
+          finalScore: Number(prop.final_score)
+        }));
+
+        // Deduplicate
+        const uniqueProperties = convertedProperties.filter((property, index, self) => 
+          index === self.findIndex(p => p.id === property.id)
+        );
+
+        console.log('✅ useOptimizedProperties: Loaded', uniqueProperties.length, 'unique properties');
+        
+        if (uniqueProperties.length > 0) {
+          toast({
+            title: "Propriedades carregadas",
+            description: `${uniqueProperties.length} propriedades carregadas.`,
+          });
+        }
+
+        return uniqueProperties;
+        
+      } catch (error) {
+        console.error('💥 useOptimizedProperties: Error loading properties:', error);
+        throw error;
       }
-      
-      const convertedProperties: Property[] = savedProperties.map(prop => ({
-        id: prop.id,
-        title: prop.title,
-        address: prop.address,
-        bedrooms: prop.bedrooms,
-        bathrooms: prop.bathrooms,
-        parkingSpaces: prop.parking_spaces,
-        area: prop.area,
-        floor: prop.floor || '',
-        rent: prop.rent,
-        condo: prop.condo,
-        iptu: prop.iptu,
-        fireInsurance: prop.fire_insurance,
-        otherFees: prop.other_fees,
-        totalMonthlyCost: prop.total_monthly_cost,
-        images: prop.images || [],
-        sourceUrl: prop.source_url || undefined,
-        locationSummary: prop.location_summary || undefined,
-        scores: (prop.scores as any) || {
-          location: 5,
-          internalSpace: 5,
-          furniture: 5,
-          accessibility: 5,
-          finishing: 5,
-          price: 5,
-          condo: 5,
-        },
-        finalScore: Number(prop.final_score)
-      }));
-
-      // Deduplicate
-      const uniqueProperties = convertedProperties.filter((property, index, self) => 
-        index === self.findIndex(p => p.id === property.id)
-      );
-
-      console.log('useOptimizedProperties: Loaded', uniqueProperties.length, 'unique properties');
-      
-      if (uniqueProperties.length > 0) {
-        toast({
-          title: "Propriedades carregadas",
-          description: `${uniqueProperties.length} propriedades carregadas.`,
-        });
-      }
-
-      return uniqueProperties;
     },
     enabled: !!user?.id,
     staleTime: 5 * 60 * 1000, // 5 minutos - evitar refetch excessivo
