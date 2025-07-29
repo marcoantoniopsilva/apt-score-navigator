@@ -413,78 +413,121 @@ function extractDifferentData(url: string): any {
 }
 
 function extractFromVivaRealUrl(url: string): any {
-  console.log('🔍 Extraindo dados da URL do VivaReal:', url);
+  console.log('🔍 Extraindo dados da URL:', url);
   
   try {
-    // Extrair informações da URL do VivaReal
-    const urlParts = url.split('/');
-    const imovelPart = urlParts.find(part => part.includes('apartamento') || part.includes('casa') || part.includes('imovel'));
-    
-    if (!imovelPart) {
-      console.log('⚠️ Não é uma URL válida do VivaReal');
-      return {};
-    }
-    
-    // Parse da URL do VivaReal para extrair informações
-    const matches = url.match(/\/imovel\/([^\/]+)/);
-    if (!matches || !matches[1]) {
-      console.log('⚠️ Não conseguiu fazer parse da URL');
-      return {};
-    }
-    
-    const urlInfo = matches[1];
-    const parts = urlInfo.split('-');
-    
-    // Extrair tipo do imóvel
+    let urlInfo = '';
     let propertyType = 'Imóvel';
-    if (urlInfo.includes('apartamento')) propertyType = 'Apartamento';
-    else if (urlInfo.includes('casa')) propertyType = 'Casa';
-    else if (urlInfo.includes('cobertura')) propertyType = 'Cobertura';
-    
-    // Extrair número de quartos
     let bedrooms = 1;
-    const bedroomMatch = urlInfo.match(/(\d+)-quartos?/);
-    if (bedroomMatch) {
-      bedrooms = parseInt(bedroomMatch[1]);
-    }
-    
-    // Extrair bairro/localização de forma mais precisa
     let neighborhood = '';
     let city = '';
     
-    // Método 1: Procurar padrão específico do VivaReal
-    // Exemplo: "apartamento-2-quartos-vila-da-serra-bairros-nova-lima"
-    const vivaRealPattern = /quartos-([^-]+-[^-]+(?:-[^-]+)*)-bairros?-([^-]+(?:-[^-]+)*)/i;
-    const vivaRealMatch = urlInfo.match(vivaRealPattern);
-    
-    if (vivaRealMatch) {
-      neighborhood = vivaRealMatch[1].replace(/-/g, ' ').split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-      city = vivaRealMatch[2].replace(/-/g, ' ').split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-      console.log('🏘️ Extraído via padrão VivaReal:', { neighborhood, city });
-    } else {
-      // Método 2: Fallback para outros padrões
-      const locationPatterns = [
-        /-([a-z-]+)-com-(?:garagem|elevador|area)/i,
-        /-([a-z-]+)-bairros?/i,
-        /bairros?-([a-z-]+)(?:-com-|-\d)/i
-      ];
+    // Detectar se é VivaReal ou QuintoAndar e processar adequadamente
+    if (url.includes('vivareal.com')) {
+      console.log('🏢 Processando URL do VivaReal');
+      const urlParts = url.split('/');
+      const imovelPart = urlParts.find(part => part.includes('apartamento') || part.includes('casa') || part.includes('imovel'));
       
-      for (const pattern of locationPatterns) {
-        const match = urlInfo.match(pattern);
-        if (match && match[1]) {
-          neighborhood = match[1].replace(/-/g, ' ').split(' ')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(' ');
-          break;
+      if (!imovelPart) {
+        console.log('⚠️ Não é uma URL válida do VivaReal');
+        return {};
+      }
+      
+      const matches = url.match(/\/imovel\/([^\/]+)/);
+      if (!matches || !matches[1]) {
+        console.log('⚠️ Não conseguiu fazer parse da URL do VivaReal');
+        return {};
+      }
+      
+      urlInfo = matches[1];
+      
+      // Parse específico para VivaReal
+      if (urlInfo.includes('apartamento')) propertyType = 'Apartamento';
+      else if (urlInfo.includes('casa')) propertyType = 'Casa';
+      else if (urlInfo.includes('cobertura')) propertyType = 'Cobertura';
+      
+      const bedroomMatch = urlInfo.match(/(\d+)-quartos?/);
+      if (bedroomMatch) {
+        bedrooms = parseInt(bedroomMatch[1]);
+      }
+      
+      // Padrão VivaReal: "apartamento-2-quartos-vila-da-serra-bairros-nova-lima"
+      const vivaRealPattern = /quartos-([^-]+-[^-]+(?:-[^-]+)*)-bairros?-([^-]+(?:-[^-]+)*)/i;
+      const vivaRealMatch = urlInfo.match(vivaRealPattern);
+      
+      if (vivaRealMatch) {
+        neighborhood = vivaRealMatch[1].replace(/-/g, ' ').split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+        city = vivaRealMatch[2].replace(/-/g, ' ').split(' ')
+          .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+          .join(' ');
+        console.log('🏘️ VivaReal - Bairro:', neighborhood, 'Cidade:', city);
+      }
+      
+    } else if (url.includes('quintoandar.com')) {
+      console.log('🏢 Processando URL do QuintoAndar');
+      
+      // Para QuintoAndar: /imovel/894800321/alugar/apartamento-5-quartos-sao-lucas-belo-horizonte
+      const quintoandarMatch = url.match(/\/imovel\/\d+\/[^\/]+\/(.+)/);
+      if (quintoandarMatch) {
+        urlInfo = quintoandarMatch[1];
+        console.log('📋 URL info extraída:', urlInfo);
+        
+        // Parse específico para QuintoAndar
+        if (urlInfo.includes('apartamento')) propertyType = 'Apartamento';
+        else if (urlInfo.includes('casa')) propertyType = 'Casa';
+        else if (urlInfo.includes('cobertura')) propertyType = 'Cobertura';
+        
+        // Extrair quartos: "apartamento-5-quartos-sao-lucas-belo-horizonte"
+        const bedroomMatch = urlInfo.match(/(\d+)-quartos?/);
+        if (bedroomMatch) {
+          bedrooms = parseInt(bedroomMatch[1]);
+          console.log('🛏️ Quartos encontrados:', bedrooms);
+        }
+        
+        // Extrair bairro e cidade: após "quartos-" até final
+        const locationMatch = urlInfo.match(/quartos-(.+)/);
+        if (locationMatch) {
+          const locationPart = locationMatch[1];
+          const locationParts = locationPart.split('-');
+          
+          // Para "sao-lucas-belo-horizonte":
+          // - Bairro: sao-lucas
+          // - Cidade: belo-horizonte
+          if (locationParts.length >= 3 && locationParts.includes('belo') && locationParts.includes('horizonte')) {
+            // Encontrar onde começa "belo-horizonte"
+            const beloIndex = locationParts.indexOf('belo');
+            
+            // Bairro é tudo antes de "belo"
+            neighborhood = locationParts.slice(0, beloIndex).join('-')
+              .replace(/-/g, ' ').split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ');
+            
+            // Cidade é "belo-horizonte"
+            city = locationParts.slice(beloIndex).join('-')
+              .replace(/-/g, ' ').split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ');
+              
+            console.log('🏘️ QuintoAndar - Bairro:', neighborhood, 'Cidade:', city);
+          } else {
+            // Fallback: assumir que a última parte é a cidade
+            neighborhood = locationParts.slice(0, -1).join('-')
+              .replace(/-/g, ' ').split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ');
+            city = locationParts[locationParts.length - 1]
+              .replace(/-/g, ' ').split(' ')
+              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' ');
+          }
         }
       }
     }
     
-    // Detectar cidade se não foi extraída no padrão VivaReal
+    // Detectar cidade se não foi extraída
     if (!city) {
       if (urlInfo.includes('nova-lima')) {
         city = 'Nova Lima';
@@ -493,7 +536,7 @@ function extractFromVivaRealUrl(url: string): any {
       } else if (urlInfo.includes('-bh-') || urlInfo.includes('-mg')) {
         city = 'Belo Horizonte';
       } else {
-        city = 'MG';
+        city = 'Belo Horizonte'; // Padrão para URLs sem cidade específica
       }
     }
     
