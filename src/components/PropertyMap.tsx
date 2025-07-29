@@ -68,11 +68,17 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
   const geocodeCache = useRef<Map<string, [number, number] | null>>(new Map());
   const [loadingProgress, setLoadingProgress] = useState(0);
 
-  // Geocodifica endereços com cache e throttling para melhor performance
+  // Geocodifica endereços usando a API do Mapbox com cache
   const geocodeAddress = async (address: string): Promise<[number, number] | null> => {
     // Verifica cache primeiro
     if (geocodeCache.current.has(address)) {
       return geocodeCache.current.get(address) || null;
+    }
+
+    if (!mapboxToken) {
+      console.warn('Token do Mapbox não disponível para geocodificação');
+      geocodeCache.current.set(address, null);
+      return null;
     }
 
     try {
@@ -80,18 +86,23 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
       const cleanAddress = `${address}, Belo Horizonte, MG, Brasil`;
       
       const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(cleanAddress)}&format=json&limit=1`,
+        `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(cleanAddress)}.json?access_token=${mapboxToken}&limit=1&country=BR&bbox=-44.1,-20.1,-43.8,-19.8`,
         {
-          headers: {
-            'User-Agent': 'AptScoreNavigator/1.0'
-          }
+          method: 'GET'
         }
       );
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      
       const data = await response.json();
       
-      if (data && data.length > 0) {
-        const coords: [number, number] = [parseFloat(data[0].lon), parseFloat(data[0].lat)];
+      if (data.features && data.features.length > 0) {
+        const [lng, lat] = data.features[0].center;
+        const coords: [number, number] = [lng, lat];
         geocodeCache.current.set(address, coords);
+        console.log(`Geocodificado: "${address}" -> [${lng}, ${lat}]`);
         return coords;
       }
     } catch (error) {
