@@ -232,13 +232,12 @@ function parseVivaRealContent(content: string, url: string): any {
         data.images = imageUrls;
         console.log('📸 Imagens encontradas:', imageUrls.length);
       } else {
-        // Fallback para imagem padrão se nenhuma for encontrada
-        data.images = ["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400"];
-        console.log('📸 Usando imagem padrão');
+        console.log('📸 Nenhuma imagem extraída do conteúdo');
+        data.images = [];
       }
     } catch (error) {
       console.error('Erro ao extrair imagens:', error);
-      data.images = ["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400"];
+      data.images = [];
     }
 
     // Extrair valores - padrões básicos
@@ -324,7 +323,7 @@ function parseVivaRealContent(content: string, url: string): any {
         ...(data.bedrooms && { bedrooms: data.bedrooms }),
         ...(data.bathrooms && { bathrooms: data.bathrooms }),
         ...(data.area && { area: data.area }),
-        images: data.images && data.images.length > 0 ? data.images : ["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400"]
+        images: data.images && data.images.length > 0 ? data.images : []
       };
     } catch (fallbackError) {
       console.error('💥 Erro no fallback:', fallbackError);
@@ -341,7 +340,7 @@ function parseVivaRealContent(content: string, url: string): any {
         fireInsurance: 50,
         otherFees: 0,
         description: 'Imóvel extraído automaticamente',
-        images: data.images && data.images.length > 0 ? data.images : ["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400"]
+        images: data.images && data.images.length > 0 ? data.images : []
       };
     }
   }
@@ -401,7 +400,7 @@ function extractDifferentData(url: string): any {
     fireInsurance: 50,
     otherFees: 0,
     description: `Propriedade gerada para URL ${randomSeed}`,
-    images: ["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400"]
+    images: []
   };
 }
 
@@ -536,7 +535,7 @@ function extractFromVivaRealUrl(url: string): any {
       fireInsurance: 50,
       otherFees: 0,
       description: `${propertyType} localizado em ${neighborhood || city}`,
-      images: ["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400"]
+      images: []
     };
     
     console.log('✅ Dados extraídos:', { title: result.title, address: result.address });

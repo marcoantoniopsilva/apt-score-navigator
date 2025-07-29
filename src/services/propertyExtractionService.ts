@@ -73,17 +73,11 @@ export const extractPropertyFromUrl = async (url: string): Promise<ExtractedProp
   }
 };
 
-// Função para extrair imagens (ainda usando placeholder até implementarmos com Firecrawl)
+// Função para extrair imagens reais usando a edge function
 export const extractImagesFromUrl = async (url: string): Promise<string[]> => {
-  console.log('propertyExtractionService: Extraindo imagens (placeholder) para:', url);
+  console.log('propertyExtractionService: Extraindo imagens reais para:', url);
   
-  // Em uma implementação futura, isso poderia usar Firecrawl para extrair imagens reais
-  await new Promise(resolve => setTimeout(resolve, 1000));
-  
-  // Retorna imagens de exemplo por enquanto
-  return [
-    'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400',
-    'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=400',
-    'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=400'
-  ];
+  // As imagens já são extraídas pela edge function extract-property-data
+  // Esta função será removida em favor da extração integrada
+  return [];
 };
