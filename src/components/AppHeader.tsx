@@ -27,6 +27,29 @@ const AppHeader: React.FC<AppHeaderProps> = ({
   const { toast } = useToast();
   const { extractPropertyData, isExtracting } = useHttpDirectExtraction();
 
+  const handleAddProperty = async () => {
+    // Para teste, vamos usar uma URL de exemplo
+    // Em produção, isso viria do input do usuário ou outro componente
+    const testUrl = 'https://www.vivareal.com.br/imovel/apartamento-1-quartos-vila-da-serra-bairros-nova-lima-com-garagem-69m2-venda-RS1200000-id-2761362817/';
+    console.log('🏠 AppHeader: Extraindo propriedade via HTTP direto...');
+    
+    const result = await extractPropertyData(testUrl);
+    
+    if (result.success && result.data) {
+      // Se a extração foi bem-sucedida, chama a função onAddProperty original
+      // passando os dados extraídos para serem usados no formulário
+      console.log('✅ AppHeader: Extração bem-sucedida, abrindo formulário');
+      onAddProperty(); // Abre o formulário
+      
+      // Aqui seria ideal passar os dados extraídos, mas o onAddProperty atual não aceita parâmetros
+      // Vamos precisar modificar o fluxo de dados na próxima iteração
+    } else {
+      console.error('❌ AppHeader: Falha na extração');
+      // Se falhar, abre o formulário vazio mesmo assim
+      onAddProperty();
+    }
+  };
+
   const handleTestExtraction = async () => {
     const testUrl = 'https://www.vivareal.com.br/imovel/apartamento-1-quartos-vila-da-serra-bairros-nova-lima-com-garagem-69m2-venda-RS1200000-id-2761362817/';
     console.log('🧪 Testando extração HTTP direta do header...');
@@ -93,13 +116,14 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               <span className="hidden sm:inline">Atualizar</span>
             </Button>
             <Button 
-              onClick={onAddProperty}
+              onClick={handleAddProperty}
+              disabled={isExtracting}
               className="bg-white text-blue-600 hover:bg-white/90 flex-1 sm:flex-none"
               size="sm"
             >
               <Plus className="h-4 w-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">Adicionar</span>
-              <span className="sm:hidden">Add</span>
+              <span className="hidden sm:inline">{isExtracting ? 'Extraindo...' : 'Adicionar'}</span>
+              <span className="sm:hidden">{isExtracting ? '...' : 'Add'}</span>
             </Button>
             <Button 
               onClick={handleTestExtraction}
