@@ -5,21 +5,15 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { ExternalLink, Search, Globe, Plus, AlertCircle } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import { UserProfileService } from '@/services/userProfileService';
+import { extractPropertyFromUrl } from '@/services/propertyExtractionService';
 import { useAuth } from '@/contexts/AuthContext';
 import LoadingState from '@/components/LoadingState';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { usePropertyExtraction } from '@/hooks/usePropertyExtraction';
-import { useDirectExtraction } from '@/hooks/useDirectExtraction';
-import { useTestExtraction } from '@/hooks/useTestExtraction';
-import { usePing } from '@/hooks/usePing';
-import { useDirectFetch } from '@/hooks/useDirectFetch';
-import { useDirectPropertyExtraction } from '@/hooks/useDirectPropertyExtraction';
-import { supabase } from '@/integrations/supabase/client';
 
 interface ManualPropertySearchProps {
   onAddProperty?: (propertyData: any) => void;
-  onPropertySubmit?: (property: any) => void; // Nova prop para usar a lógica que funciona
 }
 
 interface ExternalPortal {
@@ -122,17 +116,12 @@ const parseRegion = (region: string) => {
   return { estado, municipio, bairro };
 };
 
-export const ManualPropertySearch = ({ onAddProperty, onPropertySubmit }: ManualPropertySearchProps) => {
+export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProps) => {
   const [userProfile, setUserProfile] = useState<any>(null);
   const [urlInput, setUrlInput] = useState('');
-  const { toast } = useToast();
+  const [isExtracting, setIsExtracting] = useState(false);
   const { user } = useAuth();
-  const { extractPropertyData } = usePropertyExtraction();
-  const { extractDirectly } = useDirectExtraction();
-  const { testExtract } = useTestExtraction();
-  const { ping } = usePing();
-  const { directFetch } = useDirectFetch();
-  const { extractWithDirectFetch } = useDirectPropertyExtraction();
+  const { toast } = useToast();
 
   useEffect(() => {
     if (user?.id) {
@@ -327,88 +316,83 @@ export const ManualPropertySearch = ({ onAddProperty, onPropertySubmit }: Manual
     }
   ];
 
-  const [isExtracting, setIsExtracting] = useState(false);
-
-  const handleDirectFetch = async () => {
-    if (isExtracting) return;
-    setIsExtracting(true);
-    try {
-      await directFetch();
-    } finally {
-      setIsExtracting(false);
-    }
-  };
-
-  const handlePing = async () => {
-    if (isExtracting) return;
-    setIsExtracting(true);
-    try {
-      await ping();
-    } finally {
-      setIsExtracting(false);
-    }
-  };
-
-  const handleTestFunction = async () => {
-    if (isExtracting) return;
-    
-    setIsExtracting(true);
-    try {
-      const result = await testExtract(urlInput || 'https://test.com');
-      if (result && onAddProperty) {
-        onAddProperty(result);
-        setUrlInput('');
-      }
-    } finally {
-      setIsExtracting(false);
-    }
-  };
-
   const handleExtractProperty = async () => {
-    if (isExtracting || !urlInput.trim()) {
-      console.log('⚠️ Extração já em andamento ou URL vazia, ignorando clique');
+    if (!urlInput.trim()) {
+      toast({
+        title: "URL necessária",
+        description: "Por favor, insira uma URL válida de imóvel",
+        variant: "destructive"
+      });
       return;
     }
 
     setIsExtracting(true);
-    console.log('🚀 Iniciando extração de propriedade usando lógica que funciona');
     
     try {
-      // Usar a edge function extract-property-data que funciona
-      const { data, error } = await supabase.functions.invoke('extract-property-data', {
-        body: { url: urlInput }
+      console.log('Extraindo dados da URL:', urlInput);
+      const propertyData = await extractPropertyFromUrl(urlInput);
+      
+      // Avaliar o imóvel com IA
+      let evaluationData = null;
+      try {
+        const { data: aiEvaluation, error: evaluationError } = await supabase.functions.invoke('evaluate-property-scores', {
+          body: { propertyData }
+        });
+
+        if (!evaluationError && aiEvaluation) {
+          evaluationData = aiEvaluation;
+        }
+      } catch (error) {
+        console.warn('Erro na avaliação IA:', error);
+      }
+
+      const formattedProperty = {
+        id: `manual-${Date.now()}`,
+        title: propertyData.title || 'Imóvel Extraído',
+        address: propertyData.address || 'Endereço não informado',
+        bedrooms: propertyData.bedrooms || 1,
+        bathrooms: propertyData.bathrooms || 1,
+        parkingSpaces: propertyData.parkingSpaces || 0,
+        area: propertyData.area || 50,
+        floor: propertyData.floor || '',
+        rent: propertyData.rent || 0,
+        condo: propertyData.condo || 0,
+        iptu: propertyData.iptu || 0,
+        fireInsurance: 50,
+        otherFees: 0,
+        totalMonthlyCost: (propertyData.rent || 0) + (propertyData.condo || 0) + (propertyData.iptu || 0) + 50,
+        images: propertyData.images || [],
+        sourceUrl: urlInput,
+        scores: evaluationData?.scores || {},
+        finalScore: evaluationData?.finalScore || 0
+      };
+
+      if (onAddProperty) {
+        // Em vez de salvar diretamente, passa os dados para abrir o formulário
+        onAddProperty(formattedProperty);
+      }
+
+      setUrlInput('');
+      
+      toast({
+        title: "Dados extraídos com sucesso",
+        description: "O formulário foi aberto para você revisar e editar os dados antes de salvar",
+        duration: 5000
       });
 
-      if (error) {
-        console.error('❌ Erro do Supabase:', error);
-        throw new Error(`Erro na comunicação: ${error.message}`);
-      }
-
-      if (!data || !data.success) {
-        console.error('❌ Extração falhou:', data?.error || 'Resposta inválida');
-        throw new Error(data?.error || 'Falha na extração dos dados');
-      }
-
-      console.log('✅ Dados extraídos com sucesso:', data.data);
+    } catch (error: any) {
+      console.error('Erro na extração:', error);
       
-      // Sempre usar onAddProperty para abrir o formulário
-      if (onAddProperty && data.data) {
-        console.log('✅ Passando dados extraídos para o formulário');
-        onAddProperty(data.data);
-        setUrlInput('');
-        
-        toast({
-          title: "Dados extraídos!",
-          description: "Os dados foram extraídos. Complete o formulário e clique em 'Adicionar Propriedade'.",
-        });
-      } else {
-        console.log('❌ Nenhuma função de callback disponível');
+      let errorMessage = "Erro ao extrair dados do imóvel";
+      if (error?.message?.includes('não atende aos critérios')) {
+        errorMessage = "Imóvel não atende aos seus critérios de busca";
+      } else if (error?.message?.includes('extrair dados')) {
+        errorMessage = "Não foi possível extrair dados desta URL";
       }
-    } catch (error) {
-      console.error('❌ Erro durante extração:', error);
+      
       toast({
         title: "Erro na extração",
-        description: error instanceof Error ? error.message : "Não foi possível extrair os dados da propriedade.",
+        description: errorMessage,
         variant: "destructive"
       });
     } finally {
@@ -490,19 +474,28 @@ export const ManualPropertySearch = ({ onAddProperty, onPropertySubmit }: Manual
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-4">
+          <div className="flex gap-2">
             <Input
-              placeholder="Cole a URL do anúncio aqui..."
+              placeholder="https://www.zapimoveis.com.br/imovel/..."
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
+              disabled={isExtracting}
             />
             <Button 
               onClick={handleExtractProperty}
               disabled={isExtracting || !urlInput.trim()}
-              className="w-full"
-              size="lg"
             >
-              {isExtracting ? '⏳ Extraindo...' : '✨ Extrair e Adicionar Propriedade'}
+              {isExtracting ? (
+                <>
+                  <Search className="h-4 w-4 mr-2 animate-spin" />
+                  Extraindo...
+                </>
+              ) : (
+                <>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Extrair
+                </>
+              )}
             </Button>
           </div>
           

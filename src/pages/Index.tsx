@@ -10,27 +10,32 @@ import { UserPreferencesDisplay } from '@/components/UserPreferencesDisplay';
 import { MobileWeightsEditor } from '@/components/MobileWeightsEditor';
 import { PropertyComparison } from '@/components/PropertyComparison';
 import { ManualPropertySearch } from '@/components/ManualPropertySearch';
-// SessionManager removed - using optimized approach
+import { SessionManager } from '@/components/SessionManager';
 
 import { calculateFinalScore } from '@/utils/scoreCalculator';
 import { usePropertyLoader } from '@/hooks/usePropertyLoader';
 import { usePropertyActions } from '@/hooks/usePropertyActions';
 import { usePropertySorting } from '@/hooks/usePropertySorting';
 import { usePropertyComparison } from '@/hooks/usePropertyComparison';
+import { useSubscription } from '@/hooks/useSubscription';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { EnhancedOnboardingModal } from '@/components/EnhancedOnboardingModal';
 import { useCriteria } from '@/hooks/useCriteria';
-
+import { SubscriptionStatus } from '@/components/SubscriptionStatus';
+import { UpgradeModal } from '@/components/UpgradeModal';
+import { SessionExpiredMessage } from '@/components/SessionExpiredMessage';
 import { UserProfileType } from '@/types/onboarding';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 const Index = () => {
   const [comparisonMode, setComparisonMode] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [extractedPropertyData, setExtractedPropertyData] = useState<any>(null);
   
   const { properties, setProperties, isLoading, loadProperties } = usePropertyLoader();
   const { sortBy, sortOrder, setSortBy, setSortOrder } = usePropertySorting();
+  const { isPro, loading: subscriptionLoading, checkSubscription, sessionError } = useSubscription();
   
   // Hook de critérios dinâmicos - DEVE vir antes de qualquer useEffect/useState condicional
   const { criteriaWeights, updateCriteriaWeight, activeCriteria, getWeightsObject } = useCriteria();
@@ -87,19 +92,29 @@ const Index = () => {
     }
   };
   
-  // Property actions  
-  const handleAddProperty = () => {
+  // Verificar limites do plano gratuito
+  const handleAddPropertyWithLimits = () => {
+    if (!isPro && properties.length >= 5) {
+      toast.error('Limite de 5 propriedades atingido. Faça upgrade para o plano Pro para adicionar mais propriedades.');
+      setShowUpgradeModal(true);
+      return;
+    }
     setShowAddForm(true);
   };
 
-  const handleToggleComparison = () => {
-    setComparisonMode(!comparisonMode);
+  const handleComparisonWithLimits = () => {
+    if (!isPro) {
+      toast.error('Funcionalidade de comparação disponível apenas no plano Pro.');
+      setShowUpgradeModal(true);
+      return;
+    }
+    setComparisonMode(true);
   };
 
   const {
     showAddForm,
     setShowAddForm,
-    handleAddProperty: handleAddPropertySubmit,
+    handleAddProperty,
     handleUpdateProperty,
     handleDeleteProperty
   } = usePropertyActions(properties, setProperties, criteriaWeights, loadProperties);
@@ -151,12 +166,12 @@ const Index = () => {
   }, []);
 
   return (
-    <div>
+    <SessionManager>
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
         <AppHeader 
           title="Imobly"
           subtitle="Seu novo jeito de escolher imóveis"
-        onAddProperty={handleAddProperty}
+          onAddProperty={handleAddPropertyWithLimits}
           onRefresh={loadProperties}
           isLoading={isLoading}
         />
@@ -171,7 +186,13 @@ const Index = () => {
             />
           )}
           
+          <div className="mb-6">
+            <SessionExpiredMessage error={sessionError} />
+          </div>
           
+          <div className="mb-6">
+            <SubscriptionStatus />
+          </div>
 
           {/* Busca Manual - movido para o topo após o card de plano */}
           {hasCompletedOnboarding && (
@@ -201,7 +222,7 @@ const Index = () => {
             isLoading={isLoading}
             onUpdate={handleUpdateProperty}
             onDelete={handleDeleteProperty}
-            onAddProperty={handleAddProperty}
+            onAddProperty={handleAddPropertyWithLimits}
             sortBy={sortBy}
             sortOrder={sortOrder}
             selectedProperties={comparisonMode ? selectedProperties : undefined}
@@ -211,7 +232,7 @@ const Index = () => {
             canCompare={comparisonMode ? canCompare : false}
             onCompare={comparisonMode ? openComparison : undefined}
             onClearSelection={comparisonMode ? clearSelection : undefined}
-            onActivateComparison={handleToggleComparison}
+            onActivateComparison={handleComparisonWithLimits}
             onDeactivateComparison={() => {
               console.log('Desativando modo comparação');
               setComparisonMode(false);
@@ -237,8 +258,8 @@ const Index = () => {
         </div>
 
         {showAddForm && (
-        <AddPropertyForm 
-          onSubmit={handleAddPropertySubmit}
+          <AddPropertyForm 
+            onSubmit={handleAddProperty}
             onCancel={() => {
               setShowAddForm(false);
               setExtractedPropertyData(null);
@@ -255,13 +276,17 @@ const Index = () => {
           />
         )}
 
+        <UpgradeModal 
+          open={showUpgradeModal} 
+          onOpenChange={setShowUpgradeModal} 
+        />
 
         <EnhancedOnboardingModal
           open={showOnboarding}
           onOpenChange={setShowOnboarding}
         />
       </div>
-    </div>
+    </SessionManager>
   );
 };
 

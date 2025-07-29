@@ -137,25 +137,18 @@ export const deletePropertyFromDatabase = async (propertyId: string) => {
 export const loadSavedProperties = async () => {
   try {
     const data = await supabaseQuery(async () => {
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        throw sessionError;
-      }
+      const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
         return { data: [], error: null };
       }
 
-      const result = await supabase
+      return await supabase
         .from('properties')
         .select('*')
         .eq('user_id', session.user.id)
         .order('created_at', { ascending: false });
-        
-      return result;
-    }, { retries: 3, timeout: 180000, refreshOnAuth: true });
+    }, { retries: 2, refreshOnAuth: true });
 
     return data || [];
   } catch (error) {

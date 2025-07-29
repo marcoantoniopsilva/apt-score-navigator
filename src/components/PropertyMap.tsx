@@ -22,22 +22,19 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
   const [isLoadingToken, setIsLoadingToken] = useState(true);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
 
-  const callbackRef = useRef<typeof onPropertySelect>(onPropertySelect);
-  callbackRef.current = onPropertySelect;
-
-  // Função global para selecionar propriedade do popup - stable reference
+  // Função global para selecionar propriedade do popup
   useEffect(() => {
     (window as any).selectPropertyFromMap = (propertyId: string) => {
       const property = properties.find(p => p.id === propertyId);
-      if (property && callbackRef.current) {
-        callbackRef.current(property);
+      if (property && onPropertySelect) {
+        onPropertySelect(property);
       }
     };
 
     return () => {
       delete (window as any).selectPropertyFromMap;
     };
-  }, [properties]);
+  }, [properties, onPropertySelect]);
 
   // Busca o token do Mapbox configurado no Supabase
   useEffect(() => {
@@ -194,13 +191,6 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
     });
 
     return () => {
-      // Clean up markers before removing map
-      markersRef.current.forEach(marker => {
-        marker.getPopup()?.remove();
-        marker.remove();
-      });
-      markersRef.current = [];
-      
       if (map.current) {
         map.current.remove();
         map.current = null;
@@ -218,10 +208,7 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
     console.log('PropertyMap: Adicionando marcadores para', properties.length, 'propriedades');
 
     // Remove marcadores existentes
-    markersRef.current.forEach(marker => {
-      marker.getPopup()?.remove();
-      marker.remove();
-    });
+    markersRef.current.forEach(marker => marker.remove());
     markersRef.current = [];
 
     // Adiciona novos marcadores
@@ -275,15 +262,8 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
       addMarkers();
     }, 1000);
 
-    return () => {
-      clearTimeout(timeoutId);
-      // Clean up any remaining markers
-      markersRef.current.forEach(marker => {
-        marker.getPopup()?.remove();
-        marker.remove();
-      });
-    };
-  }, [properties]);
+    return () => clearTimeout(timeoutId);
+  }, [properties, onPropertySelect]);
 
   if (isLoadingToken) {
     return (

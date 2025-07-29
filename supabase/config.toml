@@ -11,15 +11,3 @@ verify_jwt = true
 
 [functions.get-mapbox-token]
 verify_jwt = false
-
-[functions.ping]
-verify_jwt = false
-
-[functions.test-extract]
-verify_jwt = false
-
-[functions.simple-extract]
-verify_jwt = false
-
-[functions.simple-score]
-verify_jwt = false

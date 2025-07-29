@@ -1,15 +1,13 @@
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Property } from '@/types/property';
 import { loadSavedProperties } from '@/services/propertyDatabaseService';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
-// Session restore and tab focus removed for optimization
 
 export const usePropertyLoader = () => {
   const { toast } = useToast();
   const { user } = useAuth();
-  // Session restore and tab focus removed for optimization
   const [properties, setProperties] = useState<Property[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const isLoadingRef = useRef(false);
@@ -106,8 +104,6 @@ export const usePropertyLoader = () => {
       isLoadingRef.current = false;
     }
   }, [toast]);
-
-  // Session refresh and tab visibility callbacks removed for optimization
 
   useEffect(() => {
     // Verificar se o usuário mudou

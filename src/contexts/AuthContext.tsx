@@ -73,43 +73,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Enhanced visibility change handling with force refresh
+  // Page Visibility API implementation
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (!document.hidden && session) {
-        console.log('AuthContext: Tab became visible, force checking session');
-        
         // Clear any existing timeout
         if (refreshTimeoutRef.current) {
           clearTimeout(refreshTimeoutRef.current);
         }
         
-        // Force session refresh when tab becomes visible
-        refreshTimeoutRef.current = setTimeout(async () => {
-          try {
-            const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-            
-            if (!mountedRef.current) return;
-            
-            if (error) {
-              console.error('Visibility session check error:', error);
-              return;
-            }
-
-            if (currentSession) {
-              console.log('AuthContext: Session validated on visibility');
-              // Force update session and user even if they appear the same
-              setSession(currentSession);
-              setUser(currentSession.user);
-            } else {
-              console.log('AuthContext: No session found on visibility check');
-              setSession(null);
-              setUser(null);
-            }
-          } catch (error) {
-            console.error('AuthContext: Visibility session check failed:', error);
-          }
-        }, 500); // Shorter delay for more responsive feel
+        // Debounce session check when tab becomes visible
+        refreshTimeoutRef.current = setTimeout(() => {
+          debouncedRefreshSession();
+        }, 1000); // 1 second delay after tab becomes visible
       }
     };
 
@@ -121,7 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         clearTimeout(refreshTimeoutRef.current);
       }
     };
-  }, [session]);
+  }, [session, debouncedRefreshSession]);
 
   // Session validation every 5 minutes for active sessions
   useEffect(() => {
@@ -152,11 +128,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     mountedRef.current = true;
+    console.log('AuthContext: Setting up auth state listener');
 
     // Set up auth state listener with anti-loop protection
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
         if (!mountedRef.current) return;
+        
+        console.log('Auth state changed:', event, newSession?.user?.email);
         
         // Prevent loops by checking if session actually changed
         const sessionChanged = 
@@ -167,6 +146,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (sessionChanged) {
           setSession(newSession);
           setUser(newSession?.user ?? null);
+          console.log('Session updated:', !!newSession);
         }
         
         setLoading(false);
@@ -174,7 +154,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // Initial session check with timeout
-    console.log('🔍 AuthContext: Checking for existing session');
+    console.log('AuthContext: Checking for existing session');
     const sessionCheckTimeout = setTimeout(async () => {
       if (!mountedRef.current) return;
       
@@ -184,19 +164,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!mountedRef.current) return;
         
         if (error) {
-          console.error('❌ Initial session check error:', error);
+          console.error('Initial session check error:', error);
         } else {
-          console.log('📊 Initial session check result:');
-          console.log('   - Has session:', !!initialSession);
-          console.log('   - User email:', initialSession?.user?.email || 'No user');
-          console.log('   - Access token:', !!initialSession?.access_token);
-          console.log('   - Refresh token:', !!initialSession?.refresh_token);
-          
+          console.log('Initial session found:', !!initialSession);
           setSession(initialSession);
           setUser(initialSession?.user ?? null);
         }
       } catch (error) {
-        console.error('💥 Session check failed:', error);
+        console.error('Session check failed:', error);
       } finally {
         if (mountedRef.current) {
           setLoading(false);
@@ -205,6 +180,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, 100); // Small delay to prevent race conditions
 
     return () => {
+      console.log('AuthContext: Cleanup');
       mountedRef.current = false;
       clearTimeout(sessionCheckTimeout);
       if (refreshTimeoutRef.current) {
@@ -229,7 +205,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signIn = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
+    const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -238,20 +214,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    try {
-      // Limpar estado local primeiro
-      setSession(null);
-      setUser(null);
-      
-      // Fazer logout no Supabase
-      await supabase.auth.signOut();
-      
-    } catch (error) {
-      console.error('Erro durante logout:', error);
-      // Mesmo com erro, limpar estado
-      setSession(null);
-      setUser(null);
-    }
+    await supabase.auth.signOut();
   };
 
   const value = {

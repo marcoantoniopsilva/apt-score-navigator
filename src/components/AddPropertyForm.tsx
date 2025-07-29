@@ -9,8 +9,6 @@ import { PropertyDetailsForm } from './forms/PropertyDetailsForm';
 import { PropertyFinancialForm } from './forms/PropertyFinancialForm';
 import { PropertyScoresForm } from './forms/PropertyScoresForm';
 import { useCriteria } from '@/hooks/useCriteria';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/components/ui/use-toast';
 
 interface AddPropertyFormProps {
   onSubmit: (property: Property) => void;
@@ -23,7 +21,6 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
   const [urlExtractedData, setUrlExtractedData] = useState<any>(null);
   const { activeCriteria, getCriteriaLabel } = useCriteria();
   const [suggestedScores, setSuggestedScores] = useState<Record<string, number>>({});
-  const { toast } = useToast();
   
   const [formData, setFormData] = useState({
     title: '',
@@ -51,23 +48,8 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
         initialScores[criterio.key] = 5; // Score padrão
       });
       setScores(initialScores);
-      
-      // Se temos dados extraídos pendentes, aplicar os scores agora
-      if (urlExtractedData && urlExtractedData.scores) {
-        console.log('AddPropertyForm: Aplicando scores dos dados extraídos após critérios carregarem');
-        const newScores: Record<string, number> = {};
-        activeCriteria.forEach(criterio => {
-          const scoreValue = urlExtractedData.scores[criterio.key];
-          console.log(`AddPropertyForm: Mapeando ${criterio.key} -> ${scoreValue}`);
-          // Usar a sugestão da IA se disponível, senão usar 5 como padrão
-          newScores[criterio.key] = typeof scoreValue === 'number' ? scoreValue : 5;
-        });
-        console.log('AddPropertyForm: Aplicando scores finais:', newScores);
-        setScores(newScores);
-        setSuggestedScores(urlExtractedData.scores);
-      }
     }
-  }, [activeCriteria, urlExtractedData]);
+  }, [activeCriteria]);
 
   // Preencher formulário com dados extraídos se fornecidos
   useEffect(() => {
@@ -99,30 +81,19 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
       otherFees: data.otherFees || 0
     });
     
-    // Atualizar scores baseado nos dados extraídos
+    // Atualizar scores baseado nos dados extraídos ou usar scores sugeridos
     if (data.scores && typeof data.scores === 'object') {
       console.log('AddPropertyForm: Processando scores recebidos:', data.scores);
-      setSuggestedScores(data.scores); // Guardar as sugestões sempre
-      
-      // Se os critérios já estão carregados, aplicar imediatamente
-      if (activeCriteria.length > 0) {
-        console.log('AddPropertyForm: Critérios disponíveis:', activeCriteria.map(c => `${c.key} (${c.label})`));
-        console.log('AddPropertyForm: Scores recebidos keys:', Object.keys(data.scores));
-        
-        const newScores: Record<string, number> = {};
-        activeCriteria.forEach(criterio => {
-          const scoreValue = data.scores[criterio.key];
-          console.log(`AddPropertyForm: Mapeando ${criterio.key} (${criterio.label}) -> ${scoreValue}`);
-          // Usar a sugestão da IA se disponível, senão usar 5 como padrão
-          newScores[criterio.key] = typeof scoreValue === 'number' ? scoreValue : 5;
-        });
-        console.log('AddPropertyForm: Aplicando scores finais imediatamente:', newScores);
-        setScores(newScores);
-      } else {
-        console.log('AddPropertyForm: Critérios ainda não carregados, aguardando...');
-        console.log('AddPropertyForm: activeCriteria length:', activeCriteria.length);
-        console.log('AddPropertyForm: hasCompletedOnboarding:', !!activeCriteria);
-      }
+      const newScores: Record<string, number> = {};
+      activeCriteria.forEach(criterio => {
+        const scoreValue = data.scores[criterio.key];
+        console.log(`AddPropertyForm: Mapeando ${criterio.key} -> ${scoreValue}`);
+        // Usar a sugestão da IA se disponível, senão usar 5 como padrão
+        newScores[criterio.key] = typeof scoreValue === 'number' ? scoreValue : 5;
+      });
+      console.log('AddPropertyForm: Scores finais a serem aplicados:', newScores);
+      setScores(newScores);
+      setSuggestedScores(data.scores); // Guardar as sugestões
     } else {
       console.log('AddPropertyForm: Não há scores nos dados extraídos');
     }
@@ -206,57 +177,6 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
     onSubmit(newProperty);
   };
 
-  const testUserPreferences = async () => {
-    console.log('🔍 Testando nova função extract-property-data...');
-    
-    try {
-      const { data: session } = await supabase.auth.getSession();
-      
-      if (!session?.session?.access_token) {
-        toast({
-          title: "Erro",
-          description: "Usuário não autenticado",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      console.log('📡 Chamando extract-property-data com URL teste...');
-      const response = await supabase.functions.invoke('new-extract', {
-        body: { 
-          url: 'https://teste-url-nova-' + Date.now() + '.com.br/imovel/teste-123'
-        },
-        headers: {
-          Authorization: `Bearer ${session.session.access_token}`,
-        }
-      });
-
-      console.log('📋 Resposta completa:', response);
-      
-      if (response.error) {
-        toast({
-          title: "Erro na função",
-          description: response.error.message || 'Erro desconhecido',
-          variant: "destructive"
-        });
-        return;
-      }
-      
-      toast({
-        title: "✅ Teste concluído",
-        description: `Dados: ${JSON.stringify(response.data?.data?.title || 'sem título').substring(0, 50)}...`,
-      });
-      
-    } catch (error) {
-      console.error('💥 Erro no teste:', error);
-      toast({
-        title: "Erro no teste",
-        description: error.message || 'Erro desconhecido',
-        variant: "destructive"
-      });
-    }
-  };
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <Card className="w-full max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -300,13 +220,6 @@ export const AddPropertyForm: React.FC<AddPropertyFormProps> = ({ onSubmit, onCa
 
             {/* Action Buttons */}
             <div className="flex justify-end space-x-4 pt-4 border-t">
-              <Button 
-                type="button" 
-                variant="secondary" 
-                onClick={testUserPreferences}
-              >
-                🔍 Testar Critérios
-              </Button>
               <Button type="button" variant="outline" onClick={onCancel}>
                 Cancelar
               </Button>

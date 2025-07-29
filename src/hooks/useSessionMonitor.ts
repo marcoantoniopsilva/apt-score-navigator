@@ -1,181 +1,120 @@
-import { useEffect, useRef, useCallback } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { debugLogger } from '@/utils/debugLogger';
+import { sessionValidator, isAuthError } from '@/utils/sessionUtils';
+import { supabase } from '@/integrations/supabase/client';
 
-/**
- * Hook para monitoramento ativo da sessão com detecção de problemas
- */
+interface SessionMonitorState {
+  isSessionValid: boolean;
+  sessionError: string | null;
+  isMonitoring: boolean;
+}
+
 export const useSessionMonitor = () => {
   const { session, user } = useAuth();
-  const { toast } = useToast();
-  const lastSessionCheckRef = useRef<number>(0);
-  const isCheckingRef = useRef(false);
+  const [state, setState] = useState<SessionMonitorState>({
+    isSessionValid: true,
+    sessionError: null,
+    isMonitoring: false
+  });
 
-  const checkSessionHealth = useCallback(async () => {
-    // Evitar verificações muito frequentes
-    const now = Date.now();
-    if (now - lastSessionCheckRef.current < 30000) { // 30 segundos
-      return { isHealthy: true, needsRefresh: false };
-    }
+  const monitoringRef = useRef(false);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-    if (isCheckingRef.current) {
-      return { isHealthy: true, needsRefresh: false };
-    }
+  const checkSession = async () => {
+    if (monitoringRef.current || !session) return;
 
-    isCheckingRef.current = true;
-    lastSessionCheckRef.current = now;
+    monitoringRef.current = true;
+    setState(prev => ({ ...prev, isMonitoring: true }));
 
     try {
-      debugLogger.session('SessionMonitor', 'Checking session health...');
+      const sessionState = await sessionValidator.validateSession();
       
-      // Verificar se temos sessão local
-      if (!session || !user) {
-        debugLogger.warning('SessionMonitor', 'No local session/user');
-        return { isHealthy: false, needsRefresh: false };
-      }
+      setState(prev => ({
+        ...prev,
+        isSessionValid: sessionState.isValid,
+        sessionError: sessionState.error || null,
+        isMonitoring: false
+      }));
 
-      // Verificar sessão no Supabase
-      const { data: { session: currentSession }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('❌ SessionMonitor: Session check error:', error);
-        return { isHealthy: false, needsRefresh: true, error: error.message };
-      }
-
-      if (!currentSession) {
-        console.log('❌ SessionMonitor: No session in Supabase');
-        return { isHealthy: false, needsRefresh: false };
-      }
-
-      // Verificar se o token está próximo do vencimento
-      const expiresAt = currentSession.expires_at;
-      if (expiresAt) {
-        const timeUntilExpiry = expiresAt * 1000 - Date.now();
-        if (timeUntilExpiry < 5 * 60 * 1000) { // 5 minutos
-          console.log('⚠️ SessionMonitor: Session expires soon');
-          return { isHealthy: true, needsRefresh: true };
-        }
-      }
-
-      // Testar se conseguimos fazer uma chamada autenticada
-      try {
-        const { error: testError } = await supabase
-          .from('user_profiles')
-          .select('id')
-          .limit(1);
+      if (!sessionState.isValid && sessionState.error) {
+        console.warn('Session validation failed:', sessionState.error);
         
-        if (testError && testError.message.includes('JWT')) {
-          console.log('❌ SessionMonitor: JWT validation failed');
-          return { isHealthy: false, needsRefresh: true };
+        // Attempt automatic refresh if session needs refresh
+        if (sessionState.needsRefresh) {
+          console.log('Attempting automatic session refresh...');
+          try {
+            const { data: { session: refreshedSession }, error: refreshError } = await supabase.auth.refreshSession();
+            
+            if (!refreshError && refreshedSession) {
+              console.log('Session refreshed successfully');
+              setState(prev => ({
+                ...prev,
+                isSessionValid: true,
+                sessionError: null,
+                isMonitoring: false
+              }));
+              
+              // Notify other components about session refresh
+              window.dispatchEvent(new CustomEvent('session-refreshed'));
+            }
+          } catch (refreshError) {
+            console.error('Session refresh failed:', refreshError);
+          }
         }
-      } catch (testError) {
-        console.log('❌ SessionMonitor: Auth test failed');
-        return { isHealthy: false, needsRefresh: true };
       }
-
-      console.log('✅ SessionMonitor: Session is healthy');
-      return { isHealthy: true, needsRefresh: false };
 
     } catch (error) {
-      console.error('💥 SessionMonitor: Health check failed:', error);
-      return { 
-        isHealthy: false, 
-        needsRefresh: true, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
-      };
+      const errorMessage = error instanceof Error ? error.message : 'Session check failed';
+      setState(prev => ({
+        ...prev,
+        isSessionValid: false,
+        sessionError: errorMessage,
+        isMonitoring: false
+      }));
     } finally {
-      isCheckingRef.current = false;
+      monitoringRef.current = false;
     }
+  };
+
+  // Monitor session every 2 minutes when user is active
+  useEffect(() => {
+    if (!session || !user) {
+      setState({
+        isSessionValid: false,
+        sessionError: null,
+        isMonitoring: false
+      });
+      return;
+    }
+
+    // Initial check
+    checkSession();
+
+    // Set up periodic monitoring
+    intervalRef.current = setInterval(checkSession, 2 * 60 * 1000); // 2 minutes
+
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
   }, [session, user]);
 
-  const refreshSession = useCallback(async () => {
-    try {
-      console.log('🔄 SessionMonitor: Refreshing session...');
-      
-      // Verificar se há uma sessão atual antes de tentar refresh
-      const { data: { session: currentSession } } = await supabase.auth.getSession();
-      
-      if (!currentSession) {
-        console.log('❌ SessionMonitor: No current session to refresh');
-        return false;
-      }
-      
-      // Usar refreshSession do Supabase que gerencia tokens internamente
-      const { data, error } = await supabase.auth.refreshSession(currentSession);
-      
-      if (error) {
-        console.error('❌ SessionMonitor: Refresh failed:', error);
-        
-        // Se o refresh token é inválido, fazer logout completo
-        if (error.message.includes('Invalid Refresh Token') || error.message.includes('refresh_token_not_found')) {
-          console.log('🚪 SessionMonitor: Invalid refresh token, signing out...');
-          await supabase.auth.signOut();
-        }
-        
-        toast({
-          title: "Erro de sessão",
-          description: "Sua sessão expirou. Por favor, faça login novamente.",
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      if (data.session) {
-        console.log('✅ SessionMonitor: Session refreshed successfully');
-        return true;
-      }
-
-      return false;
-    } catch (error) {
-      console.error('💥 SessionMonitor: Refresh error:', error);
-      return false;
-    }
-  }, [toast]);
-
-  // Monitoramento contínuo
+  // Check session on window focus
   useEffect(() => {
-    if (!session || !user) return;
-
-    const interval = setInterval(async () => {
-      const health = await checkSessionHealth();
-      
-      if (!health.isHealthy && health.needsRefresh) {
-        console.log('🚨 SessionMonitor: Session unhealthy, attempting refresh');
-        const refreshed = await refreshSession();
-        
-        if (!refreshed) {
-          toast({
-            title: "Sessão expirada",
-            description: "Por favor, atualize a página e faça login novamente.",
-            variant: "destructive",
-          });
-        }
+    const handleFocus = () => {
+      if (session && !document.hidden) {
+        checkSession();
       }
-    }, 2 * 60 * 1000); // Verificar a cada 2 minutos
+    };
 
-    return () => clearInterval(interval);
-  }, [session, user, checkSessionHealth, refreshSession, toast]);
-
-  // Verificação on-demand
-  const validateSession = useCallback(async () => {
-    const health = await checkSessionHealth();
-    
-    if (!health.isHealthy) {
-      if (health.needsRefresh) {
-        const refreshed = await refreshSession();
-        return refreshed;
-      }
-      return false;
-    }
-    
-    return true;
-  }, [checkSessionHealth, refreshSession]);
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
+  }, [session]);
 
   return {
-    checkSessionHealth,
-    refreshSession,
-    validateSession
+    ...state,
+    checkSession,
+    isAuthError
   };
 };

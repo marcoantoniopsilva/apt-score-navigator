@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { LogOut, RefreshCw, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-
+import { SubscriptionStatus } from './SubscriptionStatus';
 import imoblyLogo from '/lovable-uploads/eba11e85-5438-4e92-a0b6-3406499da928.png';
 
 interface AppHeaderProps {
