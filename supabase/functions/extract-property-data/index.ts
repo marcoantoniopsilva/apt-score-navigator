@@ -227,10 +227,12 @@ function parseVivaRealContent(content: string, url: string): any {
     // Extrair imagens do imóvel
     try {
       console.log('🖼️ Extraindo imagens...');
-      const imageUrls = extractImagesFromContent(content, cleanContent);
-      if (imageUrls.length > 0) {
-        data.images = imageUrls;
-        console.log('📸 Imagens encontradas:', imageUrls.length);
+      const allImageUrls = extractImagesFromContent(content, cleanContent);
+      if (allImageUrls.length > 0) {
+        // Selecionar as melhores imagens representativas
+        const bestImages = selectBestPropertyImage(allImageUrls);
+        data.images = bestImages;
+        console.log('📸 Melhores imagens selecionadas:', bestImages.length);
       } else {
         console.log('📸 Nenhuma imagem extraída do conteúdo');
         data.images = [];
@@ -816,18 +818,36 @@ function isValidImageUrl(url: string): boolean {
 function isPropertyImage(url: string): boolean {
   const urlLower = url.toLowerCase();
   
-  // URLs que provavelmente são de imóveis
-  const propertyIndicators = [
+  // URLs que provavelmente são de imóveis - com prioridade
+  const highPriorityIndicators = [
     'resizedimgs.vivareal.com',
+    '/crop/614x', // Imagens grandes do VivaReal
+    '/crop/640x', // Imagens grandes
     'apartamento-com-',
     'casa-com-',
-    'crop/',
-    'imovel',
-    'property'
+    'imovel'
   ];
   
-  // URLs que provavelmente são logos/banners
-  const logoIndicators = [
+  // Palavras que indicam cômodos e áreas do imóvel
+  const roomIndicators = [
+    'sala',
+    'quarto',
+    'banheiro',
+    'cozinha',
+    'varanda',
+    'area-gourmet',
+    'lavanderia',
+    'garagem',
+    'fachada',
+    'living',
+    'dormitorio',
+    'suite',
+    'escritorio',
+    'closet'
+  ];
+  
+  // URLs que provavelmente são logos/banners/objetos - filtrar
+  const excludeIndicators = [
     'logo',
     'banner',
     'header',
@@ -846,40 +866,139 @@ function isPropertyImage(url: string): boolean {
     'user',
     '/ui/',
     '/assets/icons',
-    'placeholder'
+    'placeholder',
+    'watermark',
+    'marca-dagua',
+    'corretor',
+    'agente',
+    'creci',
+    'whatsapp',
+    'telefone',
+    'contato',
+    'social',
+    'facebook',
+    'instagram',
+    'youtube',
+    'email',
+    'site',
+    'www.',
+    '.com.br',
+    'vendedor',
+    'consultor'
   ];
   
-  // Verificar se contém indicadores de logo/banner
-  for (const indicator of logoIndicators) {
-    if (urlLower.includes(indicator)) {
+  // Verificar se contém indicadores de exclusão
+  for (const exclude of excludeIndicators) {
+    if (urlLower.includes(exclude)) {
+      console.log(`❌ Imagem filtrada (${exclude}):`, url.substring(0, 60));
       return false;
     }
   }
   
-  // Verificar se contém indicadores de propriedade
-  for (const indicator of propertyIndicators) {
-    if (urlLower.includes(indicator)) {
-      return true;
-    }
-  }
-  
-  // Se contém dimensões típicas de imóveis (não thumbnails muito pequenos)
+  // Verificar dimensões - filtrar imagens muito pequenas
   const dimensionMatch = url.match(/(\d+)x(\d+)/);
   if (dimensionMatch) {
     const width = parseInt(dimensionMatch[1]);
     const height = parseInt(dimensionMatch[2]);
     
-    // Filtrar imagens muito pequenas (provavelmente logos/ícones)
-    if (width < 100 || height < 100) {
+    // Filtrar imagens muito pequenas (thumbnails/logos)
+    if (width < 200 || height < 150) {
+      console.log(`❌ Imagem muito pequena (${width}x${height}):`, url.substring(0, 60));
       return false;
     }
     
-    // Preferir imagens maiores
-    if (width >= 300 && height >= 200) {
+    // Filtrar imagens com proporções estranhas (banners horizontais)
+    const aspectRatio = width / height;
+    if (aspectRatio > 4 || aspectRatio < 0.5) {
+      console.log(`❌ Proporção inadequada (${aspectRatio.toFixed(2)}):`, url.substring(0, 60));
+      return false;
+    }
+  }
+  
+  // Verificar se contém indicadores de alta prioridade
+  for (const indicator of highPriorityIndicators) {
+    if (urlLower.includes(indicator)) {
+      console.log(`✅ Imagem de alta prioridade (${indicator}):`, url.substring(0, 60));
       return true;
     }
   }
   
-  // Por padrão, aceitar se passou nas outras validações
-  return true;
+  // Verificar se contém indicadores de cômodos
+  for (const room of roomIndicators) {
+    if (urlLower.includes(room)) {
+      console.log(`✅ Imagem de cômodo (${room}):`, url.substring(0, 60));
+      return true;
+    }
+  }
+  
+  // Se chegou até aqui, aceitar apenas se for uma URL do VivaReal
+  if (urlLower.includes('vivareal') || urlLower.includes('resizedimgs')) {
+    console.log(`✅ Imagem VivaReal aceita:`, url.substring(0, 60));
+    return true;
+  }
+  
+  console.log(`❌ Imagem rejeitada (não passou nos filtros):`, url.substring(0, 60));
+  return false;
+}
+
+// Função para selecionar a melhor imagem de uma lista
+function selectBestPropertyImage(imageUrls: string[]): string[] {
+  if (!imageUrls || imageUrls.length === 0) return [];
+  
+  console.log(`🎯 Selecionando melhor imagem entre ${imageUrls.length} opções`);
+  
+  // Pontuação para cada imagem
+  const scoredImages = imageUrls.map(url => {
+    let score = 0;
+    const urlLower = url.toLowerCase();
+    
+    // Pontos por qualidade da imagem
+    const dimensionMatch = url.match(/(\d+)x(\d+)/);
+    if (dimensionMatch) {
+      const width = parseInt(dimensionMatch[1]);
+      const height = parseInt(dimensionMatch[2]);
+      
+      // Preferir imagens maiores (mas não exageradamente grandes)
+      if (width >= 600 && height >= 400) score += 20;
+      else if (width >= 400 && height >= 300) score += 15;
+      else if (width >= 300 && height >= 200) score += 10;
+      
+      // Bonus para proporções adequadas (foto de cômodo)
+      const aspectRatio = width / height;
+      if (aspectRatio >= 1.2 && aspectRatio <= 1.8) score += 10;
+    }
+    
+    // Pontos por tipo de cômodo (prioridade)
+    if (urlLower.includes('sala')) score += 25;
+    if (urlLower.includes('living')) score += 25;
+    if (urlLower.includes('quarto')) score += 20;
+    if (urlLower.includes('dormitorio')) score += 20;
+    if (urlLower.includes('cozinha')) score += 18;
+    if (urlLower.includes('varanda')) score += 15;
+    if (urlLower.includes('fachada')) score += 22;
+    if (urlLower.includes('banheiro')) score += 12;
+    
+    // Pontos por ser do VivaReal (fonte confiável)
+    if (urlLower.includes('resizedimgs.vivareal.com')) score += 15;
+    
+    // Pontos por tamanho da URL (URLs do VivaReal com crop/)
+    if (urlLower.includes('/crop/614x') || urlLower.includes('/crop/640x')) score += 10;
+    
+    console.log(`📊 Imagem pontuada (${score}):`, url.substring(0, 80));
+    return { url, score };
+  });
+  
+  // Ordenar por pontuação (maior primeiro)
+  scoredImages.sort((a, b) => b.score - a.score);
+  
+  // Retornar apenas as melhores imagens (máximo 3)
+  const bestImages = scoredImages.slice(0, 3).map(item => item.url);
+  
+  console.log(`🏆 Melhores imagens selecionadas: ${bestImages.length}`);
+  bestImages.forEach((url, index) => {
+    const score = scoredImages[index].score;
+    console.log(`  ${index + 1}. (${score} pontos) ${url.substring(0, 80)}`);
+  });
+  
+  return bestImages;
 }
