@@ -62,6 +62,32 @@ serve(async (req) => {
     const propertyData = await extractFromPage(url);
     console.log('🏠 Dados extraídos:', propertyData.title || 'Título não encontrado');
 
+    // Para URLs do QuintoAndar, sempre usar dados da URL para maior precisão
+    if (url.includes('quintoandar.com')) {
+      console.log('🏢 URL QuintoAndar detectada - usando extração da URL');
+      const urlData = extractFromVivaRealUrl(url);
+      
+      // Avaliar com IA ou simulação
+      const scores = await evaluateWithAI(urlData, userCriteria);
+      console.log('⭐ Scores:', Object.keys(scores));
+
+      // Manter apenas as imagens extraídas do conteúdo, mas usar dados da URL
+      const result = {
+        ...urlData,
+        images: propertyData.images || [],
+        scores: scores,
+        sourceUrl: url
+      };
+
+      return new Response(JSON.stringify({
+        success: true,
+        data: result,
+        message: 'Extração e avaliação completas'
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Se não conseguiu extrair da página, usar dados da URL como fallback
     if (!propertyData.title && !propertyData.address) {
       const fallbackData = extractFromVivaRealUrl(url);
