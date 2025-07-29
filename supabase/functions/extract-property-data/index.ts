@@ -150,7 +150,7 @@ function parseVivaRealContent(content: string, url: string): any {
   console.log('📝 Amostra do conteúdo (primeiros 200 chars):', content.substring(0, 200));
   
   const data: any = {
-    images: ["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400"]
+    images: []
   };
 
   try {
@@ -222,6 +222,23 @@ function parseVivaRealContent(content: string, url: string): any {
         console.error('Erro no regex de endereço:', regexError);
         continue;
       }
+    }
+
+    // Extrair imagens do imóvel
+    try {
+      console.log('🖼️ Extraindo imagens...');
+      const imageUrls = extractImagesFromContent(content, cleanContent);
+      if (imageUrls.length > 0) {
+        data.images = imageUrls;
+        console.log('📸 Imagens encontradas:', imageUrls.length);
+      } else {
+        // Fallback para imagem padrão se nenhuma for encontrada
+        data.images = ["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400"];
+        console.log('📸 Usando imagem padrão');
+      }
+    } catch (error) {
+      console.error('Erro ao extrair imagens:', error);
+      data.images = ["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400"];
     }
 
     // Extrair valores - padrões básicos
@@ -307,7 +324,7 @@ function parseVivaRealContent(content: string, url: string): any {
         ...(data.bedrooms && { bedrooms: data.bedrooms }),
         ...(data.bathrooms && { bathrooms: data.bathrooms }),
         ...(data.area && { area: data.area }),
-        images: data.images
+        images: data.images && data.images.length > 0 ? data.images : ["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400"]
       };
     } catch (fallbackError) {
       console.error('💥 Erro no fallback:', fallbackError);
@@ -324,7 +341,7 @@ function parseVivaRealContent(content: string, url: string): any {
         fireInsurance: 50,
         otherFees: 0,
         description: 'Imóvel extraído automaticamente',
-        images: data.images
+        images: data.images && data.images.length > 0 ? data.images : ["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400"]
       };
     }
   }
@@ -701,3 +718,168 @@ function calculateScore(criteriaName: string, property: any): number {
       return Math.floor(Math.random() * 4) + 6; // 6-9
   }
 }
+
+function extractImagesFromContent(content: string, cleanContent: string): string[] {
+  console.log('🔍 Extraindo imagens do conteúdo...');
+  
+  const imageUrls: string[] = [];
+  const processedUrls = new Set<string>();
+  
+  try {
+    // Padrões para encontrar URLs de imagem
+    const imagePatterns = [
+      // URLs diretas de imagens
+      /https?:\/\/[^\s]+\.(?:jpg|jpeg|png|webp|gif)(?:\?[^\s]*)?/gi,
+      // URLs do VivaReal resizedimgs
+      /https?:\/\/resizedimgs\.vivareal\.com\/[^\s"'\)]+/gi,
+      // URLs de imagens em markdown
+      /!\[[^\]]*\]\(([^)]+)\)/gi,
+      // URLs de imagens em HTML
+      /<img[^>]+src=["']([^"']+)["'][^>]*>/gi,
+      // URLs do VivaReal específicas
+      /https?:\/\/[^\s]*vivareal[^\s]*\.(?:jpg|jpeg|png|webp)/gi
+    ];
+
+    for (const pattern of imagePatterns) {
+      let match;
+      while ((match = pattern.exec(content)) !== null) {
+        let imageUrl = match[1] || match[0];
+        
+        // Limpar a URL
+        imageUrl = imageUrl.trim().replace(/['">\)]+$/, '');
+        
+        // Validar URL
+        if (isValidImageUrl(imageUrl) && !processedUrls.has(imageUrl)) {
+          processedUrls.add(imageUrl);
+          
+          // Filtrar imagens válidas (não logos)
+          if (isPropertyImage(imageUrl)) {
+            imageUrls.push(imageUrl);
+            console.log('✅ Imagem válida adicionada:', imageUrl.substring(0, 80) + '...');
+            
+            // Limitar a 10 imagens por performance
+            if (imageUrls.length >= 10) {
+              break;
+            }
+          } else {
+            console.log('❌ Imagem filtrada (logo/banner):', imageUrl.substring(0, 60) + '...');
+          }
+        }
+      }
+    }
+
+    // Se não encontrou imagens suficientes, tentar buscar no HTML bruto
+    if (imageUrls.length < 3) {
+      console.log('🔍 Buscando mais imagens no HTML...');
+      const htmlImagePattern = /src=["']([^"']*(?:vivareal|images)[^"']*\.(?:jpg|jpeg|png|webp)[^"']*)["']/gi;
+      let htmlMatch;
+      
+      while ((htmlMatch = htmlImagePattern.exec(content)) !== null && imageUrls.length < 10) {
+        const imageUrl = htmlMatch[1];
+        
+        if (isValidImageUrl(imageUrl) && !processedUrls.has(imageUrl) && isPropertyImage(imageUrl)) {
+          processedUrls.add(imageUrl);
+          imageUrls.push(imageUrl);
+          console.log('✅ Imagem HTML adicionada:', imageUrl.substring(0, 80) + '...');
+        }
+      }
+    }
+
+    console.log(`📸 Total de imagens extraídas: ${imageUrls.length}`);
+    return imageUrls;
+
+  } catch (error) {
+    console.error('💥 Erro ao extrair imagens:', error);
+    return [];
+  }
+}
+
+function isValidImageUrl(url: string): boolean {
+  if (!url || url.length < 10) return false;
+  
+  try {
+    const urlObj = new URL(url);
+    const pathname = urlObj.pathname.toLowerCase();
+    
+    // Verificar se é uma URL de imagem válida
+    return (
+      (urlObj.protocol === 'http:' || urlObj.protocol === 'https:') &&
+      (pathname.includes('.jpg') || pathname.includes('.jpeg') || 
+       pathname.includes('.png') || pathname.includes('.webp')) &&
+      !pathname.includes('favicon') &&
+      url.length < 500 // URLs muito longas podem ser problemáticas
+    );
+  } catch {
+    return false;
+  }
+}
+
+function isPropertyImage(url: string): boolean {
+  const urlLower = url.toLowerCase();
+  
+  // URLs que provavelmente são de imóveis
+  const propertyIndicators = [
+    'resizedimgs.vivareal.com',
+    'apartamento-com-',
+    'casa-com-',
+    'crop/',
+    'imovel',
+    'property'
+  ];
+  
+  // URLs que provavelmente são logos/banners
+  const logoIndicators = [
+    'logo',
+    'banner',
+    'header',
+    'footer',
+    'nav',
+    'menu',
+    'btn',
+    'button',
+    'icon',
+    'sprite',
+    'brand',
+    'empresa',
+    'imobiliaria',
+    'avatar',
+    'profile',
+    'user',
+    '/ui/',
+    '/assets/icons',
+    'placeholder'
+  ];
+  
+  // Verificar se contém indicadores de logo/banner
+  for (const indicator of logoIndicators) {
+    if (urlLower.includes(indicator)) {
+      return false;
+    }
+  }
+  
+  // Verificar se contém indicadores de propriedade
+  for (const indicator of propertyIndicators) {
+    if (urlLower.includes(indicator)) {
+      return true;
+    }
+  }
+  
+  // Se contém dimensões típicas de imóveis (não thumbnails muito pequenos)
+  const dimensionMatch = url.match(/(\d+)x(\d+)/);
+  if (dimensionMatch) {
+    const width = parseInt(dimensionMatch[1]);
+    const height = parseInt(dimensionMatch[2]);
+    
+    // Filtrar imagens muito pequenas (provavelmente logos/ícones)
+    if (width < 100 || height < 100) {
+      return false;
+    }
+    
+    // Preferir imagens maiores
+    if (width >= 300 && height >= 200) {
+      return true;
+    }
+  }
+  
+  // Por padrão, aceitar se passou nas outras validações
+  return true;
