@@ -1,10 +1,9 @@
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from '@/components/ui/button';
-import { LogOut, RefreshCw, Plus, TestTube } from 'lucide-react';
+import { LogOut, RefreshCw, Plus } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useHttpDirectExtraction } from '@/hooks/useHttpDirectExtraction';
 
 import imoblyLogo from '/lovable-uploads/eba11e85-5438-4e92-a0b6-3406499da928.png';
 
@@ -25,56 +24,6 @@ const AppHeader: React.FC<AppHeaderProps> = ({
 }) => {
   const { signOut } = useAuth();
   const { toast } = useToast();
-  const { extractPropertyData, isExtracting } = useHttpDirectExtraction();
-
-  const handleAddProperty = async () => {
-    console.log('🏠 AppHeader: Botão Adicionar clicado');
-    
-    // SEMPRE abre o formulário primeiro
-    onAddProperty(); 
-    console.log('✅ AppHeader: Formulário aberto');
-    
-    // Tentativa opcional de extração em background  
-    // Se funcionar, os dados aparecerão no formulário
-    // Se não funcionar, o usuário pode inserir manualmente
-    const testUrl = 'https://www.vivareal.com.br/imovel/apartamento-1-quartos-vila-da-serra-bairros-nova-lima-com-garagem-69m2-venda-RS1200000-id-2761362817/';
-    
-    try {
-      console.log('🔍 AppHeader: Tentando extração em background...');
-      const result = await extractPropertyData(testUrl);
-      
-      if (result.success && result.data) {
-        console.log('✅ AppHeader: Extração em background bem-sucedida');
-        // Os dados extraídos poderiam ser passados para o formulário aqui
-        // Por enquanto, apenas mostramos o resultado
-      } else {
-        console.log('⚠️ AppHeader: Extração em background falhou, mas formulário está aberto');
-      }
-    } catch (error) {
-      console.log('⚠️ AppHeader: Erro na extração em background:', error);
-      // Mesmo com erro, o formulário já está aberto
-    }
-  };
-
-  const handleTestExtraction = async () => {
-    const testUrl = 'https://www.vivareal.com.br/imovel/apartamento-1-quartos-vila-da-serra-bairros-nova-lima-com-garagem-69m2-venda-RS1200000-id-2761362817/';
-    console.log('🧪 Testando extração HTTP direta do header...');
-    
-    const result = await extractPropertyData(testUrl);
-    
-    if (result.success) {
-      toast({
-        title: "✅ Teste bem-sucedido!",
-        description: `Dados extraídos: ${result.data?.title || 'propriedade'}`,
-      });
-    } else {
-      toast({
-        title: "❌ Teste falhou",
-        description: result.error,
-        variant: "destructive"
-      });
-    }
-  };
 
   const handleSignOut = async () => {
     try {
@@ -122,25 +71,13 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               <span className="hidden sm:inline">Atualizar</span>
             </Button>
             <Button 
-              onClick={handleAddProperty}
-              disabled={isExtracting}
+              onClick={onAddProperty}
               className="bg-white text-blue-600 hover:bg-white/90 flex-1 sm:flex-none"
               size="sm"
             >
               <Plus className="h-4 w-4 mr-1 sm:mr-2" />
-              <span className="hidden sm:inline">{isExtracting ? 'Extraindo...' : 'Adicionar'}</span>
-              <span className="sm:hidden">{isExtracting ? '...' : 'Add'}</span>
-            </Button>
-            <Button 
-              onClick={handleTestExtraction}
-              variant="outline"
-              disabled={isExtracting}
-              size="sm"
-              className="flex-1 sm:flex-none border-white bg-white/10 text-white hover:bg-white/20 hover:text-white"
-            >
-              <TestTube className={`h-4 w-4 mr-1 sm:mr-2`} />
-              <span className="hidden sm:inline">{isExtracting ? 'Testando...' : 'Testar HTTP'}</span>
-              <span className="sm:hidden">{isExtracting ? '...' : 'Test'}</span>
+              <span className="hidden sm:inline">Adicionar</span>
+              <span className="sm:hidden">Add</span>
             </Button>
             <Button 
               onClick={handleSignOut}

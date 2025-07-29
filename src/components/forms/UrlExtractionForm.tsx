@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useHttpDirectExtraction } from '@/hooks/useHttpDirectExtraction';
+import { usePropertyExtraction } from '@/hooks/usePropertyExtraction';
 
 interface UrlExtractionFormProps {
   url: string;
@@ -15,17 +15,13 @@ export const UrlExtractionForm: React.FC<UrlExtractionFormProps> = ({
   setUrl,
   onDataExtracted
 }) => {
-  const { extractPropertyData, isExtracting } = useHttpDirectExtraction();
+  const { extractPropertyData, isExtracting } = usePropertyExtraction();
 
   const handleExtractFromUrl = async () => {
-    console.log('📋 UrlExtractionForm: Iniciando extração...');
     const result = await extractPropertyData(url);
     
-    if (result.success && result.data) {
-      console.log('✅ UrlExtractionForm: Extração bem-sucedida');
-      onDataExtracted(result.data);
-    } else {
-      console.error('❌ UrlExtractionForm: Falha na extração:', result.error);
+    if (result) {
+      onDataExtracted(result);
     }
   };
 
