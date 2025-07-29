@@ -62,32 +62,6 @@ serve(async (req) => {
     const propertyData = await extractFromPage(url);
     console.log('🏠 Dados extraídos:', propertyData.title || 'Título não encontrado');
 
-    // Para URLs do QuintoAndar, sempre usar dados da URL para maior precisão
-    if (url.includes('quintoandar.com')) {
-      console.log('🏢 URL QuintoAndar detectada - usando extração da URL');
-      const urlData = extractFromVivaRealUrl(url);
-      
-      // Avaliar com IA ou simulação
-      const scores = await evaluateWithAI(urlData, userCriteria);
-      console.log('⭐ Scores:', Object.keys(scores));
-
-      // Manter apenas as imagens extraídas do conteúdo, mas usar dados da URL
-      const result = {
-        ...urlData,
-        images: propertyData.images || [],
-        scores: scores,
-        sourceUrl: url
-      };
-
-      return new Response(JSON.stringify({
-        success: true,
-        data: result,
-        message: 'Extração e avaliação completas'
-      }), {
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     // Se não conseguiu extrair da página, usar dados da URL como fallback
     if (!propertyData.title && !propertyData.address) {
       const fallbackData = extractFromVivaRealUrl(url);
@@ -495,10 +469,10 @@ function extractFromVivaRealUrl(url: string): any {
       console.log('🏢 Processando URL do QuintoAndar');
       
       // Para QuintoAndar: /imovel/894800321/alugar/apartamento-5-quartos-sao-lucas-belo-horizonte
-      const quintoandarMatch = url.match(/\/imovel\/\d+\/[^\/]+\/(.+)/);
+      const quintoandarMatch = url.match(/\/imovel\/\d+\/[^\/]+\/(.+?)(?:\?|$)/);
       if (quintoandarMatch) {
         urlInfo = quintoandarMatch[1];
-        console.log('📋 URL info extraída:', urlInfo);
+        console.log('📋 URL info extraída (limpa):', urlInfo);
         
         // Parse específico para QuintoAndar
         if (urlInfo.includes('apartamento')) propertyType = 'Apartamento';
@@ -512,42 +486,43 @@ function extractFromVivaRealUrl(url: string): any {
           console.log('🛏️ Quartos encontrados:', bedrooms);
         }
         
-        // Extrair bairro e cidade: após "quartos-" até final
+        // Extrair localização após "quartos-"
         const locationMatch = urlInfo.match(/quartos-(.+)/);
         if (locationMatch) {
           const locationPart = locationMatch[1];
           const locationParts = locationPart.split('-');
           
+          console.log('📍 Partes da localização:', locationParts);
+          
           // Para "sao-lucas-belo-horizonte":
-          // - Bairro: sao-lucas
-          // - Cidade: belo-horizonte
-          if (locationParts.length >= 3 && locationParts.includes('belo') && locationParts.includes('horizonte')) {
-            // Encontrar onde começa "belo-horizonte"
+          if (locationParts.includes('belo') && locationParts.includes('horizonte')) {
             const beloIndex = locationParts.indexOf('belo');
             
             // Bairro é tudo antes de "belo"
-            neighborhood = locationParts.slice(0, beloIndex).join('-')
-              .replace(/-/g, ' ').split(' ')
-              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(' ');
+            if (beloIndex > 0) {
+              neighborhood = locationParts.slice(0, beloIndex)
+                .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                .join(' ');
+            }
             
-            // Cidade é "belo-horizonte"
-            city = locationParts.slice(beloIndex).join('-')
-              .replace(/-/g, ' ').split(' ')
-              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(' ');
-              
-            console.log('🏘️ QuintoAndar - Bairro:', neighborhood, 'Cidade:', city);
+            // Cidade é "Belo Horizonte"
+            city = 'Belo Horizonte';
+            
+            console.log('🏘️ QuintoAndar extraído - Bairro:', neighborhood, 'Cidade:', city);
           } else {
-            // Fallback: assumir que a última parte é a cidade
-            neighborhood = locationParts.slice(0, -1).join('-')
-              .replace(/-/g, ' ').split(' ')
-              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(' ');
-            city = locationParts[locationParts.length - 1]
-              .replace(/-/g, ' ').split(' ')
-              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-              .join(' ');
+            // Fallback: última parte como cidade, resto como bairro
+            if (locationParts.length >= 2) {
+              neighborhood = locationParts.slice(0, -1)
+                .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+                .join(' ');
+              city = locationParts[locationParts.length - 1]
+                .charAt(0).toUpperCase() + locationParts[locationParts.length - 1].slice(1);
+            } else {
+              neighborhood = locationParts[0]
+                .charAt(0).toUpperCase() + locationParts[0].slice(1);
+              city = 'Belo Horizonte';
+            }
+            console.log('🏘️ QuintoAndar fallback - Bairro:', neighborhood, 'Cidade:', city);
           }
         }
       }
@@ -573,11 +548,19 @@ function extractFromVivaRealUrl(url: string): any {
       area = parseInt(areaMatch[1]);
     }
     
-    // Extrair valor do aluguel se presente
-    let rent = 3000; // valor padrão
-    const rentMatch = urlInfo.match(/(?:aluguel-)?RS?(\d+)/i);
-    if (rentMatch) {
-      rent = parseInt(rentMatch[1]);
+    // Para QuintoAndar, tentar extrair valores reais da URL
+    let rent = 0; // Default 0 para usar extração do conteúdo se disponível
+    if (url.includes('quintoandar.com')) {
+      // URLs do QuintoAndar não costumam ter valores, deixar 0 para usar dados do conteúdo
+      console.log('🏢 QuintoAndar: usando valores do conteúdo da página');
+    } else {
+      // Extrair valor do aluguel se presente (VivaReal)
+      const rentMatch = urlInfo.match(/(?:aluguel-)?RS?(\d+)/i);
+      if (rentMatch) {
+        rent = parseInt(rentMatch[1]);
+      } else {
+        rent = 0; // Deixar 0 para usar dados do conteúdo
+      }
     }
     
     // Montar título descritivo mais limpo
@@ -602,9 +585,9 @@ function extractFromVivaRealUrl(url: string): any {
     const result = {
       title: title,
       address: address,
-      rent: rent,
-      condo: Math.floor(rent * 0.15), // Estimativa de condomínio (15% do aluguel)
-      iptu: Math.floor(rent * 0.05), // Estimativa de IPTU (5% do aluguel)
+      rent: rent || 0, // Manter 0 se não extraiu valor
+      condo: rent > 0 ? Math.floor(rent * 0.15) : 0, // Só calcular se rent > 0
+      iptu: rent > 0 ? Math.floor(rent * 0.05) : 0, // Só calcular se rent > 0
       bedrooms: bedrooms,
       bathrooms: Math.max(1, bedrooms - 1), // Estimativa de banheiros
       area: area,
