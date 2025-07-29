@@ -15,33 +15,37 @@ import { useSessionRefetchOnVisibility } from "@/hooks/useSessionRefetchOnVisibi
 
 const queryClient = new QueryClient();
 
-const App = () => {
+const App = () => (
+  <QueryClientProvider client={queryClient}>
+    <TooltipProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <AuthProvider>
+          <AppWithHooks />
+        </AuthProvider>
+      </BrowserRouter>
+    </TooltipProvider>
+  </QueryClientProvider>
+);
+
+const AppWithHooks = () => {
   useSessionRefetchOnVisibility();
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <Routes>
-              <Route path="/" element={<Landing />} />
-              <Route path="/onboarding" element={<Onboarding />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/app" element={
-                <ProtectedRoute>
-                  <OptimizedIndex />
-                </ProtectedRoute>
-              } />
-              <Route path="/test-app" element={<div>Teste de rota funcionando</div>} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
+    <Routes>
+      <Route path="/" element={<Landing />} />
+      <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/auth" element={<Auth />} />
+      <Route path="/app" element={
+        <ProtectedRoute>
+          <OptimizedIndex />
+        </ProtectedRoute>
+      } />
+      <Route path="/test-app" element={<div>Teste de rota funcionando</div>} />
+      {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+      <Route path="*" element={<NotFound />} />
+    </Routes>
   );
 };
 
