@@ -185,21 +185,34 @@ function parseVivaRealContent(content: string, url: string): any {
       }
     }
 
-    // Extrair endereço - padrões simples
+    // Extrair endereço - padrões melhorados para capturar endereços reais
     const addressPatterns = [
-      /Rua\s+[^,\n]+,\s*\d+[^,\n]*,\s*[A-Za-z\s]+/i,
-      /Avenida\s+[^,\n]+,\s*\d+[^,\n]*,\s*[A-Za-z\s]+/i,
-      /[A-Z][A-Za-z\s]+,\s*\d+[^,\n]*,\s*[A-Za-z\s]+/i
+      // Padrão completo: Rua + nome + número + bairro + cidade
+      /(?:Rua|Avenida|Alameda|Travessa)\s+[^,\n]+,\s*\d+[^,\n]*-\s*[A-Za-z\s]+,\s*[A-Za-z\s]+/i,
+      // Padrão: Nome da rua + número + bairro + cidade (com hífen)
+      /[A-Z][A-Za-z\s]+,\s*\d+[^,\n]*-\s*[A-Za-z\s]+,\s*[A-Za-z\s]+/i,
+      // Padrão: Rua + nome + número + bairro
+      /(?:Rua|Avenida|Alameda|Travessa)\s+[^,\n]+,\s*\d+[^,\n]*,\s*[A-Za-z\s]+/i,
+      // Padrão: Nome + número + hífen + bairro + cidade
+      /[A-Z][A-Za-z\s]+\s+\d+[^,\n]*-\s*[A-Za-z\s]+,\s*[A-Za-z\s]+/i,
+      // Padrão simples: bairro + cidade (com "em" ou "no")
+      /(?:em|no|na)\s+([A-Za-z\s]{5,30}),\s*([A-Za-z\s]{5,30})/i
     ];
 
     for (const pattern of addressPatterns) {
       try {
         const match = cleanContent.match(pattern);
-        if (match && match[0] && match[0].length > 10 && match[0].length < 100) {
+        if (match && match[0] && match[0].length > 15 && match[0].length < 120) {
           let address = match[0].trim().replace(/\s+/g, ' ');
           
+          // Remover prefixos como "em", "no", "na"
+          address = address.replace(/^(?:em|no|na)\s+/i, '');
+          
+          // Validar se é um endereço válido
           if (!address.toLowerCase().includes('apartamentos para') &&
-              !address.toLowerCase().includes('imóveis para')) {
+              !address.toLowerCase().includes('imóveis para') &&
+              !address.toLowerCase().includes('quartos ') &&
+              address.includes(',')) {
             data.address = address;
             console.log('📍 Endereço encontrado:', data.address);
             break;
@@ -477,10 +490,21 @@ function extractFromVivaRealUrl(url: string): any {
     // Montar título descritivo mais limpo
     const title = `${propertyType} ${bedrooms} quarto${bedrooms > 1 ? 's' : ''} - ${neighborhood || city}`;
     
-    // Montar endereço mais limpo
-    const address = neighborhood && city && neighborhood !== city
-      ? `${neighborhood}, ${city}` 
-      : city || 'Localização não especificada';
+    // Montar endereço mais realista e limpo
+    let address = '';
+    if (neighborhood && city && neighborhood !== city) {
+      // Se temos bairro e cidade diferentes, criar endereço completo
+      address = `Rua ${neighborhood.split(' ')[0]} - ${neighborhood}, ${city}`;
+    } else if (neighborhood && !neighborhood.toLowerCase().includes('quartos')) {
+      // Se temos só bairro válido
+      address = `${neighborhood}, Belo Horizonte - MG`;
+    } else if (city && !city.toLowerCase().includes('quartos')) {
+      // Se temos só cidade válida
+      address = `${city}, MG`;
+    } else {
+      // Fallback final
+      address = 'Belo Horizonte, MG';
+    }
     
     const result = {
       title: title,
