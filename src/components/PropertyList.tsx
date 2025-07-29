@@ -6,9 +6,8 @@ import LoadingState from '@/components/LoadingState';
 import EmptyState from '@/components/EmptyState';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MapView from '@/components/MapView';
-import { BarChart3, X, List, Map } from 'lucide-react';
+import { BarChart3, X } from 'lucide-react';
 
 interface PropertyListProps {
   properties: Property[];
@@ -51,7 +50,6 @@ const PropertyList: React.FC<PropertyListProps> = ({
   onDeactivateComparison,
   comparisonMode = false
 }) => {
-  const [activeTab, setActiveTab] = useState('list');
   const sortedProperties = [...properties].sort((a, b) => {
     let aValue: number;
     let bValue: number;
@@ -160,51 +158,36 @@ const PropertyList: React.FC<PropertyListProps> = ({
         </div>
       )}
 
-      {/* Tabs para lista e mapa */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
-          <TabsTrigger value="list" className="flex items-center gap-2">
-            <List className="w-4 h-4" />
-            Lista
-          </TabsTrigger>
-          <TabsTrigger value="map" className="flex items-center gap-2">
-            <Map className="w-4 h-4" />
-            Mapa
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="list" className="mt-6">
-          <div className="space-y-6">
-            {sortedProperties.map((property, index) => (
-              <PropertyCard
-                key={property.id}
-                property={property}
-                rank={index + 1}
-                weights={weights}
-                onUpdate={onUpdate}
-                onDelete={onDelete}
-                isSelected={isPropertySelected ? isPropertySelected(property.id) : false}
-                onToggleSelection={onToggleSelection ? () => onToggleSelection(property) : undefined}
-                showComparisonCheckbox={!!onToggleSelection}
-              />
-            ))}
-          </div>
-        </TabsContent>
-
-        <TabsContent value="map" className="mt-6">
-          <MapView 
-            properties={sortedProperties}
-            onPropertySelect={(property) => {
-              // Volta para a aba de lista e posiciona na propriedade selecionada
-              setActiveTab('list');
-              setTimeout(() => {
-                const propertyElement = document.getElementById(`property-${property.id}`);
-                propertyElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              }, 100);
-            }}
+      {/* Lista de propriedades */}
+      <div className="space-y-6">
+        {sortedProperties.map((property, index) => (
+          <PropertyCard
+            key={property.id}
+            property={property}
+            rank={index + 1}
+            weights={weights}
+            onUpdate={onUpdate}
+            onDelete={onDelete}
+            isSelected={isPropertySelected ? isPropertySelected(property.id) : false}
+            onToggleSelection={onToggleSelection ? () => onToggleSelection(property) : undefined}
+            showComparisonCheckbox={!!onToggleSelection}
           />
-        </TabsContent>
-      </Tabs>
+        ))}
+      </div>
+
+      {/* Mapa sempre visível após a lista */}
+      <div className="mt-8">
+        <MapView 
+          properties={sortedProperties}
+          onPropertySelect={(property) => {
+            // Rola para a propriedade selecionada na lista
+            setTimeout(() => {
+              const propertyElement = document.getElementById(`property-${property.id}`);
+              propertyElement?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+          }}
+        />
+      </div>
     </div>
   );
 };

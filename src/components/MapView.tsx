@@ -47,12 +47,12 @@ const MapView: React.FC<MapViewProps> = ({ properties, onPropertySelect }) => {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Map className="w-5 h-5" />
-          <h2 className="text-xl font-semibold">Mapa Interativo</h2>
-          <Badge variant="secondary">
-            {filteredProperties.length} de {properties.length} propriedades
+          <Map className="w-5 h-5 text-primary" />
+          <h2 className="text-2xl font-bold">Mapa Interativo</h2>
+          <Badge variant="secondary" className="text-sm">
+            {filteredProperties.length} propriedades no mapa
           </Badge>
         </div>
         
