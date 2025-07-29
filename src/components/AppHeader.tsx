@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { LogOut, RefreshCw, Plus } from 'lucide-react';
+import { LogOut, RefreshCw, Plus, TestTube } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useHttpDirectExtraction } from '@/hooks/useHttpDirectExtraction';
 
 import imoblyLogo from '/lovable-uploads/eba11e85-5438-4e92-a0b6-3406499da928.png';
 
@@ -24,6 +25,27 @@ const AppHeader: React.FC<AppHeaderProps> = ({
 }) => {
   const { signOut } = useAuth();
   const { toast } = useToast();
+  const { extractPropertyData, isExtracting } = useHttpDirectExtraction();
+
+  const handleTestExtraction = async () => {
+    const testUrl = 'https://www.vivareal.com.br/imovel/apartamento-1-quartos-vila-da-serra-bairros-nova-lima-com-garagem-69m2-venda-RS1200000-id-2761362817/';
+    console.log('🧪 Testando extração HTTP direta do header...');
+    
+    const result = await extractPropertyData(testUrl);
+    
+    if (result.success) {
+      toast({
+        title: "✅ Teste bem-sucedido!",
+        description: `Dados extraídos: ${result.data?.title || 'propriedade'}`,
+      });
+    } else {
+      toast({
+        title: "❌ Teste falhou",
+        description: result.error,
+        variant: "destructive"
+      });
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -78,6 +100,17 @@ const AppHeader: React.FC<AppHeaderProps> = ({
               <Plus className="h-4 w-4 mr-1 sm:mr-2" />
               <span className="hidden sm:inline">Adicionar</span>
               <span className="sm:hidden">Add</span>
+            </Button>
+            <Button 
+              onClick={handleTestExtraction}
+              variant="outline"
+              disabled={isExtracting}
+              size="sm"
+              className="flex-1 sm:flex-none border-white bg-white/10 text-white hover:bg-white/20 hover:text-white"
+            >
+              <TestTube className={`h-4 w-4 mr-1 sm:mr-2`} />
+              <span className="hidden sm:inline">{isExtracting ? 'Testando...' : 'Testar HTTP'}</span>
+              <span className="sm:hidden">{isExtracting ? '...' : 'Test'}</span>
             </Button>
             <Button 
               onClick={handleSignOut}
