@@ -1,6 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { EnhancedOnboardingFlow } from '@/components/onboarding/EnhancedOnboardingFlow';
+import { ImoblyHeader } from '@/components/ImoblyHeader';
 import { OnboardingAnswers, UserProfileType } from '@/types/onboarding';
 
 const Onboarding = () => {
@@ -31,12 +32,20 @@ const Onboarding = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5">
-      <div className="container mx-auto px-4 py-8">
-        <EnhancedOnboardingFlow 
-          onComplete={handleOnboardingComplete}
-          onClose={handleClose}
-        />
+    <div className="min-h-screen bg-gradient-to-br from-blue-600 via-blue-700 to-blue-800">
+      {/* Header com logo e título */}
+      <div className="bg-blue-600 px-6 py-4 shadow-lg">
+        <ImoblyHeader />
+      </div>
+      
+      {/* Conteúdo do onboarding */}
+      <div className="bg-gradient-to-br from-primary/5 via-secondary/5 to-accent/5 min-h-[calc(100vh-80px)]">
+        <div className="container mx-auto px-4 py-8">
+          <EnhancedOnboardingFlow 
+            onComplete={handleOnboardingComplete}
+            onClose={handleClose}
+          />
+        </div>
       </div>
     </div>
   );
