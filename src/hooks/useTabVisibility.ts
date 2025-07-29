@@ -1,6 +1,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAutoRecovery } from '@/hooks/useAutoRecovery';
 
 /**
  * Hook para detectar mudanças de visibilidade da aba e reagir adequadamente
@@ -9,30 +10,9 @@ import { useAuth } from '@/contexts/AuthContext';
 export const useTabVisibility = () => {
   const queryClient = useQueryClient();
   const { user, session } = useAuth();
+  const { attemptRecovery } = useAutoRecovery();
   const isReactivatingRef = useRef(false);
   const lastVisibilityChangeRef = useRef(Date.now());
-
-  const validateAuth = useCallback(async () => {
-    console.log('🔍 Validando autenticação após reativação da aba...');
-    
-    // Verifica se a sessão ainda é válida
-    if (!session || !user) {
-      console.warn('⚠️ Sessão não encontrada após reativação da aba');
-      return false;
-    }
-
-    // Verifica se o token ainda não expirou
-    const now = Math.floor(Date.now() / 1000);
-    const tokenExpiry = session.expires_at;
-    
-    if (tokenExpiry && now >= tokenExpiry) {
-      console.warn('⚠️ Token expirado após reativação da aba');
-      return false;
-    }
-
-    console.log('✅ Autenticação válida após reativação da aba');
-    return true;
-  }, [session, user]);
 
   const handleTabReactivation = useCallback(async () => {
     if (isReactivatingRef.current) {
@@ -40,17 +20,21 @@ export const useTabVisibility = () => {
       return;
     }
 
-    console.log('🔄 Aba reativada - iniciando processo de atualização');
+    console.log('🔄 Aba reativada - iniciando processo coordenado de atualização');
     isReactivatingRef.current = true;
 
     try {
-      // 1. Validar autenticação
-      const isAuthValid = await validateAuth();
-      if (!isAuthValid) {
-        console.error('❌ Autenticação inválida, redirecionando para login...');
+      // 🔁 Primeiro, tente recuperar a sessão usando useAutoRecovery
+      console.log('🔑 Tentando recuperar sessão antes do refetch...');
+      const recovered = await attemptRecovery('tab visibility');
+      
+      if (!recovered) {
+        console.warn('❌ Sessão inválida após tentativa de recuperação, redirecionando para login...');
         // Aqui você pode adicionar lógica para redirecionar para login
         return;
       }
+
+      console.log('✅ Sessão válida - seguindo com refetch coordenado');
 
       // 2. Invalidar e refazer queries críticas
       console.log('🔄 Refetch iniciado - invalidando queries...');
@@ -112,7 +96,7 @@ export const useTabVisibility = () => {
     } finally {
       isReactivatingRef.current = false;
     }
-  }, [queryClient, user?.id, validateAuth]);
+  }, [queryClient, user?.id, attemptRecovery]);
 
   useEffect(() => {
     const handleVisibilityChange = () => {
