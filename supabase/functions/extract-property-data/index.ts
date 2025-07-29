@@ -147,218 +147,173 @@ async function extractFromPage(url: string): Promise<any> {
 
 function parseVivaRealContent(content: string, url: string): any {
   console.log('🔍 Analisando conteúdo da página...');
-  console.log('📝 Amostra do conteúdo (primeiros 500 chars):', content.substring(0, 500));
+  console.log('📝 Amostra do conteúdo (primeiros 200 chars):', content.substring(0, 200));
   
   const data: any = {
     images: ["https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=400"]
   };
 
   try {
-    // Limpar conteúdo removendo caracteres especiais que podem atrapalhar o parsing
-    const cleanContent = content.replace(/[\[\]()]/g, '').replace(/\s+/g, ' ');
+    // Limpar conteúdo básico
+    const cleanContent = content.replace(/\s+/g, ' ').trim();
     
-    // Extrair título do imóvel - melhorados os padrões
+    // Extrair título do imóvel - padrões simples e seguros
     const titlePatterns = [
-      // Padrão específico: "Apartamento com X quartos" etc
-      /(Apartamento|Casa|Cobertura|Studio|Kitnet)\s+(?:com\s+)?(\d+)\s+quarto[s]?[^.\n]{0,50}/i,
-      // Padrão: "X quartos + localização"
-      /(\d+)\s+quarto[s]?[^.\n]*?(?:em|no|na)\s+([A-Za-zÀ-ÿ\s]{3,30})/i,
-      // Padrão geral de título de imóvel
-      /(Apartamento|Casa|Cobertura|Studio|Kitnet)[^.\n]{10,80}(?:aluguel|alugar)/i,
-      // Fallback: primeiro texto que menciona tipo + características
-      /(Apartamento|Casa|Cobertura|Studio|Kitnet)[^.\n]{15,60}/i
+      /Apartamento\s+(?:com\s+)?\d+\s+quarto[s]?[^.\n]{10,50}/i,
+      /Casa\s+(?:com\s+)?\d+\s+quarto[s]?[^.\n]{10,50}/i,
+      /\d+\s+quarto[s]?[^.\n]{15,50}(?:em|no|na)\s+[A-Za-z\s]{3,20}/i,
+      /Apartamento[^.\n]{15,60}(?:aluguel|alugar)/i
     ];
 
     for (const pattern of titlePatterns) {
-      const match = cleanContent.match(pattern);
-      if (match && match[0] && match[0].length > 10 && match[0].length < 100) {
-        // Limpar o título extraído
-        let title = match[0].trim()
-          .replace(/^\W+|\W+$/g, '') // Remove caracteres especiais do início/fim
-          .replace(/\s+/g, ' '); // Normaliza espaços
-        
-        // Validar se não é um título genérico demais
-        if (!title.toLowerCase().includes('apartamentos para alugar') && 
-            !title.toLowerCase().includes('imóveis para') &&
-            title.length > 15) {
-          data.title = title;
-          console.log('🏠 Título encontrado:', data.title);
-          break;
+      try {
+        const match = cleanContent.match(pattern);
+        if (match && match[0] && match[0].length > 15 && match[0].length < 80) {
+          let title = match[0].trim().replace(/\s+/g, ' ');
+          
+          // Validar se não é genérico
+          if (!title.toLowerCase().includes('apartamentos para alugar') && 
+              !title.toLowerCase().includes('imóveis para')) {
+            data.title = title;
+            console.log('🏠 Título encontrado:', data.title);
+            break;
+          }
         }
+      } catch (regexError) {
+        console.error('Erro no regex de título:', regexError);
+        continue;
       }
     }
 
-    // Extrair endereço - padrões melhorados
+    // Extrair endereço - padrões simples
     const addressPatterns = [
-      // Padrão com CEP
-      /([A-ZÀ-ÿ][^,\n]*[A-Za-zÀ-ÿ][^,\n]*,\s*[^,\n]*\d{5}-?\d{3}[^,\n]*)/i,
-      // Padrão: Rua/Avenida + nome + número + bairro + cidade
-      /((?:Rua|Avenida|Alameda|Travessa)\s+[^,\n]+,\s*\d+[^,\n]*,\s*[A-ZÀ-ÿ][^,\n]*,\s*[A-ZÀ-ÿ][^,\n]*)/i,
-      // Padrão: Nome da rua + número + bairro + cidade
-      /([A-ZÀ-ÿ][^,\n]*,\s*\d+[^,\n]*,\s*[A-ZÀ-ÿ][^,\n]*,\s*[A-ZÀ-ÿ][^,\n]*)/i,
-      // Padrão simplificado: bairro + cidade
-      /([A-ZÀ-ÿ][A-Za-zÀ-ÿ\s]{3,25}),\s*([A-ZÀ-ÿ][A-Za-zÀ-ÿ\s]{3,25})/i
+      /Rua\s+[^,\n]+,\s*\d+[^,\n]*,\s*[A-Za-z\s]+/i,
+      /Avenida\s+[^,\n]+,\s*\d+[^,\n]*,\s*[A-Za-z\s]+/i,
+      /[A-Z][A-Za-z\s]+,\s*\d+[^,\n]*,\s*[A-Za-z\s]+/i
     ];
 
     for (const pattern of addressPatterns) {
-      const match = cleanContent.match(pattern);
-      if (match && match[1]) {
-        let address = match[1].trim()
-          .replace(/^\W+|\W+$/g, '')
-          .replace(/\s+/g, ' ');
-        
-        // Validar se não é um endereço genérico
-        if (address.length > 10 && 
-            !address.toLowerCase().includes('apartamentos para') &&
-            !address.toLowerCase().includes('imóveis para')) {
-          data.address = address;
-          console.log('📍 Endereço encontrado:', data.address);
-          break;
+      try {
+        const match = cleanContent.match(pattern);
+        if (match && match[0] && match[0].length > 10 && match[0].length < 100) {
+          let address = match[0].trim().replace(/\s+/g, ' ');
+          
+          if (!address.toLowerCase().includes('apartamentos para') &&
+              !address.toLowerCase().includes('imóveis para')) {
+            data.address = address;
+            console.log('📍 Endereço encontrado:', data.address);
+            break;
+          }
         }
+      } catch (regexError) {
+        console.error('Erro no regex de endereço:', regexError);
+        continue;
       }
     }
 
-    // Extrair valores financeiros - melhorados
-    const rentPatterns = [
-      /(?:aluguel|valor)[:\s]*R\$\s*([\d.,]+)/i,
-      /R\$\s*([\d.,]+)(?:\s*\/\s*mês|\s*por\s*mês|\s*mensais?)/i,
-      /preço[:\s]*R\$\s*([\d.,]+)/i
-    ];
-
-    for (const pattern of rentPatterns) {
-      const match = cleanContent.match(pattern);
-      if (match && match[1]) {
-        const value = parseInt(match[1].replace(/[.,]/g, ''));
-        if (value > 500 && value < 50000) { // Validação de range razoável
+    // Extrair valores - padrões básicos
+    try {
+      const rentMatch = cleanContent.match(/R\$\s*(\d{1,2}\.?\d{3,4})/i);
+      if (rentMatch && rentMatch[1]) {
+        const value = parseInt(rentMatch[1].replace(/\D/g, ''));
+        if (value > 500 && value < 50000) {
           data.rent = value;
           console.log('💰 Aluguel encontrado:', data.rent);
-          break;
         }
       }
+    } catch (error) {
+      console.error('Erro ao extrair aluguel:', error);
     }
 
-    const condoPatterns = [
-      /condomínio[:\s]*R\$\s*([\d.,]+)/i,
-      /taxa[:\s]*R\$\s*([\d.,]+)/i
-    ];
-
-    for (const pattern of condoPatterns) {
-      const match = cleanContent.match(pattern);
-      if (match && match[1]) {
-        const value = parseInt(match[1].replace(/[.,]/g, ''));
-        if (value > 0 && value < 5000) {
-          data.condo = value;
-          console.log('🏢 Condomínio encontrado:', data.condo);
-          break;
-        }
-      }
-    }
-
-    // Extrair características - padrões melhorados
-    const bedroomPatterns = [
-      /(\d+)\s+(?:quarto[s]?|dormitório[s]?)/i,
-      /(\d+)\s*q(?:to[s]?)?/i
-    ];
-
-    for (const pattern of bedroomPatterns) {
-      const match = cleanContent.match(pattern);
-      if (match && match[1]) {
-        const bedrooms = parseInt(match[1]);
+    // Extrair características básicas
+    try {
+      const bedroomMatch = cleanContent.match(/(\d+)\s+quarto[s]?/i);
+      if (bedroomMatch && bedroomMatch[1]) {
+        const bedrooms = parseInt(bedroomMatch[1]);
         if (bedrooms >= 0 && bedrooms <= 10) {
           data.bedrooms = bedrooms;
-          console.log('🛏️ Quartos encontrados:', data.bedrooms);
-          break;
+          console.log('🛏️ Quartos:', data.bedrooms);
         }
       }
+    } catch (error) {
+      console.error('Erro ao extrair quartos:', error);
     }
 
-    const bathroomPatterns = [
-      /(\d+)\s+banheiro[s]?/i,
-      /(\d+)\s*bwc[s]?/i
-    ];
-
-    for (const pattern of bathroomPatterns) {
-      const match = cleanContent.match(pattern);
-      if (match && match[1]) {
-        const bathrooms = parseInt(match[1]);
+    try {
+      const bathroomMatch = cleanContent.match(/(\d+)\s+banheiro[s]?/i);
+      if (bathroomMatch && bathroomMatch[1]) {
+        const bathrooms = parseInt(bathroomMatch[1]);
         if (bathrooms >= 1 && bathrooms <= 10) {
           data.bathrooms = bathrooms;
-          console.log('🚿 Banheiros encontrados:', data.bathrooms);
-          break;
+          console.log('🚿 Banheiros:', data.bathrooms);
         }
       }
+    } catch (error) {
+      console.error('Erro ao extrair banheiros:', error);
     }
 
-    const areaPatterns = [
-      /(\d+)\s*m[²2](?:\s*(?:privativa|útil|total))?/i,
-      /área[:\s]*(\d+)\s*m/i
-    ];
-
-    for (const pattern of areaPatterns) {
-      const match = cleanContent.match(pattern);
-      if (match && match[1]) {
-        const area = parseInt(match[1]);
+    try {
+      const areaMatch = cleanContent.match(/(\d+)\s*m[²2]/i);
+      if (areaMatch && areaMatch[1]) {
+        const area = parseInt(areaMatch[1]);
         if (area >= 20 && area <= 1000) {
           data.area = area;
-          console.log('📐 Área encontrada:', data.area);
-          break;
+          console.log('📐 Área:', data.area);
         }
       }
-    }
-
-    const parkingPatterns = [
-      /(\d+)\s*vaga[s]?(?:\s*de\s*garagem)?/i,
-      /garagem[:\s]*(\d+)/i
-    ];
-
-    for (const pattern of parkingPatterns) {
-      const match = cleanContent.match(pattern);
-      if (match && match[1]) {
-        const parking = parseInt(match[1]);
-        if (parking >= 0 && parking <= 5) {
-          data.parkingSpaces = parking;
-          console.log('🚗 Vagas encontradas:', data.parkingSpaces);
-          break;
-        }
-      }
+    } catch (error) {
+      console.error('Erro ao extrair área:', error);
     }
 
     console.log('✅ Dados extraídos do conteúdo:', {
       hasTitle: !!data.title,
       hasAddress: !!data.address,
       hasRent: !!data.rent,
-      bedrooms: data.bedrooms,
-      area: data.area
+      bedrooms: data.bedrooms
     });
 
   } catch (error) {
-    console.error('💥 Erro ao analisar conteúdo:', error);
+    console.error('💥 Erro geral ao analisar conteúdo:', error);
   }
 
-  // Validar qualidade dos dados extraídos
-  const hasValidTitle = data.title && data.title.length > 10 && 
-    !data.title.toLowerCase().includes('apartamentos para alugar');
-  const hasValidAddress = data.address && data.address.length > 10 && 
-    !data.address.toLowerCase().includes('apartamentos para');
+  // Validar qualidade dos dados
+  const hasValidTitle = data.title && data.title.length > 10;
+  const hasValidAddress = data.address && data.address.length > 10;
 
   console.log('🔍 Validação:', { hasValidTitle, hasValidAddress });
 
-  // Se não conseguiu extrair dados essenciais ou são dados genéricos, usar fallback da URL
+  // Se dados insuficientes, usar fallback da URL
   if (!hasValidTitle || !hasValidAddress) {
-    console.log('🔄 Dados insuficientes ou genéricos, usando fallback da URL');
-    const fallback = extractFromVivaRealUrl(url);
-    
-    // Mesclar dados mantendo os válidos do scraping
-    return {
-      ...fallback,
-      ...(data.rent && { rent: data.rent }),
-      ...(data.condo && { condo: data.condo }),
-      ...(data.bedrooms && { bedrooms: data.bedrooms }),
-      ...(data.bathrooms && { bathrooms: data.bathrooms }),
-      ...(data.area && { area: data.area }),
-      ...(data.parkingSpaces !== undefined && { parkingSpaces: data.parkingSpaces }),
-      images: data.images
-    };
+    console.log('🔄 Dados insuficientes, usando fallback da URL');
+    try {
+      const fallback = extractFromVivaRealUrl(url);
+      
+      return {
+        ...fallback,
+        ...(data.rent && { rent: data.rent }),
+        ...(data.bedrooms && { bedrooms: data.bedrooms }),
+        ...(data.bathrooms && { bathrooms: data.bathrooms }),
+        ...(data.area && { area: data.area }),
+        images: data.images
+      };
+    } catch (fallbackError) {
+      console.error('💥 Erro no fallback:', fallbackError);
+      return {
+        title: 'Imóvel extraído',
+        address: 'Endereço não encontrado',
+        rent: 3000,
+        condo: 450,
+        iptu: 150,
+        bedrooms: 2,
+        bathrooms: 1,
+        area: 70,
+        parkingSpaces: 1,
+        fireInsurance: 50,
+        otherFees: 0,
+        description: 'Imóvel extraído automaticamente',
+        images: data.images
+      };
+    }
   }
 
   // Completar dados padrão
@@ -366,12 +321,12 @@ function parseVivaRealContent(content: string, url: string): any {
     title: data.title,
     address: data.address,
     rent: data.rent || 3000,
-    condo: data.condo || Math.floor((data.rent || 3000) * 0.15),
+    condo: Math.floor((data.rent || 3000) * 0.15),
     iptu: Math.floor((data.rent || 3000) * 0.05),
     bedrooms: data.bedrooms || 2,
     bathrooms: data.bathrooms || 1,
     area: data.area || 70,
-    parkingSpaces: data.parkingSpaces !== undefined ? data.parkingSpaces : (data.bedrooms >= 2 ? 1 : 0),
+    parkingSpaces: data.bedrooms >= 2 ? 1 : 0,
     fireInsurance: 50,
     otherFees: 0,
     description: data.title,
