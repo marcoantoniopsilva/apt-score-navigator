@@ -878,6 +878,7 @@ function isPropertyImage(url: string): boolean {
     if (width >= 300 && height >= 200) {
       return true;
     }
+  }
   
   // Por padrão, aceitar se passou nas outras validações
   return true;
