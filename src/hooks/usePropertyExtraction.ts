@@ -3,6 +3,7 @@ import { extractPropertyFromUrl } from '@/services/propertyExtractionService';
 import { useToast } from '@/hooks/use-toast';
 import { useTabVisibility } from '@/hooks/useTabVisibility';
 import { useSessionMonitor } from '@/hooks/useSessionMonitor';
+import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
 /**
@@ -14,20 +15,25 @@ export const usePropertyExtraction = () => {
   const { toast } = useToast();
   const { onTabReactivated } = useTabVisibility();
   const { validateSession } = useSessionMonitor();
+  const { session, user } = useAuth();
   const extractionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Reset extraction state when tab is reactivated
   useEffect(() => {
     const cleanup = onTabReactivated(() => {
-      console.log('🔄 Tab reactivated - resetting extraction state');
-      if (isExtracting) {
+      console.log('🔄 Tab reativado: resetando extração e verificando integridade');
+
+      // Sempre tentar resetar, mesmo que a aba tenha sido trocada antes do início da extração
+      if (isExtracting || (!session || !user)) {
         setIsExtracting(false);
         toast({
-          title: "Reativação de aba detectada",
-          description: "Por favor, tente a extração novamente se necessário.",
+          title: "A aba foi reativada",
+          description: "O processo de extração foi interrompido ou inválido. Tente novamente.",
           variant: "default"
         });
       }
+
+      // Opcional: limpar dados antigos, cancelar requisições pendentes, ou até iniciar uma nova extração automática se for o caso
     });
 
     return cleanup;
