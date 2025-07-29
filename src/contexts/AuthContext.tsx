@@ -152,14 +152,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     mountedRef.current = true;
-    console.log('AuthContext: Setting up auth state listener');
+    console.log('🚀 AuthContext: Setting up auth state listener');
 
     // Set up auth state listener with anti-loop protection
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
         if (!mountedRef.current) return;
         
-        console.log('Auth state changed:', event, newSession?.user?.email);
+        console.log('🔄 Auth state changed:', event);
+        console.log('👤 User email:', newSession?.user?.email || 'No user');
+        console.log('🎫 Has access token:', !!newSession?.access_token);
+        console.log('🎟️ Has refresh token:', !!newSession?.refresh_token);
         
         // Prevent loops by checking if session actually changed
         const sessionChanged = 
@@ -168,9 +171,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           (session?.access_token !== newSession?.access_token);
 
         if (sessionChanged) {
+          console.log('✅ Session state updated:', !!newSession);
           setSession(newSession);
           setUser(newSession?.user ?? null);
-          console.log('Session updated:', !!newSession);
+        } else {
+          console.log('⏭️ Session unchanged, skipping update');
         }
         
         setLoading(false);
@@ -178,7 +183,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     );
 
     // Initial session check with timeout
-    console.log('AuthContext: Checking for existing session');
+    console.log('🔍 AuthContext: Checking for existing session');
     const sessionCheckTimeout = setTimeout(async () => {
       if (!mountedRef.current) return;
       
@@ -188,14 +193,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (!mountedRef.current) return;
         
         if (error) {
-          console.error('Initial session check error:', error);
+          console.error('❌ Initial session check error:', error);
         } else {
-          console.log('Initial session found:', !!initialSession);
+          console.log('📊 Initial session check result:');
+          console.log('   - Has session:', !!initialSession);
+          console.log('   - User email:', initialSession?.user?.email || 'No user');
+          console.log('   - Access token:', !!initialSession?.access_token);
+          console.log('   - Refresh token:', !!initialSession?.refresh_token);
+          
           setSession(initialSession);
           setUser(initialSession?.user ?? null);
         }
       } catch (error) {
-        console.error('Session check failed:', error);
+        console.error('💥 Session check failed:', error);
       } finally {
         if (mountedRef.current) {
           setLoading(false);
@@ -229,10 +239,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
+    console.log('🔐 AuthContext: Attempting sign in for:', email);
+    
+    const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
+    
+    console.log('📊 Sign in result:');
+    console.log('   - Error:', error?.message || 'None');
+    console.log('   - Has session:', !!data.session);
+    console.log('   - User email:', data.user?.email || 'No user');
     
     return { error };
   };

@@ -14,6 +14,8 @@ import Onboarding from "./pages/Onboarding";
 import { useSessionRefetchOnVisibility } from "@/hooks/useSessionRefetchOnVisibility";
 import { TestSessionRenewal } from "@/components/TestSessionRenewal";
 import { useTokenCleanup } from "@/hooks/useTokenCleanup";
+import { SessionDebugPanel } from "@/components/SessionDebugPanel";
+import { SupabaseConnectionTest } from "@/components/SupabaseConnectionTest";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +40,8 @@ const AppWithHooks = () => {
   return (
     <>
       <TestSessionRenewal />
+      <SessionDebugPanel />
+      <SupabaseConnectionTest />
       <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/onboarding" element={<Onboarding />} />
