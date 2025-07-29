@@ -722,6 +722,7 @@ function calculateScore(criteriaName: string, property: any): number {
 
 function extractImagesFromContent(content: string, cleanContent: string): string[] {
   console.log('🔍 Extraindo imagens do conteúdo...');
+  console.log('📄 Tamanho do conteúdo:', content.length);
   
   const imageUrls: string[] = [];
   const processedUrls = new Set<string>();
@@ -741,52 +742,79 @@ function extractImagesFromContent(content: string, cleanContent: string): string
       /https?:\/\/[^\s]*vivareal[^\s]*\.(?:jpg|jpeg|png|webp)/gi
     ];
 
-    for (const pattern of imagePatterns) {
+    console.log('🔍 Aplicando padrões de busca de imagem...');
+    
+    for (let i = 0; i < imagePatterns.length; i++) {
+      const pattern = imagePatterns[i];
+      console.log(`🔍 Testando padrão ${i + 1}/${imagePatterns.length}`);
+      
       let match;
-      while ((match = pattern.exec(content)) !== null) {
+      let matchCount = 0;
+      while ((match = pattern.exec(content)) !== null && imageUrls.length < 20) {
+        matchCount++;
         let imageUrl = match[1] || match[0];
         
         // Limpar a URL
         imageUrl = imageUrl.trim().replace(/['">\)]+$/, '');
         
+        console.log(`🔗 URL encontrada (padrão ${i + 1}, match ${matchCount}):`, imageUrl.substring(0, 100));
+        
         // Validar URL
         if (isValidImageUrl(imageUrl) && !processedUrls.has(imageUrl)) {
           processedUrls.add(imageUrl);
+          console.log(`✅ URL válida, testando se é imagem de propriedade...`);
           
           // Filtrar imagens válidas (não logos)
           if (isPropertyImage(imageUrl)) {
             imageUrls.push(imageUrl);
-            console.log('✅ Imagem válida adicionada:', imageUrl.substring(0, 80) + '...');
-            
-            // Limitar a 10 imagens por performance
-            if (imageUrls.length >= 10) {
-              break;
-            }
+            console.log('✅ Imagem de propriedade adicionada:', imageUrl.substring(0, 100) + '...');
           } else {
-            console.log('❌ Imagem filtrada (logo/banner):', imageUrl.substring(0, 60) + '...');
+            console.log('❌ Imagem filtrada (não é de propriedade)');
           }
+        } else if (processedUrls.has(imageUrl)) {
+          console.log('⚠️ URL já processada, ignorando');
+        } else {
+          console.log('❌ URL inválida:', imageUrl.substring(0, 60));
         }
       }
+      
+      console.log(`📊 Padrão ${i + 1} encontrou ${matchCount} matches, total de imagens válidas: ${imageUrls.length}`);
     }
 
     // Se não encontrou imagens suficientes, tentar buscar no HTML bruto
     if (imageUrls.length < 3) {
-      console.log('🔍 Buscando mais imagens no HTML...');
-      const htmlImagePattern = /src=["']([^"']*(?:vivareal|images)[^"']*\.(?:jpg|jpeg|png|webp)[^"']*)["']/gi;
+      console.log('🔍 Poucas imagens encontradas, buscando mais no HTML...');
+      const htmlImagePattern = /src=["']([^"']*(?:vivareal|images|resizedimgs)[^"']*\.(?:jpg|jpeg|png|webp)[^"']*)["']/gi;
       let htmlMatch;
+      let htmlMatchCount = 0;
       
       while ((htmlMatch = htmlImagePattern.exec(content)) !== null && imageUrls.length < 10) {
+        htmlMatchCount++;
         const imageUrl = htmlMatch[1];
+        
+        console.log(`🔗 HTML match ${htmlMatchCount}:`, imageUrl.substring(0, 100));
         
         if (isValidImageUrl(imageUrl) && !processedUrls.has(imageUrl) && isPropertyImage(imageUrl)) {
           processedUrls.add(imageUrl);
           imageUrls.push(imageUrl);
-          console.log('✅ Imagem HTML adicionada:', imageUrl.substring(0, 80) + '...');
+          console.log('✅ Imagem HTML adicionada:', imageUrl.substring(0, 100) + '...');
         }
       }
+      
+      console.log(`📊 HTML pattern encontrou ${htmlMatchCount} matches adicionais`);
     }
 
-    console.log(`📸 Total de imagens extraídas: ${imageUrls.length}`);
+    console.log(`📸 RESULTADO FINAL: ${imageUrls.length} imagens extraídas`);
+    
+    if (imageUrls.length === 0) {
+      console.log('⚠️ NENHUMA IMAGEM ENCONTRADA - Mostrando amostra do conteúdo para debug:');
+      console.log('📝 Primeiros 500 caracteres:', content.substring(0, 500));
+      console.log('📝 Procurando por "vivareal" no conteúdo:', content.toLowerCase().includes('vivareal'));
+      console.log('📝 Procurando por "resizedimgs" no conteúdo:', content.toLowerCase().includes('resizedimgs'));
+      console.log('📝 Procurando por ".jpg" no conteúdo:', content.toLowerCase().includes('.jpg'));
+      console.log('📝 Procurando por ".webp" no conteúdo:', content.toLowerCase().includes('.webp'));
+    }
+    
     return imageUrls;
 
   } catch (error) {
