@@ -12,11 +12,6 @@ import NotFound from "./pages/NotFound";
 import Landing from "./pages/Landing";
 import Onboarding from "./pages/Onboarding";
 import { useSessionRefetchOnVisibility } from "@/hooks/useSessionRefetchOnVisibility";
-import { TestSessionRenewal } from "@/components/TestSessionRenewal";
-import { useTokenCleanup } from "@/hooks/useTokenCleanup";
-import { SessionDebugPanel } from "@/components/SessionDebugPanel";
-import { SupabaseConnectionTest } from "@/components/SupabaseConnectionTest";
-import { EmergencyLogout } from "@/components/EmergencyLogout";
 
 const queryClient = new QueryClient();
 
@@ -35,17 +30,10 @@ const App = () => (
 );
 
 const AppWithHooks = () => {
-  // Usar apenas um hook de sessão para evitar conflitos
-  // useSessionRefetchOnVisibility();
-  useTokenCleanup();
+  useSessionRefetchOnVisibility();
 
   return (
-    <>
-      <EmergencyLogout />
-      <TestSessionRenewal />
-      <SessionDebugPanel />
-      <SupabaseConnectionTest />
-      <Routes>
+    <Routes>
       <Route path="/" element={<Landing />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route path="/auth" element={<Auth />} />
@@ -58,7 +46,6 @@ const AppWithHooks = () => {
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
-    </>
   );
 };
 

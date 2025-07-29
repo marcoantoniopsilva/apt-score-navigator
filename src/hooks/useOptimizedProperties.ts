@@ -21,23 +21,13 @@ export const useOptimizedProperties = () => {
     queryKey: ['properties', user?.id],
     queryFn: async (): Promise<Property[]> => {
       if (!user?.id) {
-        console.log('🚨 useOptimizedProperties: No user ID available');
         return [];
       }
-
-      console.log('🔍 useOptimizedProperties: Loading properties for user', user.id);
-      console.log('📊 useOptimizedProperties: User object:', { 
-        id: user.id, 
-        email: user.email,
-        authenticated: !!user
-      });
       
       try {
         const savedProperties = await loadSavedProperties();
-        console.log('📦 useOptimizedProperties: Raw properties from DB:', savedProperties?.length || 0);
         
         if (!savedProperties || savedProperties.length === 0) {
-          console.log('⚠️ useOptimizedProperties: No properties found in database');
           return [];
         }
         
@@ -75,8 +65,6 @@ export const useOptimizedProperties = () => {
         const uniqueProperties = convertedProperties.filter((property, index, self) => 
           index === self.findIndex(p => p.id === property.id)
         );
-
-        console.log('✅ useOptimizedProperties: Loaded', uniqueProperties.length, 'unique properties');
         
         if (uniqueProperties.length > 0) {
           toast({
@@ -88,7 +76,7 @@ export const useOptimizedProperties = () => {
         return uniqueProperties;
         
       } catch (error) {
-        console.error('💥 useOptimizedProperties: Error loading properties:', error);
+        console.error('Error loading properties:', error);
         throw error;
       }
     },

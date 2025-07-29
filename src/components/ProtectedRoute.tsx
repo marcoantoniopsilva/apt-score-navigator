@@ -10,16 +10,8 @@ interface ProtectedRouteProps {
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const { user, session, loading } = useAuth();
-  
-  console.log('🛡️ ProtectedRoute: Checking access');
-  console.log('   - Loading:', loading);
-  console.log('   - User:', !!user);
-  console.log('   - Session:', !!session);
-  console.log('   - User email:', user?.email || 'None');
-  console.log('   - Current location:', window.location.pathname);
 
   if (loading) {
-    console.log('🔄 ProtectedRoute: Still loading, showing loading state');
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
         <div className="text-center">
@@ -36,11 +28,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   }
 
   if (!user || !session) {
-    console.log('🚫 ProtectedRoute: No valid user/session, redirecting to /auth');
     return <Navigate to="/auth" replace />;
   }
 
-  console.log('✅ ProtectedRoute: Access granted');
   return <>{children}</>;
 };
 

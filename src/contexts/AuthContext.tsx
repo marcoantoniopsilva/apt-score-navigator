@@ -152,17 +152,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   useEffect(() => {
     mountedRef.current = true;
-    console.log('🚀 AuthContext: Setting up auth state listener');
 
     // Set up auth state listener with anti-loop protection
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, newSession) => {
         if (!mountedRef.current) return;
-        
-        console.log('🔄 Auth state changed:', event);
-        console.log('👤 User email:', newSession?.user?.email || 'No user');
-        console.log('🎫 Has access token:', !!newSession?.access_token);
-        console.log('🎟️ Has refresh token:', !!newSession?.refresh_token);
         
         // Prevent loops by checking if session actually changed
         const sessionChanged = 
@@ -171,11 +165,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           (session?.access_token !== newSession?.access_token);
 
         if (sessionChanged) {
-          console.log('✅ Session state updated:', !!newSession);
           setSession(newSession);
           setUser(newSession?.user ?? null);
-        } else {
-          console.log('⏭️ Session unchanged, skipping update');
         }
         
         setLoading(false);
@@ -214,7 +205,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, 100); // Small delay to prevent race conditions
 
     return () => {
-      console.log('AuthContext: Cleanup');
       mountedRef.current = false;
       clearTimeout(sessionCheckTimeout);
       if (refreshTimeoutRef.current) {
@@ -239,52 +229,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signIn = async (email: string, password: string) => {
-    console.log('🔐 AuthContext: Attempting sign in for:', email);
-    
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
     
-    console.log('📊 Sign in result:');
-    console.log('   - Error:', error?.message || 'None');
-    console.log('   - Has session:', !!data.session);
-    console.log('   - User email:', data.user?.email || 'No user');
-    
     return { error };
   };
 
   const signOut = async () => {
-    console.log('🚪 AuthContext: Signing out and clearing all tokens');
-    
     try {
       // Limpar estado local primeiro
       setSession(null);
       setUser(null);
       
-      // Limpar localStorage
-      localStorage.removeItem('sb-eepkixxqvelppxzfwoin-auth-token');
-      localStorage.clear(); // Limpar tudo para garantir
-      
       // Fazer logout no Supabase
-      const { error } = await supabase.auth.signOut();
-      
-      if (error) {
-        console.error('Erro no logout:', error);
-      } else {
-        console.log('✅ Logout realizado com sucesso');
-      }
-      
-      // Forçar reload da página para limpar qualquer estado residual
-      window.location.href = '/auth';
+      await supabase.auth.signOut();
       
     } catch (error) {
-      console.error('💥 Erro durante logout:', error);
-      // Mesmo com erro, limpar estado e redirecionar
+      console.error('Erro durante logout:', error);
+      // Mesmo com erro, limpar estado
       setSession(null);
       setUser(null);
-      localStorage.clear();
-      window.location.href = '/auth';
     }
   };
 
