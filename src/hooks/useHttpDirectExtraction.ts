@@ -23,42 +23,7 @@ export const useHttpDirectExtraction = () => {
     setIsExtracting(true);
 
     try {
-      // Força refresh da sessão antes de fazer a chamada
       console.log('🔄 Verificando e atualizando sessão antes da extração...');
-      
-      const sessionResult = await supabase.auth.getSession();
-      console.log('📋 Resultado da getSession():', {
-        data: !!sessionResult.data,
-        session: !!sessionResult.data?.session,
-        error: sessionResult.error,
-        accessToken: !!sessionResult.data?.session?.access_token
-      });
-      
-      const currentSession = sessionResult.data?.session;
-      
-      if (!currentSession) {
-        const error = 'Nenhuma sessão encontrada após verificação.';
-        console.error('❌ Sessão não encontrada:', sessionResult);
-        toast({
-          title: "Erro de autenticação",
-          description: error,
-          variant: "destructive",
-        });
-        return { success: false, error };
-      }
-      
-      if (!currentSession.access_token) {
-        const error = 'Token de acesso não encontrado na sessão.';
-        console.error('❌ Token de acesso inválido:', currentSession);
-        toast({
-          title: "Erro de autenticação",
-          description: error,
-          variant: "destructive",
-        });
-        return { success: false, error };
-      }
-
-      console.log('✅ Sessão válida confirmada');
 
       if (!url || !url.trim()) {
         const error = 'URL é obrigatória';
@@ -70,10 +35,66 @@ export const useHttpDirectExtraction = () => {
         return { success: false, error };
       }
 
+      // Estratégia robusta: tenta diferentes formas de obter o token
+      let accessToken: string | undefined;
+
+      try {
+        // Tentativa 1: getSession() com timeout de 3 segundos
+        console.log('🔍 Tentativa 1: getSession() com timeout...');
+        
+        const sessionPromise = supabase.auth.getSession();
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout na getSession')), 3000)
+        );
+        
+        const sessionResult = await Promise.race([sessionPromise, timeoutPromise]) as any;
+        
+        if (sessionResult?.data?.session?.access_token) {
+          accessToken = sessionResult.data.session.access_token;
+          console.log('✅ Token obtido via getSession()');
+        }
+      } catch (error) {
+        console.log('⚠️ getSession() falhou:', error);
+      }
+
+      // Tentativa 2: usar token da sessão em cache do AuthContext  
+      if (!accessToken && session?.access_token) {
+        accessToken = session.access_token;
+        console.log('✅ Token obtido via AuthContext cache');
+      }
+
+      // Tentativa 3: verificar localStorage diretamente
+      if (!accessToken) {
+        try {
+          console.log('🔍 Tentativa 3: verificando localStorage...');
+          const projectId = 'eepkixxqvelppxzfwoin';
+          const supabaseAuth = localStorage.getItem(`sb-${projectId}-auth-token`);
+          if (supabaseAuth) {
+            const authData = JSON.parse(supabaseAuth);
+            if (authData?.access_token) {
+              accessToken = authData.access_token;
+              console.log('✅ Token obtido via localStorage');
+            }
+          }
+        } catch (error) {
+          console.log('⚠️ localStorage falhou:', error);
+        }
+      }
+
+      if (!accessToken) {
+        const error = 'Não foi possível obter token de acesso. Faça login novamente.';
+        console.error('❌ Todas as tentativas de obter token falharam');
+        toast({
+          title: "Erro de autenticação",
+          description: error,
+          variant: "destructive",
+        });
+        return { success: false, error };
+      }
+
       console.log('🚀 useHttpDirectExtraction: Iniciando extração direta via HTTP');
       console.log('📍 URL:', url);
-      console.log('🔑 Current session token presente:', !!currentSession.access_token);
-      console.log('🔑 Current session token (primeiros 50 chars):', currentSession.access_token?.substring(0, 50) + '...');
+      console.log('🔑 Token obtido com sucesso');
 
       // Construir URL da função usando o project ID
       const projectId = 'eepkixxqvelppxzfwoin';
@@ -81,18 +102,13 @@ export const useHttpDirectExtraction = () => {
       const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlcGtpeHhxdmVscHB4emZ3b2luIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzNTQ3MDIsImV4cCI6MjA2MDkzMDcwMn0.fPkjY979Pr2fKjVds0Byq3UAQ6Z5w0bBGaS48_LTBA4';
       
       console.log('🌐 Function URL:', functionUrl);
-      console.log('🔐 Apikey (primeiros 50 chars):', supabaseAnonKey.substring(0, 50) + '...');
-
-      const requestPayload = { url };
-      console.log('📦 Payload:', requestPayload);
-
       console.log('⏳ Fazendo chamada HTTP...');
 
       const response = await fetch(functionUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${currentSession.access_token}`, // Usa a sessão atualizada
+          'Authorization': `Bearer ${accessToken}`,
           'apikey': supabaseAnonKey,
         },
         body: JSON.stringify({ url })
