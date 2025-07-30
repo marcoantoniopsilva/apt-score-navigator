@@ -176,39 +176,42 @@ export type Database = {
         }
         Relationships: []
       }
-      subscribers: {
+      user_addresses: {
         Row: {
+          address: string
+          cep: string | null
           created_at: string
-          email: string
+          custom_label: string | null
           id: string
-          stripe_customer_id: string | null
-          subscribed: boolean
-          subscription_end: string | null
-          subscription_tier: string | null
+          label: string
+          latitude: number | null
+          longitude: number | null
           updated_at: string
-          user_id: string | null
+          user_id: string
         }
         Insert: {
+          address: string
+          cep?: string | null
           created_at?: string
-          email: string
+          custom_label?: string | null
           id?: string
-          stripe_customer_id?: string | null
-          subscribed?: boolean
-          subscription_end?: string | null
-          subscription_tier?: string | null
+          label: string
+          latitude?: number | null
+          longitude?: number | null
           updated_at?: string
-          user_id?: string | null
+          user_id: string
         }
         Update: {
+          address?: string
+          cep?: string | null
           created_at?: string
-          email?: string
+          custom_label?: string | null
           id?: string
-          stripe_customer_id?: string | null
-          subscribed?: boolean
-          subscription_end?: string | null
-          subscription_tier?: string | null
+          label?: string
+          latitude?: number | null
+          longitude?: number | null
           updated_at?: string
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: []
       }

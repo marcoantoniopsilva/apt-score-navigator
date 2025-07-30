@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RegiaoSelector } from '@/components/RegiaoSelector';
+import { AddressSelector } from '@/components/AddressSelector';
+import { UserAddress } from '@/types/address';
+import { AddressService } from '@/services/addressService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface PreferencesFormProps {
   intencao: 'alugar' | 'comprar';
@@ -39,6 +43,28 @@ export const PreferencesForm: React.FC<PreferencesFormProps> = ({
 }) => {
   const [faixaPreco, setFaixaPreco] = useState<string>('');
   const [regiaoReferencia, setRegiaoReferencia] = useState<string>('');
+  const [userAddresses, setUserAddresses] = useState<UserAddress[]>([]);
+  const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserId(user.id);
+        loadUserAddresses(user.id);
+      }
+    };
+    checkUser();
+  }, []);
+
+  const loadUserAddresses = async (userId: string) => {
+    try {
+      const addresses = await AddressService.getUserAddresses(userId);
+      setUserAddresses(addresses);
+    } catch (error) {
+      console.error('Erro ao carregar endereços:', error);
+    }
+  };
 
   const faixasPreco = intencao === 'alugar' ? FAIXAS_PRECO_ALUGUEL : FAIXAS_PRECO_COMPRA;
   const tipoImovel = intencao === 'alugar' ? 'alugar' : 'comprar';
@@ -83,6 +109,15 @@ export const PreferencesForm: React.FC<PreferencesFormProps> = ({
           onChange={setRegiaoReferencia}
           placeholder="Ex: Vila Madalena, São Paulo, Centro..."
         />
+
+        {/* Seção de endereços pessoais */}
+        <div className="border-t pt-6">
+          <AddressSelector
+            userAddresses={userAddresses}
+            onAddressesChange={() => userId && loadUserAddresses(userId)}
+            isEmbedded
+          />
+        </div>
 
         <div className="flex gap-3 pt-4">
           <Button variant="outline" onClick={onBack} className="flex-1">

@@ -4,7 +4,8 @@ import { Property, CriteriaWeights } from '@/types/property';
 import { Card } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ChevronDown, ChevronUp, MapPin, Star } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { calculateFinalScore } from '@/utils/scoreCalculator';
 import { PropertyHeader } from '@/components/PropertyHeader';
@@ -13,6 +14,7 @@ import { PropertyCosts } from '@/components/PropertyCosts';
 import { PropertyScores } from '@/components/PropertyScores';
 import { PropertyImage } from '@/components/PropertyImage';
 import { PropertyLocationSummary } from '@/components/PropertyLocationSummary';
+import { ProximityCalculator } from '@/utils/proximityCalculator';
 
 interface PropertyCardProps {
   property: Property;
@@ -137,6 +139,32 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
 
       {/* Informações básicas - sempre visível */}
       <PropertyBasicInfo property={property} />
+
+      {/* Distâncias de proximidade - sempre visível se existirem */}
+      {property.proximityDistances && property.proximityDistances.length > 0 && (
+        <div className="mb-4 space-y-2">
+          {property.proximityDistances.slice(0, 2).map((distance, index) => (
+            <div key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
+              <MapPin className="h-3 w-3" />
+              <span>
+                {ProximityCalculator.formatDistance(distance.distance)} de {distance.addressLabel}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Bônus de proximidade */}
+      {property.proximityBonuses && property.proximityBonuses.length > 0 && (
+        <div className="mb-4 flex flex-wrap gap-2">
+          {property.proximityBonuses.map((bonus, index) => (
+            <Badge key={index} variant="secondary" className="text-xs">
+              <Star className="h-3 w-3 mr-1" />
+              Mais próximo: {bonus.addressLabel}
+            </Badge>
+          ))}
+        </div>
+      )}
 
       {/* Custo total resumido - sempre visível */}
       <div className="mb-4 p-3 bg-muted rounded-lg">

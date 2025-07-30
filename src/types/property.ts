@@ -18,6 +18,10 @@ export interface Property {
   scores: PropertyScores;
   finalScore: number;
   locationSummary?: string;
+  // Campos de proximidade
+  proximityDistances?: import('@/types/address').PropertyDistance[];
+  proximityBonuses?: import('@/utils/proximityCalculator').ProximityBonus[];
+  adjustedScore?: number;
 }
 
 export interface PropertyScores {
