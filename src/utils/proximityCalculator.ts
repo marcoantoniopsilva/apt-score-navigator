@@ -1,6 +1,7 @@
 import { Property } from '@/types/property';
 import { UserAddress, PropertyDistance } from '@/types/address';
 import { AddressService } from '@/services/addressService';
+import { PropertyGeocodingService } from '@/services/propertyGeocoding';
 
 export interface ProximityBonus {
   addressId: string;
@@ -18,15 +19,18 @@ export interface PropertyWithProximity extends Property {
 
 export class ProximityCalculator {
   // Calcular distâncias e bônus de proximidade para um imóvel
-  static calculateProximityData(
+  static async calculateProximityData(
     property: Property, 
     userAddresses: UserAddress[]
-  ): Pick<PropertyWithProximity, 'proximityDistances' | 'proximityBonuses' | 'adjustedScore'> {
-    // Por enquanto, usar coordenadas simuladas baseadas no endereço
-    // Em produção, isso seria substituído por geocoding real
-    const propertyCoords = this.extractCoordinatesFromAddress(property.address);
+  ): Promise<Pick<PropertyWithProximity, 'proximityDistances' | 'proximityBonuses' | 'adjustedScore'>> {
+    console.log('ProximityCalculator: Calculating proximity for property:', property.id, property.address);
+    console.log('ProximityCalculator: User addresses count:', userAddresses.length);
+    
+    // Tentar obter coordenadas reais do imóvel
+    const propertyCoords = await PropertyGeocodingService.getCachedCoordinates(property.address);
     
     if (!propertyCoords) {
+      console.log('ProximityCalculator: Could not geocode property address:', property.address);
       return {
         proximityDistances: [],
         proximityBonuses: [],
@@ -34,9 +38,17 @@ export class ProximityCalculator {
       };
     }
 
-    // Calcular distâncias para todos os endereços
+    console.log('ProximityCalculator: Property coordinates:', propertyCoords);
+
+    // Calcular distâncias para todos os endereços que possuem coordenadas
     const distances = userAddresses
-      .filter(addr => addr.latitude && addr.longitude)
+      .filter(addr => {
+        const hasCoords = addr.latitude && addr.longitude;
+        if (!hasCoords) {
+          console.log('ProximityCalculator: Address without coordinates:', addr.address);
+        }
+        return hasCoords;
+      })
       .map(address => {
         const distance = AddressService.calculateDistance(
           propertyCoords.lat,
@@ -49,6 +61,8 @@ export class ProximityCalculator {
           ? address.custom_label 
           : this.getAddressDisplayLabel(address.label);
 
+        console.log(`ProximityCalculator: Distance to ${label}: ${Math.round(distance)}m`);
+
         return {
           addressId: address.id,
           addressLabel: label,
@@ -57,6 +71,8 @@ export class ProximityCalculator {
         };
       })
       .sort((a, b) => a.distance - b.distance);
+
+    console.log('ProximityCalculator: Calculated distances:', distances);
 
     // Calcular bônus de proximidade (assumindo que temos outros imóveis para comparar)
     const bonuses: ProximityBonus[] = [];
@@ -70,10 +86,10 @@ export class ProximityCalculator {
   }
 
   // Calcular bônus de proximidade comparando múltiplos imóveis
-  static calculateProximityBonuses(
+  static async calculateProximityBonuses(
     properties: Property[],
     userAddresses: UserAddress[]
-  ): Map<string, ProximityBonus[]> {
+  ): Promise<Map<string, ProximityBonus[]>> {
     const bonusMap = new Map<string, ProximityBonus[]>();
 
     // Agrupar endereços por tipo
@@ -84,15 +100,15 @@ export class ProximityCalculator {
     };
 
     // Para cada tipo de endereço, encontrar o imóvel mais próximo
-    (['trabalho', 'escola', 'outro'] as const).forEach(addressType => {
+    for (const addressType of ['trabalho', 'escola', 'outro'] as const) {
       const addresses = addressGroups[addressType].filter(addr => addr.latitude && addr.longitude);
       
-      addresses.forEach(address => {
+      for (const address of addresses) {
         let closestProperty: { property: Property; distance: number } | null = null;
         
-        properties.forEach(property => {
-          const propertyCoords = this.extractCoordinatesFromAddress(property.address);
-          if (!propertyCoords) return;
+        for (const property of properties) {
+          const propertyCoords = await PropertyGeocodingService.getCachedCoordinates(property.address);
+          if (!propertyCoords) continue;
 
           const distance = AddressService.calculateDistance(
             propertyCoords.lat,
@@ -104,7 +120,7 @@ export class ProximityCalculator {
           if (!closestProperty || distance < closestProperty.distance) {
             closestProperty = { property, distance };
           }
-        });
+        }
 
         // Adicionar bônus ao imóvel mais próximo
         if (closestProperty) {
@@ -123,57 +139,37 @@ export class ProximityCalculator {
 
           bonusMap.set(closestProperty.property.id, existingBonuses);
         }
-      });
-    });
+      }
+    }
 
     return bonusMap;
   }
 
   // Aplicar bônus de proximidade aos scores dos imóveis
-  static applyProximityBonuses(
+  static async applyProximityBonuses(
     properties: Property[],
     bonusMap: Map<string, ProximityBonus[]>
-  ): PropertyWithProximity[] {
-    return properties.map(property => {
+  ): Promise<PropertyWithProximity[]> {
+    const enrichedProperties: PropertyWithProximity[] = [];
+    
+    for (const property of properties) {
       const bonuses = bonusMap.get(property.id) || [];
       const bonusPoints = bonuses.length; // +1 ponto por cada endereço onde é o mais próximo
       
-      const proximityData = this.calculateProximityData(property, []);
+      const proximityData = await this.calculateProximityData(property, []);
       
-      return {
+      enrichedProperties.push({
         ...property,
         proximityDistances: proximityData.proximityDistances,
         proximityBonuses: bonuses,
         adjustedScore: property.finalScore + bonusPoints
-      };
-    });
-  }
-
-  // Extrair coordenadas do endereço (simulação para desenvolvimento)
-  private static extractCoordinatesFromAddress(address: string): { lat: number; lng: number } | null {
-    // Por enquanto, usa coordenadas simuladas de São Paulo
-    // Em produção, isso seria substituído por geocoding real usando Mapbox
-    
-    // Gerar coordenadas baseadas no hash do endereço para ter consistência
-    const hash = this.simpleHash(address);
-    const variance = 0.05; // ~5km de variação
-    
-    return {
-      lat: -23.5505 + ((hash % 1000) / 1000 - 0.5) * variance,
-      lng: -46.6333 + (((hash * 13) % 1000) / 1000 - 0.5) * variance
-    };
-  }
-
-  // Função simples de hash para gerar coordenadas consistentes
-  private static simpleHash(str: string): number {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32bit integer
+      });
     }
-    return Math.abs(hash);
+    
+    return enrichedProperties;
   }
+
+  // Método removido - agora usamos geocoding real via PropertyGeocodingService
 
   private static getAddressDisplayLabel(label: 'trabalho' | 'escola' | 'outro'): string {
     const labels = {

@@ -227,7 +227,7 @@ const Index = () => {
           />
 
           <PropertyList
-            properties={displayedProperties}
+            properties={enrichedProperties.length > 0 ? enrichedProperties : displayedProperties}
             weights={criteriaWeights}
             isLoading={isLoading}
             onUpdate={handleUpdateProperty}

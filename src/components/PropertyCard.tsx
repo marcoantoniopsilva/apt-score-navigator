@@ -143,16 +143,28 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({
       {/* Distâncias de proximidade - sempre visível se existirem */}
       {property.proximityDistances && property.proximityDistances.length > 0 && (
         <div className="mb-4 space-y-2">
-          {property.proximityDistances.slice(0, 2).map((distance, index) => (
-            <div key={index} className="flex items-center gap-2 text-sm text-muted-foreground">
-              <MapPin className="h-3 w-3" />
-              <span>
-                {ProximityCalculator.formatDistance(distance.distance)} de {distance.addressLabel}
-              </span>
+          <p className="text-xs font-medium text-muted-foreground mb-2">DISTÂNCIAS</p>
+          {property.proximityDistances.map((distance, index) => (
+            <div key={`${distance.addressId}-${index}`} className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm">
+                <MapPin className="h-3 w-3 text-blue-600" />
+                <span className="font-medium">{distance.addressLabel}</span>
+              </div>
+              <div className="text-right text-sm">
+                <div className="font-medium text-primary">
+                  {ProximityCalculator.formatDistance(distance.distance)}
+                </div>
+                {distance.travelTime && (
+                  <div className="text-xs text-muted-foreground">
+                    ~{ProximityCalculator.formatTravelTime(distance.travelTime)}
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
       )}
+      
 
       {/* Bônus de proximidade */}
       {property.proximityBonuses && property.proximityBonuses.length > 0 && (

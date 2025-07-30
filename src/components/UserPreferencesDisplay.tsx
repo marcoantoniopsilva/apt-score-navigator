@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, DollarSign, Target, Settings } from 'lucide-react';
 import { UserProfile } from '@/types/onboarding';
+import { UserAddress } from '@/types/address';
+import { AddressDisplaySection } from '@/components/AddressDisplaySection';
+import { useUserAddresses } from '@/hooks/useUserAddresses';
 
 interface UserPreferencesDisplayProps {
   userProfile: UserProfile;
@@ -94,6 +97,8 @@ export const UserPreferencesDisplay: React.FC<UserPreferencesDisplayProps> = ({
   userProfile,
   onEdit
 }) => {
+  const { userAddresses } = useUserAddresses();
+
   return (
     <Card className="mb-6 bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
       <CardHeader>
@@ -182,6 +187,9 @@ export const UserPreferencesDisplay: React.FC<UserPreferencesDisplayProps> = ({
             )}
           </div>
         )}
+        
+        {/* Seção de endereços pessoais */}
+        <AddressDisplaySection userAddresses={userAddresses} />
       </CardContent>
     </Card>
   );

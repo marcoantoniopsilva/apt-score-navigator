@@ -27,19 +27,21 @@ export const useProximityCalculation = (
       
       try {
         // Calcular dados de proximidade para cada propriedade
-        const enriched = properties.map(property => {
-          const proximityData = ProximityCalculator.calculateProximityData(property, userAddresses);
-          
-          return {
-            ...property,
-            proximityDistances: proximityData.proximityDistances,
-            proximityBonuses: proximityData.proximityBonuses,
-            adjustedScore: proximityData.adjustedScore
-          };
-        });
+        const enriched = await Promise.all(
+          properties.map(async (property) => {
+            const proximityData = await ProximityCalculator.calculateProximityData(property, userAddresses);
+            
+            return {
+              ...property,
+              proximityDistances: proximityData.proximityDistances,
+              proximityBonuses: proximityData.proximityBonuses,
+              adjustedScore: proximityData.adjustedScore
+            };
+          })
+        );
 
         // Calcular bônus de proximidade comparando todas as propriedades
-        const bonusMap = ProximityCalculator.calculateProximityBonuses(properties, userAddresses);
+        const bonusMap = await ProximityCalculator.calculateProximityBonuses(properties, userAddresses);
         
         // Aplicar bônus às propriedades
         const withBonuses = enriched.map(property => {

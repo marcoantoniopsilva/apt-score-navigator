@@ -9,6 +9,7 @@ import { MapPin, Search, Plus, Trash2, Edit3 } from 'lucide-react';
 import { AddressService } from '@/services/addressService';
 import { UserAddress, AddressFormData, AddressSearchResult } from '@/types/address';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AddressSelectorProps {
   userAddresses: UserAddress[];
@@ -291,5 +292,3 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
     </Card>
   );
 };
-
-import { supabase } from '@/integrations/supabase/client';
