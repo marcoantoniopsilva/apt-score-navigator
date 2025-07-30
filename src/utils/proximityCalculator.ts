@@ -22,8 +22,8 @@ export class ProximityCalculator {
     property: Property, 
     userAddresses: UserAddress[]
   ): Pick<PropertyWithProximity, 'proximityDistances' | 'proximityBonuses' | 'adjustedScore'> {
-    // Extrair coordenadas do endereço do imóvel (seria necessário geocodificar o endereço)
-    // Por enquanto, vamos simular coordenadas baseadas no endereço
+    // Por enquanto, usar coordenadas simuladas baseadas no endereço
+    // Em produção, isso seria substituído por geocoding real
     const propertyCoords = this.extractCoordinatesFromAddress(property.address);
     
     if (!propertyCoords) {
@@ -149,16 +149,30 @@ export class ProximityCalculator {
     });
   }
 
-  // Extrair coordenadas do endereço (seria implementado com geocoding real)
+  // Extrair coordenadas do endereço (simulação para desenvolvimento)
   private static extractCoordinatesFromAddress(address: string): { lat: number; lng: number } | null {
-    // Simulação - em produção, usaria geocoding do Mapbox
-    // Por enquanto, vamos retornar coordenadas aleatórias de São Paulo
-    const saoPaulo = {
-      lat: -23.5505 + (Math.random() - 0.5) * 0.1,
-      lng: -46.6333 + (Math.random() - 0.5) * 0.1
-    };
+    // Por enquanto, usa coordenadas simuladas de São Paulo
+    // Em produção, isso seria substituído por geocoding real usando Mapbox
     
-    return saoPaulo;
+    // Gerar coordenadas baseadas no hash do endereço para ter consistência
+    const hash = this.simpleHash(address);
+    const variance = 0.05; // ~5km de variação
+    
+    return {
+      lat: -23.5505 + ((hash % 1000) / 1000 - 0.5) * variance,
+      lng: -46.6333 + (((hash * 13) % 1000) / 1000 - 0.5) * variance
+    };
+  }
+
+  // Função simples de hash para gerar coordenadas consistentes
+  private static simpleHash(str: string): number {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32bit integer
+    }
+    return Math.abs(hash);
   }
 
   private static getAddressDisplayLabel(label: 'trabalho' | 'escola' | 'outro'): string {

@@ -58,7 +58,7 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
       cep: result.postcode
     }));
     setSearchResults([]);
-    setSearchQuery('');
+    setSearchQuery(result.place_name); // Manter o texto da busca como referência
   };
 
   const handleSave = async () => {
@@ -232,9 +232,9 @@ export const AddressSelector: React.FC<AddressSelectorProps> = ({
                   type="button" 
                   variant="outline" 
                   onClick={handleSearch}
-                  disabled={isSearching}
+                  disabled={isSearching || !searchQuery.trim()}
                 >
-                  <Search className="h-4 w-4" />
+                  {isSearching ? '...' : <Search className="h-4 w-4" />}
                 </Button>
               </div>
             </div>

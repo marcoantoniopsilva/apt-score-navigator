@@ -28,6 +28,8 @@ import { UserProfileType } from '@/types/onboarding';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { usePageRefresh } from '@/hooks/usePageRefresh';
+import { useUserAddresses } from '@/hooks/useUserAddresses';
+import { useProximityCalculation } from '@/hooks/useProximityCalculation';
 
 const Index = () => {
   const [comparisonMode, setComparisonMode] = useState(false);
@@ -53,6 +55,10 @@ const Index = () => {
 
   // Hook para refresh automático da página
   usePageRefresh();
+
+  // Hook para endereços do usuário e cálculo de proximidade
+  const { userAddresses, isLoading: addressesLoading } = useUserAddresses();
+  const { enrichedProperties, isProcessing: proximityProcessing } = useProximityCalculation(properties, userAddresses);
 
   // Mostrar onboarding para usuários autenticados que não completaram
   useEffect(() => {
@@ -143,17 +149,17 @@ const Index = () => {
     canCompare
   } = usePropertyComparison();
 
-  // Apenas recalcula pontuações sem duplicar propriedades
+  // Recalcula pontuações usando propriedades enriquecidas com proximidade
   const displayedProperties = useMemo(() => {
-    console.log('Index: Recalculando apenas pontuações para exibição...');
-    return properties.map(property => {
+    console.log('Index: Recalculando pontuações para exibição...');
+    return enrichedProperties.map(property => {
       const newFinalScore = calculateFinalScore(property.scores, criteriaWeights);
       return {
         ...property,
         finalScore: newFinalScore
       };
     });
-  }, [properties, criteriaWeights]);
+  }, [enrichedProperties, criteriaWeights]);
 
   // Escuta mudanças nos critérios para forçar atualização das pontuações
   useEffect(() => {
