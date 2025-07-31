@@ -45,7 +45,7 @@ const getObjetivoLabel = (objetivo: string | string[]) => {
 const getProfileTypeLabel = (profileType: string) => {
   switch (profileType) {
     case 'investidor': return 'Investidor';
-    case 'primeira_compra': return 'Primeira compra';
+    case 'primeira_compra': return 'Compra segura';
     case 'profissional_solteiro': return 'Profissional solteiro';
     case 'familia_com_filhos': return 'Família com filhos';
     case 'aposentado_tranquilo': return 'Aposentado tranquilo';

@@ -15,7 +15,7 @@ interface ProfileSummaryProps {
 
 const PROFILE_LABELS: Record<UserProfileType, string> = {
   investidor: 'Investidor',
-  primeira_compra: 'Primeira Compra/Aluguel',
+  primeira_compra: 'Compra Segura',
   profissional_solteiro: 'Profissional Solteiro',
   familia_com_filhos: 'Família com Filhos',
   aposentado_tranquilo: 'Aposentado/Tranquilo'
@@ -23,7 +23,7 @@ const PROFILE_LABELS: Record<UserProfileType, string> = {
 
 const PROFILE_DESCRIPTIONS: Record<UserProfileType, string> = {
   investidor: 'Focado em rentabilidade e potencial de valorização',
-  primeira_compra: 'Buscando o melhor custo-benefício para começar',
+  primeira_compra: 'Buscando o melhor custo-benefício para compra segura',
   profissional_solteiro: 'Priorizando localização e mobilidade urbana',
   familia_com_filhos: 'Focado em segurança, espaço e infraestrutura familiar',
   aposentado_tranquilo: 'Valorizando tranquilidade e comodidade'
