@@ -29,7 +29,7 @@ export const AppExplanation = () => {
             <h4 className="font-semibold mb-2 text-gray-900 flex items-center gap-2">
               <span>⚖️</span> Sistema de Pontuação:
             </h4>
-            <p className="text-gray-700 leading-relaxed">Cada propriedade é avaliada em 5 a 10 critérios, conforme você define em suas preferências, numa escala de 1 a 10. A IA insere no</p>
+            <p className="text-gray-700 leading-relaxed">Cada propriedade é avaliada em 5 a 10 critérios, conforme você define em suas preferências, numa escala de 1 a 10. A IA insere as notas, e você pode ajustá-las conforme sua própria avaliação do imóvel.</p>
           </div>
           
           <div className="p-4 bg-gray-50 rounded-lg">
@@ -43,9 +43,7 @@ export const AppExplanation = () => {
             <h4 className="font-semibold mb-2 text-gray-900 flex items-center gap-2">
               <span>📊</span> Ranking Automático:
             </h4>
-            <p className="text-gray-700 leading-relaxed">
-              As propriedades são automaticamente ordenadas pela pontuação final, calculada com base nas notas e pesos definidos.
-            </p>
+            <p className="text-gray-700 leading-relaxed">As propriedades são automaticamente ordenadas pela pontuação final, calculada com base nas notas e pesos definidos.</p>
           </div>
           
           <div className="p-4 bg-gray-50 rounded-lg">
