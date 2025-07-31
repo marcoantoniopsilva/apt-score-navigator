@@ -154,24 +154,61 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
 
   const externalPortals: ExternalPortal[] = [
     {
-      name: 'Google Imóveis',
-      icon: '🔍',
-      baseUrl: 'https://www.google.com/search',
-      description: 'Busca geral por imóveis em diversos sites',
+      name: 'QuintoAndar',
+      icon: '/lovable-uploads/4333678b-c642-4904-8805-f0abb5daf484.png',
+      baseUrl: 'https://www.quintoandar.com.br',
+      description: 'Plataforma moderna de aluguel de imóveis',
       searchParams: (profile) => {
-        const intent = profile?.intencao === 'alugar' ? 'aluguel' : 'venda';
-        const region = profile?.regiao_referencia || 'Belo Horizonte';
-        const priceRange = profile?.faixa_preco || '';
+        const intent = profile?.intencao === 'alugar' ? 'alugar' : 'comprar';
+        const region = profile?.regiao_referencia || 'belo horizonte, mg';
         
-        let query = `${intent} imovel ${region}`;
-        if (priceRange) query += ` ${priceRange}`;
+        // Processar região para extrair estado, município e bairro
+        const { estado, municipio, bairro } = parseRegion(region);
         
-        return `?q=${encodeURIComponent(query)}`;
+        // Converter estado completo para sigla
+        const estadoReverseMap: Record<string, string> = {
+          'minas-gerais': 'mg',
+          'sao-paulo': 'sp',
+          'rio-de-janeiro': 'rj',
+          'rio-grande-do-sul': 'rs',
+          'parana': 'pr',
+          'santa-catarina': 'sc',
+          'goias': 'go',
+          'mato-grosso': 'mt',
+          'mato-grosso-do-sul': 'ms',
+          'distrito-federal': 'df',
+          'espirito-santo': 'es',
+          'bahia': 'ba',
+          'pernambuco': 'pe',
+          'ceara': 'ce',
+          'paraiba': 'pb',
+          'rio-grande-do-norte': 'rn',
+          'alagoas': 'al',
+          'sergipe': 'se',
+          'piaui': 'pi',
+          'maranhao': 'ma',
+          'tocantins': 'to',
+          'para': 'pa',
+          'amapa': 'ap',
+          'amazonas': 'am',
+          'roraima': 'rr',
+          'acre': 'ac',
+          'rondonia': 'ro'
+        };
+        
+        const estadoSigla = estadoReverseMap[estado] || 'mg';
+        
+        // Formato: /intent/imovel/bairro-cidade-estado-brasil ou /intent/imovel/cidade-estado-brasil
+        if (bairro) {
+          return `/${intent}/imovel/${bairro}-${municipio}-${estadoSigla}-brasil`;
+        } else {
+          return `/${intent}/imovel/${municipio}-${estadoSigla}-brasil`;
+        }
       }
     },
     {
       name: 'ZAP Imóveis',
-      icon: '🏠',
+      icon: '/lovable-uploads/cc5a4346-1d05-44c8-9175-34523b20bf64.png',
       baseUrl: 'https://www.zapimoveis.com.br',
       description: 'Portal especializado em imóveis residenciais',
       searchParams: (profile) => {
@@ -225,7 +262,7 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
     },
     {
       name: 'Viva Real',
-      icon: '🏡',
+      icon: '/lovable-uploads/497f36f8-14ed-4e2d-b1d6-bbabd5992456.png',
       baseUrl: 'https://www.vivareal.com.br',
       description: 'Portal líder em anúncios imobiliários',
       searchParams: (profile) => {
@@ -244,7 +281,7 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
     },
     {
       name: 'OLX Imóveis',
-      icon: '🔄',
+      icon: '/lovable-uploads/8be5c9bc-3bef-4f1f-92dc-c0c03c9d56f5.png',
       baseUrl: 'https://www.olx.com.br',
       description: 'Marketplace com variedade de opções',
       searchParams: (profile) => {
@@ -262,56 +299,19 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
       }
     },
     {
-      name: 'QuintoAndar',
-      icon: '🏢',
-      baseUrl: 'https://www.quintoandar.com.br',
-      description: 'Plataforma moderna de aluguel de imóveis',
+      name: 'Google Imóveis',
+      icon: '/lovable-uploads/85a6a38b-7d24-4f75-8978-cd6172e3ac32.png',
+      baseUrl: 'https://www.google.com/search',
+      description: 'Busca geral por imóveis em diversos sites',
       searchParams: (profile) => {
-        const intent = profile?.intencao === 'alugar' ? 'alugar' : 'comprar';
-        const region = profile?.regiao_referencia || 'belo horizonte, mg';
+        const intent = profile?.intencao === 'alugar' ? 'aluguel' : 'venda';
+        const region = profile?.regiao_referencia || 'Belo Horizonte';
+        const priceRange = profile?.faixa_preco || '';
         
-        // Processar região para extrair estado, município e bairro
-        const { estado, municipio, bairro } = parseRegion(region);
+        let query = `${intent} imovel ${region}`;
+        if (priceRange) query += ` ${priceRange}`;
         
-        // Converter estado completo para sigla
-        const estadoReverseMap: Record<string, string> = {
-          'minas-gerais': 'mg',
-          'sao-paulo': 'sp',
-          'rio-de-janeiro': 'rj',
-          'rio-grande-do-sul': 'rs',
-          'parana': 'pr',
-          'santa-catarina': 'sc',
-          'goias': 'go',
-          'mato-grosso': 'mt',
-          'mato-grosso-do-sul': 'ms',
-          'distrito-federal': 'df',
-          'espirito-santo': 'es',
-          'bahia': 'ba',
-          'pernambuco': 'pe',
-          'ceara': 'ce',
-          'paraiba': 'pb',
-          'rio-grande-do-norte': 'rn',
-          'alagoas': 'al',
-          'sergipe': 'se',
-          'piaui': 'pi',
-          'maranhao': 'ma',
-          'tocantins': 'to',
-          'para': 'pa',
-          'amapa': 'ap',
-          'amazonas': 'am',
-          'roraima': 'rr',
-          'acre': 'ac',
-          'rondonia': 'ro'
-        };
-        
-        const estadoSigla = estadoReverseMap[estado] || 'mg';
-        
-        // Formato: /intent/imovel/bairro-cidade-estado-brasil ou /intent/imovel/cidade-estado-brasil
-        if (bairro) {
-          return `/${intent}/imovel/${bairro}-${municipio}-${estadoSigla}-brasil`;
-        } else {
-          return `/${intent}/imovel/${municipio}-${estadoSigla}-brasil`;
-        }
+        return `?q=${encodeURIComponent(query)}`;
       }
     }
   ];
@@ -441,7 +441,7 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
           <Card key={portal.name} className="hover:shadow-md transition-shadow">
             <CardHeader className="pb-3">
               <CardTitle className="text-base flex items-center gap-2">
-                <span className="text-xl">{portal.icon}</span>
+                <img src={portal.icon} alt={`${portal.name} logo`} className="w-6 h-6 rounded" />
                 {portal.name}
               </CardTitle>
               <p className="text-sm text-muted-foreground">
