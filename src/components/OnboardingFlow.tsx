@@ -31,7 +31,7 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, onCl
     
     if ((answers.objetivo_principal === 'morar_conforto' || answers.objetivo_principal === 'primeiro_imovel') && 
         (answers.valor_principal === 'preco' || answers.situacao_moradia === 'sozinho')) {
-      return 'primeira_compra';
+      return 'compra_segura';
     }
     
     if (answers.situacao_moradia === 'sozinho' && 
@@ -48,8 +48,8 @@ export const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, onCl
       return 'aposentado_tranquilo';
     }
     
-    // Fallback para primeira compra
-    return 'primeira_compra';
+    // Fallback para compra segura
+    return 'compra_segura';
   };
 
   // Função para sugerir pesos baseados no perfil

@@ -57,7 +57,7 @@ export const EnhancedOnboardingFlow: React.FC<EnhancedOnboardingFlowProps> = ({
               && answers.situacao_moradia === 'sozinho') {
       return 'profissional_solteiro';
     } else {
-      return 'primeira_compra';
+      return 'compra_segura';
     }
   };
 

@@ -9,7 +9,7 @@ export interface OnboardingAnswers {
 
 export type UserProfileType = 
   | 'investidor'
-  | 'primeira_compra'
+  | 'compra_segura'
   | 'profissional_solteiro'
   | 'familia_com_filhos'
   | 'aposentado_tranquilo';
@@ -71,7 +71,7 @@ export const PERFIL_PESOS_SUGERIDOS: Record<UserProfileType, Record<string, numb
     acabamento: 15,
     proximidade_metro: 10
   },
-  primeira_compra: {
+  compra_segura: {
     preco_total: 35,
     localizacao: 25,
     tamanho: 20,
