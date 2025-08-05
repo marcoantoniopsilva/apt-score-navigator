@@ -1,11 +1,55 @@
 import { supabase } from '@/integrations/supabase/client';
-import { isAuthError, retryWithBackoff } from './sessionUtils';
 
 interface ApiCallOptions {
   retries?: number;
   timeout?: number;
   refreshOnAuth?: boolean;
 }
+
+// Utility to check if error is related to authentication
+export const isAuthError = (error: any): boolean => {
+  if (!error) return false;
+  
+  const authErrorMessages = [
+    'JWT expired',
+    'Invalid token',
+    'No session',
+    'Unauthorized',
+    'Authentication required',
+    'Token has expired',
+    'Invalid JWT'
+  ];
+
+  const errorMessage = error.message || error.toString() || '';
+  return authErrorMessages.some(msg => 
+    errorMessage.toLowerCase().includes(msg.toLowerCase())
+  );
+};
+
+// Retry mechanism with exponential backoff
+export const retryWithBackoff = async <T>(
+  fn: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000
+): Promise<T> => {
+  let lastError: Error;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      if (attempt === maxRetries) break;
+      
+      // Exponential backoff: 1s, 2s, 4s, 8s...
+      const delay = baseDelay * Math.pow(2, attempt);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
+
+  throw lastError!;
+};
 
 // Enhanced API wrapper with session management
 export const apiCall = async <T>(
@@ -36,21 +80,16 @@ export const apiCall = async <T>(
         
         if (refreshError || !session) {
           console.error('Session refresh failed:', refreshError);
-          // Notify components about session expiration
-          window.dispatchEvent(new CustomEvent('session-expired'));
           throw new Error('Session expired. Please log in again.');
         }
 
         console.log('Session refreshed successfully, retrying API call');
-        // Notify components about session refresh
-        window.dispatchEvent(new CustomEvent('session-refreshed'));
         
         // Retry the API call once after refresh
         return await executeWithTimeout();
         
       } catch (refreshError) {
         console.error('Session refresh error:', refreshError);
-        window.dispatchEvent(new CustomEvent('session-expired'));
         throw new Error('Session expired. Please log in again.');
       }
     }

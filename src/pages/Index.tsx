@@ -10,8 +10,6 @@ import { UserPreferencesDisplay } from '@/components/UserPreferencesDisplay';
 import { MobileWeightsEditor } from '@/components/MobileWeightsEditor';
 import { PropertyComparison } from '@/components/PropertyComparison';
 import { ManualPropertySearch } from '@/components/ManualPropertySearch';
-import { SessionManager } from '@/components/SessionManager';
-
 import { calculateFinalScore } from '@/utils/scoreCalculator';
 import { usePropertyLoader } from '@/hooks/usePropertyLoader';
 import { usePropertyActions } from '@/hooks/usePropertyActions';
@@ -23,11 +21,9 @@ import { EnhancedOnboardingModal } from '@/components/EnhancedOnboardingModal';
 import { useCriteria } from '@/hooks/useCriteria';
 import { SubscriptionStatus } from '@/components/SubscriptionStatus';
 import { UpgradeModal } from '@/components/UpgradeModal';
-import { SessionExpiredMessage } from '@/components/SessionExpiredMessage';
 import { UserProfileType } from '@/types/onboarding';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { usePageRefresh } from '@/hooks/usePageRefresh';
 import { useUserAddresses } from '@/hooks/useUserAddresses';
 import { useProximityCalculation } from '@/hooks/useProximityCalculation';
 
@@ -53,8 +49,6 @@ const Index = () => {
     isLoading: onboardingLoading
   } = useOnboarding();
 
-  // Hook para refresh automático da página
-  usePageRefresh();
 
   // Hook para endereços do usuário e cálculo de proximidade
   const { userAddresses, isLoading: addressesLoading } = useUserAddresses();
@@ -176,33 +170,28 @@ const Index = () => {
   }, []);
 
   return (
-    <SessionManager>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-        <AppHeader 
-          title="Imobly"
-          subtitle="Seu novo jeito de escolher imóveis"
-          onAddProperty={handleAddPropertyWithLimits}
-          onRefresh={loadProperties}
-          isLoading={isLoading}
-        />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <AppHeader 
+        title="Imobly"
+        subtitle="Seu novo jeito de escolher imóveis"
+        onAddProperty={handleAddPropertyWithLimits}
+        onRefresh={loadProperties}
+        isLoading={isLoading}
+      />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-          <AppExplanation />
-          
-          {userProfile && (
-            <UserPreferencesDisplay
-              userProfile={userProfile}
-              onEdit={() => setShowOnboarding(true)}
-            />
-          )}
-          
-          <div className="mb-6">
-            <SessionExpiredMessage error={sessionError} />
-          </div>
-          
-          <div className="mb-6">
-            <SubscriptionStatus />
-          </div>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <AppExplanation />
+        
+        {userProfile && (
+          <UserPreferencesDisplay
+            userProfile={userProfile}
+            onEdit={() => setShowOnboarding(true)}
+          />
+        )}
+        
+        <div className="mb-6">
+          <SubscriptionStatus />
+        </div>
 
           {/* Busca Manual - movido para o topo após o card de plano */}
           {hasCompletedOnboarding && (
@@ -265,38 +254,37 @@ const Index = () => {
               });
             }}
           />
-        </div>
-
-        {showAddForm && (
-          <AddPropertyForm 
-            onSubmit={handleAddProperty}
-            onCancel={() => {
-              setShowAddForm(false);
-              setExtractedPropertyData(null);
-            }}
-            extractedData={extractedPropertyData}
-          />
-        )}
-
-        {isComparisonOpen && (
-          <PropertyComparison
-            properties={selectedProperties}
-            onRemoveProperty={removeProperty}
-            onClose={closeComparison}
-          />
-        )}
-
-        <UpgradeModal 
-          open={showUpgradeModal} 
-          onOpenChange={setShowUpgradeModal} 
-        />
-
-        <EnhancedOnboardingModal
-          open={showOnboarding}
-          onOpenChange={setShowOnboarding}
-        />
       </div>
-    </SessionManager>
+
+      {showAddForm && (
+        <AddPropertyForm 
+          onSubmit={handleAddProperty}
+          onCancel={() => {
+            setShowAddForm(false);
+            setExtractedPropertyData(null);
+          }}
+          extractedData={extractedPropertyData}
+        />
+      )}
+
+      {isComparisonOpen && (
+        <PropertyComparison
+          properties={selectedProperties}
+          onRemoveProperty={removeProperty}
+          onClose={closeComparison}
+        />
+      )}
+
+      <UpgradeModal 
+        open={showUpgradeModal} 
+        onOpenChange={setShowUpgradeModal} 
+      />
+
+      <EnhancedOnboardingModal
+        open={showOnboarding}
+        onOpenChange={setShowOnboarding}
+      />
+    </div>
   );
 };
 

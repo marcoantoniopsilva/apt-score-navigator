@@ -73,31 +73,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, []);
 
-  // Page Visibility API implementation
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (!document.hidden && session) {
-        // Clear any existing timeout
-        if (refreshTimeoutRef.current) {
-          clearTimeout(refreshTimeoutRef.current);
-        }
-        
-        // Debounce session check when tab becomes visible
-        refreshTimeoutRef.current = setTimeout(() => {
-          debouncedRefreshSession();
-        }, 1000); // 1 second delay after tab becomes visible
-      }
-    };
-
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      if (refreshTimeoutRef.current) {
-        clearTimeout(refreshTimeoutRef.current);
-      }
-    };
-  }, [session, debouncedRefreshSession]);
+  // Removido: Page Visibility API que causava conflitos com onAuthStateChange
+  // O Supabase já gerencia sessões automaticamente ao trocar abas
 
   // Session validation every 5 minutes for active sessions
   useEffect(() => {
