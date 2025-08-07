@@ -316,74 +316,10 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
     }
   ];
 
-  const handleExtractProperty = async () => {
-    if (!urlInput.trim()) {
-      toast({
-        title: "URL necessária",
-        description: "Por favor, insira uma URL válida de imóvel",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsExtracting(true);
-    
-    try {
-      console.log('Extraindo dados da URL:', urlInput);
-      const propertyData = await extractPropertyFromUrl(urlInput);
-      
-      // Avaliar o imóvel com IA
-      let evaluationData = null;
-      try {
-        const { data: aiEvaluation, error: evaluationError } = await supabase.functions.invoke('evaluate-property-scores', {
-          body: { propertyData }
-        });
-
-        if (!evaluationError && aiEvaluation) {
-          evaluationData = aiEvaluation;
-        }
-      } catch (error) {
-        console.warn('Erro na avaliação IA:', error);
-      }
-
-      // Formatar dados extraídos para o AddPropertyForm (igual ao botão superior)
-      const formattedProperty = {
-        ...propertyData,
-        images: propertyData.images || [],
-        sourceUrl: urlInput,
-        scores: evaluationData?.scores || propertyData.scores || {},
-      };
-
-      if (onAddProperty) {
-        // Em vez de salvar diretamente, passa os dados para abrir o formulário
-        onAddProperty(formattedProperty);
-      }
-
-      setUrlInput('');
-      
-      toast({
-        title: "Dados extraídos com sucesso",
-        description: "O formulário foi aberto para você revisar e editar os dados antes de salvar",
-        duration: 5000
-      });
-
-    } catch (error: any) {
-      console.error('Erro na extração:', error);
-      
-      let errorMessage = "Erro ao extrair dados do imóvel";
-      if (error?.message?.includes('não atende aos critérios')) {
-        errorMessage = "Imóvel não atende aos seus critérios de busca";
-      } else if (error?.message?.includes('extrair dados')) {
-        errorMessage = "Não foi possível extrair dados desta URL";
-      }
-      
-      toast({
-        title: "Erro na extração",
-        description: errorMessage,
-        variant: "destructive"
-      });
-    } finally {
-      setIsExtracting(false);
+  const handleExtractProperty = () => {
+    // Simplesmente abrir o formulário, igual ao primeiro botão
+    if (onAddProperty) {
+      onAddProperty(null); // Passa null para abrir formulário vazio
     }
   };
 
@@ -454,46 +390,20 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
         <CardHeader>
           <CardTitle className="text-base flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            Adicionar Imóvel por URL
+            Adicionar Propriedade
           </CardTitle>
           <p className="text-sm text-muted-foreground">
-            Encontrou um imóvel interessante? Cole a URL aqui para extrair automaticamente os dados
+            Clique aqui para adicionar uma nova propriedade (funciona igual ao botão + Adicionar do topo)
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Input
-              placeholder="https://www.zapimoveis.com.br/imovel/..."
-              value={urlInput}
-              onChange={(e) => setUrlInput(e.target.value)}
-              disabled={isExtracting}
-            />
-            <Button 
-              onClick={handleExtractProperty}
-              disabled={isExtracting || !urlInput.trim()}
-            >
-              {isExtracting ? (
-                <>
-                  <Search className="h-4 w-4 mr-2 animate-spin" />
-                  Extraindo...
-                </>
-              ) : (
-                <>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Extrair
-                </>
-              )}
-            </Button>
-          </div>
-          
-          {isExtracting && (
-            <div className="space-y-2">
-              <LoadingState />
-              <p className="text-sm text-muted-foreground text-center">
-                Extraindo dados do imóvel e avaliando com IA...
-              </p>
-            </div>
-          )}
+          <Button 
+            onClick={handleExtractProperty}
+            className="w-full"
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Adicionar Propriedade
+          </Button>
         </CardContent>
       </Card>
 

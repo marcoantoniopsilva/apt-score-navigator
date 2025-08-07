@@ -123,9 +123,8 @@ const Index = () => {
     handleDeleteProperty
   } = usePropertyActions(properties, setProperties, criteriaWeights, loadProperties);
 
-  // Função para lidar com dados extraídos do ManualPropertySearch
+  // Função unificada para ambos os botões de adicionar propriedade
   const handleExtractedProperty = (propertyData: any) => {
-    console.log('Index: Dados extraídos recebidos:', propertyData);
     setExtractedPropertyData(propertyData);
     setShowAddForm(true);
   };
