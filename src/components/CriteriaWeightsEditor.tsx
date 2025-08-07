@@ -22,9 +22,13 @@ export const CriteriaWeightsEditor: React.FC<CriteriaWeightsEditorProps> = ({
   onReset
 }) => {
   const handleWeightChange = (criterion: string, value: number) => {
+    // Ensure we have a valid number and apply constraints
+    const numericValue = isNaN(value) ? 1 : value;
+    const constrainedValue = Math.max(1, Math.min(5, numericValue));
+    
     onWeightsChange({
       ...weights,
-      [criterion]: Math.max(1, Math.min(5, value))
+      [criterion]: constrainedValue
     });
   };
 
@@ -74,11 +78,26 @@ export const CriteriaWeightsEditor: React.FC<CriteriaWeightsEditorProps> = ({
                 type="number"
                 min="1"
                 max="5"
+                step="1"
                 value={weights[criterion.key] || 1}
-                onChange={(e) => handleWeightChange(
-                  criterion.key,
-                  parseInt(e.target.value) || 1
-                )}
+                onChange={(e) => {
+                  const inputValue = e.target.value;
+                  // Allow empty input temporarily for better UX
+                  if (inputValue === '') {
+                    return;
+                  }
+                  const numericValue = parseInt(inputValue, 10);
+                  if (!isNaN(numericValue)) {
+                    handleWeightChange(criterion.key, numericValue);
+                  }
+                }}
+                onBlur={(e) => {
+                  // Ensure we have a valid value when leaving the field
+                  const inputValue = e.target.value;
+                  if (inputValue === '' || isNaN(parseInt(inputValue, 10))) {
+                    handleWeightChange(criterion.key, 1);
+                  }
+                }}
                 className="w-14 sm:w-16 text-center"
               />
               <span className="text-xs text-gray-500 w-10 sm:w-12 text-right">
