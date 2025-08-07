@@ -346,25 +346,12 @@ export const ManualPropertySearch = ({ onAddProperty }: ManualPropertySearchProp
         console.warn('Erro na avaliação IA:', error);
       }
 
+      // Formatar dados extraídos para o AddPropertyForm (igual ao botão superior)
       const formattedProperty = {
-        id: `manual-${Date.now()}`,
-        title: propertyData.title || 'Imóvel Extraído',
-        address: propertyData.address || 'Endereço não informado',
-        bedrooms: propertyData.bedrooms || 1,
-        bathrooms: propertyData.bathrooms || 1,
-        parkingSpaces: propertyData.parkingSpaces || 0,
-        area: propertyData.area || 50,
-        floor: propertyData.floor || '',
-        rent: propertyData.rent || 0,
-        condo: propertyData.condo || 0,
-        iptu: propertyData.iptu || 0,
-        fireInsurance: 50,
-        otherFees: 0,
-        totalMonthlyCost: (propertyData.rent || 0) + (propertyData.condo || 0) + (propertyData.iptu || 0) + 50,
+        ...propertyData,
         images: propertyData.images || [],
         sourceUrl: urlInput,
-        scores: evaluationData?.scores || {},
-        finalScore: evaluationData?.finalScore || 0
+        scores: evaluationData?.scores || propertyData.scores || {},
       };
 
       if (onAddProperty) {
