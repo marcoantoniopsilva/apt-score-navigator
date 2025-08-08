@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { CriteriaWeights, DEFAULT_CRITERIA_KEYS, DEFAULT_WEIGHTS } from '@/types/property';
 import { CRITERIOS_DISPONÍVEIS, PERFIL_PESOS_SUGERIDOS } from '@/types/onboarding';
 import { useOnboarding } from './useOnboarding';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface ActiveCriterion {
   key: string;
@@ -10,7 +11,7 @@ export interface ActiveCriterion {
 }
 
 export const useCriteria = () => {
-  const { userPreferences, hasCompletedOnboarding, userProfile } = useOnboarding();
+  const { userPreferences, hasCompletedOnboarding, userProfile, loadOnboardingData } = useOnboarding();
   const [activeCriteria, setActiveCriteria] = useState<ActiveCriterion[]>([]);
   const [criteriaWeights, setCriteriaWeights] = useState<CriteriaWeights>(DEFAULT_WEIGHTS);
 
@@ -122,16 +123,21 @@ export const useCriteria = () => {
 
   // Escuta eventos de atualização de critérios e sessão
   useEffect(() => {
+    const refreshOnboarding = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        await loadOnboardingData(session.user.id);
+      }
+    };
+
     const handleCriteriaUpdate = () => {
-      console.log('useCriteria: Critérios atualizados, forçando recálculo...');
-      // Triggere a re-execution of the main criteria effect
-      window.dispatchEvent(new CustomEvent('force-criteria-reload'));
+      console.log('useCriteria: Critérios atualizados, recarregando onboarding...');
+      refreshOnboarding();
     };
 
     const handleSessionRefresh = () => {
-      console.log('useCriteria: Sessão restaurada, recarregando critérios...');
-      // Triggere a re-execution of the main criteria effect  
-      window.dispatchEvent(new CustomEvent('force-criteria-reload'));
+      console.log('useCriteria: Sessão restaurada, recarregando onboarding...');
+      refreshOnboarding();
     };
 
     window.addEventListener('criteria-updated', handleCriteriaUpdate);
@@ -141,7 +147,7 @@ export const useCriteria = () => {
       window.removeEventListener('criteria-updated', handleCriteriaUpdate);
       window.removeEventListener('session-refreshed', handleSessionRefresh);
     };
-  }, []);
+  }, [loadOnboardingData]);
 
   // Force reload when requested
   useEffect(() => {

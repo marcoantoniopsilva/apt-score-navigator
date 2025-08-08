@@ -46,7 +46,8 @@ const Index = () => {
     setShowOnboarding,
     saveOnboardingData,
     userProfile,
-    isLoading: onboardingLoading
+    isLoading: onboardingLoading,
+    loadOnboardingData
   } = useOnboarding();
 
 
@@ -156,9 +157,13 @@ const Index = () => {
 
   // Escuta mudanças nos critérios para forçar atualização das pontuações
   useEffect(() => {
-    const handleCriteriaUpdate = () => {
-      console.log('Index: Critérios atualizados via evento');
-      // O useMemo acima irá recalcular automaticamente
+    const handleCriteriaUpdate = async () => {
+      console.log('Index: Critérios atualizados via evento - recarregando perfil/onboarding');
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.id) {
+        await loadOnboardingData(session.user.id);
+      }
+      // O useMemo acima irá recalcular automaticamente via criteriaWeights
     };
 
     window.addEventListener('criteria-updated', handleCriteriaUpdate);
@@ -166,7 +171,7 @@ const Index = () => {
     return () => {
       window.removeEventListener('criteria-updated', handleCriteriaUpdate);
     };
-  }, []);
+  }, [loadOnboardingData]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
