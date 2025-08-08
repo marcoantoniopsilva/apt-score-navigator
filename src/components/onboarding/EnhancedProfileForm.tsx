@@ -122,19 +122,27 @@ export const EnhancedProfileForm: React.FC<EnhancedProfileFormProps> = ({ onComp
   const handleMultiAnswerChange = (value: string, checked: boolean) => {
     setAnswers(prev => {
       const currentValues = (prev[currentQuestion.name] as string[]) || [];
-      let newValues: string[];
+      const alreadySelected = currentValues.includes(value);
+      let newValues = currentValues;
       
       if (checked) {
-        // Adicionar valor se não exceder o limite
+        // Evita duplicidade ao tocar no container e no checkbox
+        if (alreadySelected) {
+          return prev; // não altera se já estava selecionado
+        }
+        // Adiciona respeitando o limite
         if (!currentQuestion.maxSelections || currentValues.length < currentQuestion.maxSelections) {
           newValues = [...currentValues, value];
         } else {
-          return prev; // Não adiciona se exceder o limite
+          return prev; // não adiciona se exceder o limite
         }
       } else {
         // Remover valor
         newValues = currentValues.filter(v => v !== value);
       }
+      
+      // Garantir unicidade por segurança
+      newValues = Array.from(new Set(newValues));
       
       return {
         ...prev,

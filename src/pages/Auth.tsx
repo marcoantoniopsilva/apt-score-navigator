@@ -71,6 +71,8 @@ const Auth = () => {
           title: "Login realizado",
           description: "Bem-vindo de volta!",
         });
+        // Ao logar, aplicamos as preferências salvas do onboarding (se houver)
+        await processOnboardingData();
         navigate('/app');
       }
     } catch (error) {
@@ -127,11 +129,8 @@ const Auth = () => {
       } else {
         toast({
           title: "Cadastro realizado",
-          description: "Conta criada com sucesso! Processando suas preferências...",
+          description: "Conta criada com sucesso! Verifique seu email e faça login.",
         });
-        
-        // Processar dados do onboarding se existirem
-        await processOnboardingData();
         
         navigate('/app');
       }
