@@ -107,28 +107,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     mountedRef.current = true;
     console.log('AuthContext: Setting up auth state listener');
 
-    // Set up auth state listener with anti-loop protection
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, newSession) => {
-        if (!mountedRef.current) return;
-        
-        console.log('Auth state changed:', event, newSession?.user?.email);
-        
-        // Prevent loops by checking if session actually changed
-        const sessionChanged = 
-          (!session && newSession) || 
-          (session && !newSession) ||
-          (session?.access_token !== newSession?.access_token);
-
-        if (sessionChanged) {
-          setSession(newSession);
-          setUser(newSession?.user ?? null);
-          console.log('Session updated:', !!newSession);
-        }
-        
-        setLoading(false);
-      }
-    );
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      if (!mountedRef.current) return;
+      
+      console.log('Auth state changed:', event, newSession?.user?.email);
+      
+      // Always sync state directly to avoid stale-closure bugs
+      setSession(newSession);
+      setUser(newSession?.user ?? null);
+      
+      setLoading(false);
+    });
 
     // Initial session check with timeout
     console.log('AuthContext: Checking for existing session');
