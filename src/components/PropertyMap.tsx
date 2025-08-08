@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { MapPin, Home, Car, Bath, Bed } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { PropertyGeocodingService } from '@/services/propertyGeocoding';
 
 interface PropertyMapProps {
   properties: Property[];
@@ -76,37 +77,13 @@ const PropertyMap: React.FC<PropertyMapProps> = ({ properties, onPropertySelect 
       return geocodeCache.current.get(address) || null;
     }
 
-    if (!mapboxToken) {
-      console.error('Token do Mapbox não disponível para geocodificação');
-      geocodeCache.current.set(address, null);
-      return null;
-    }
-
     try {
-      // Simplifica endereço para melhor geocodificação
-      const cleanAddress = `${address}, Belo Horizonte, MG, Brasil`;
-      console.log(`Geocodificando: "${cleanAddress}"`);
-      
-      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(cleanAddress)}.json?access_token=${mapboxToken}&limit=1&country=BR&bbox=-44.1,-20.1,-43.8,-19.8`;
-      console.log(`URL de geocodificação: ${url.replace(mapboxToken, '[TOKEN]')}`);
-      
-      const response = await fetch(url, {
-        method: 'GET'
-      });
-      
-      if (!response.ok) {
-        console.error(`Erro HTTP ${response.status}: ${response.statusText}`);
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      console.log(`Resposta da API Mapbox para "${address}":`, data);
-      
-      if (data.features && data.features.length > 0) {
-        const [lng, lat] = data.features[0].center;
-        const coords: [number, number] = [lng, lat];
+      console.log(`Geocodificando com serviço central: "${address}"`);
+      const result = await PropertyGeocodingService.getCachedCoordinates(address);
+      if (result) {
+        const coords: [number, number] = [result.lng, result.lat];
         geocodeCache.current.set(address, coords);
-        console.log(`✅ Geocodificado: "${address}" -> [${lng}, ${lat}]`);
+        console.log(`✅ Geocodificado: "${address}" -> [${coords[0]}, ${coords[1]}]`);
         return coords;
       } else {
         console.warn(`❌ Nenhum resultado encontrado para: "${address}"`);
