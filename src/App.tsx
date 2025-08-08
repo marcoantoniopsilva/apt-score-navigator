@@ -10,7 +10,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Success from "./pages/Success";
 import NotFound from "./pages/NotFound";
-import Landing from "./pages/Landing";
+import Home from "./pages/Home";
 import Marketing from "./pages/Marketing";
 import Onboarding from "./pages/Onboarding";
 
@@ -24,7 +24,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
-            <Route path="/" element={<Landing />} />
+            <Route path="/" element={<Home />} />
             <Route path="/marketing" element={<Marketing />} />
             <Route path="/onboarding" element={<Onboarding />} />
             <Route path="/auth" element={<Auth />} />
